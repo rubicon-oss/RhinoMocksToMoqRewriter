@@ -1,0 +1,19 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      
+    - name: restore
+      run: dotnet restore
+      
+    - name: build
+      run: dotnet build --configuration Release --no-restore
+      
+    - name: test
+      run: dotnet test --configuration Release --no-build --verbosity minimal
