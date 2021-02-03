@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>RhinoMocksToMoqRewriter.Core.Interfaces</RootNamespace>
+    <LangVersion>8</LangVersion>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>true</WarningsAsErrors>
+  </PropertyGroup>
+
+</Project>
