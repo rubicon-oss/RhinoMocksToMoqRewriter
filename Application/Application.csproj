@@ -6,11 +6,10 @@
     <RootNamespace>RhinoMocksToMoqRewriter.Application</RootNamespace>
     <LangVersion>8</LangVersion>
     <Nullable>enable</Nullable>
-    <WarningsAsErrors>true</WarningsAsErrors>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Core.Interfaces\Core.Interfaces.csproj" />
     <ProjectReference Include="..\Core\Core.csproj" />
   </ItemGroup>
 
