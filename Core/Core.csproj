@@ -5,12 +5,8 @@
     <RootNamespace>RhinoMocksToMoqRewriter.Core</RootNamespace>
     <LangVersion>8</LangVersion>
     <Nullable>enable</Nullable>
-    <WarningsAsErrors>true</WarningsAsErrors>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Core.Interfaces\Core.Interfaces.csproj" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Locator" Version="1.4.1" />
