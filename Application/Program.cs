@@ -12,13 +12,55 @@
 //
 
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using CommandLine;
+using Microsoft.CodeAnalysis;
 
 namespace RhinoMocksToMoqRewriter.Application
 {
-  class Program
+  public static class Program
   {
-    static void Main (string[] args)
+    public static async Task<int> Main (string[] args)
     {
+      var documents = new List<Document>();
+      try
+      {
+        await Parser.Default.ParseArguments<Options> (args)
+            .WithParsedAsync (async opt => { documents.AddRange (await ParseArguments (opt)); });
+      }
+      catch (System.IO.FileNotFoundException e)
+      {
+        await Console.Error.WriteLineAsync (e.Message);
+        return 1;
+      }
+
+      foreach (var document in documents)
+      {
+        // TODO: Create Syntax Tree from document
+        // TODO: Create Semantic Model from document
+        Console.WriteLine (document.Name);
+      }
+
+      return 0;
+    }
+
+    private static async Task<IReadOnlyList<Document>> ParseArguments (Options opt)
+    {
+      var documentLoader = new DocumentLoader();
+      if (!string.IsNullOrEmpty (opt.SolutionPath))
+      {
+        var solution = await documentLoader.LoadSolution (opt.SolutionPath);
+        return await documentLoader.LoadDocuments (solution.Projects);
+      }
+
+      if (!string.IsNullOrEmpty (opt.ProjectPath))
+      {
+        var project = await documentLoader.LoadProject (opt.ProjectPath);
+        return await documentLoader.LoadDocuments (new[] { project });
+      }
+
+      throw new ArgumentException ("Unable to load documents!");
     }
   }
 }
