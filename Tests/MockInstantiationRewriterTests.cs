@@ -20,6 +20,8 @@ namespace RhinoMocksToMoqRewriter.Tests
   [TestFixture]
   public class MockInstantiationRewriterTests
   {
+    private readonly MockInstantiationRewriter _rewriter = new MockInstantiationRewriter();
+
     [Test]
     [TestCase ("_mock = MockRepository.GenerateMock<string>();", "_mock = new Mock<string>();")]
     [TestCase ("_mock = MockRepository.GenerateMock<string, IDisposable>();", "_mock = new Mock<string>();")]
@@ -68,8 +70,8 @@ namespace RhinoMocksToMoqRewriter.Tests
     public void Rewrite_ExpressionStatement (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatement (source);
-      var rewriter = new MockInstantiationRewriter (model);
-      var newNode = rewriter.VisitExpressionStatement (node);
+      _rewriter.Model = model;
+      var newNode = _rewriter.VisitExpressionStatement (node);
       Assert.AreEqual (expected, newNode!.ToString());
     }
 
@@ -98,8 +100,8 @@ namespace RhinoMocksToMoqRewriter.Tests
     public void Rewrite_LocalDeclarationStatement (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileLocalDeclarationStatement (source);
-      var rewriter = new MockInstantiationRewriter (model);
-      var newNode = rewriter.VisitLocalDeclarationStatement (node);
+      _rewriter.Model = model;
+      var newNode = _rewriter.VisitLocalDeclarationStatement (node);
       Assert.AreEqual (expected, newNode!.ToString());
     }
 
@@ -135,8 +137,8 @@ namespace RhinoMocksToMoqRewriter.Tests
     public void Rewrite_FieldDeclarationStatement (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileFieldDeclaration (source);
-      var rewriter = new MockInstantiationRewriter (model);
-      var newNode = rewriter.VisitFieldDeclaration (node);
+      _rewriter.Model = model;
+      var newNode = _rewriter.VisitFieldDeclaration (node);
       Assert.AreEqual (expected, newNode!.ToString());
     }
   }

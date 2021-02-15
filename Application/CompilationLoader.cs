@@ -11,20 +11,22 @@
 // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.MSBuild;
 
 namespace RhinoMocksToMoqRewriter.Application
 {
-  public class DocumentLoader
+  public class CompilationLoader
   {
     private readonly MSBuildWorkspace _workspace;
 
-    public DocumentLoader ()
+    public CompilationLoader ()
     {
       var instance = MSBuildLocator.QueryVisualStudioInstances().First();
       MSBuildLocator.RegisterInstance (instance);
@@ -41,14 +43,15 @@ namespace RhinoMocksToMoqRewriter.Application
       return await _workspace.OpenProjectAsync (pathToProject);
     }
 
-    public async Task<IReadOnlyList<Document>> LoadDocuments (IEnumerable<Project> projects)
+    public async Task<IReadOnlyList<CSharpCompilation>> LoadCompilations (IEnumerable<Project> projects)
     {
-      var compilations = await Task.WhenAll (projects.Select (async p => (Project: p, Compilation: await p.GetCompilationAsync())));
-      var documents = compilations
-          .Where (pcp => pcp.Compilation?.ReferencedAssemblyNames.Any (a => a.Name.Contains ("Rhino.Mocks")) == true)
-          .SelectMany (pcp => pcp.Project.Documents);
+      var allCompilations = await Task
+          .WhenAll (projects.Select (async p => await p.GetCompilationAsync()));
+      var rhinoMocksCompilations = allCompilations
+          .Select (c => c as CSharpCompilation)
+          .Where (c => c?.ReferencedAssemblyNames.Any (a => a.Name.Contains ("Rhino.Mocks")) == true);
 
-      return documents.ToList();
+      return rhinoMocksCompilations.ToList().AsReadOnly()!;
     }
   }
 }

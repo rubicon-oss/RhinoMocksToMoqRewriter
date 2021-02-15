@@ -19,26 +19,25 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace RhinoMocksToMoqRewriter.Core
 {
-  public class MockInstantiationRewriter : CSharpSyntaxRewriter
+  public class MockInstantiationRewriter : RewriterBase
   {
-    private readonly SemanticModel _model;
     private const string c_generateStrictMock = "GenerateStrictMock";
     private const string c_indent = "    ";
 
-    public MockInstantiationRewriter (SemanticModel model)
-    {
-      _model = model;
-    }
-
     public override SyntaxNode? VisitInvocationExpression (InvocationExpressionSyntax node)
     {
-      var compilationSymbol = _model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
+      if (Model == null)
+      {
+        throw new InvalidOperationException ("SemanticModel must not be null!");
+      }
+
+      var compilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
       if (compilationSymbol == null)
       {
         throw new ArgumentException ("Rhino.Mocks cannot be found.");
       }
 
-      var methodSymbol = _model.GetSymbolInfo (node).Symbol as IMethodSymbol;
+      var methodSymbol = Model.GetSymbolInfo (node).Symbol as IMethodSymbol;
       if (methodSymbol == null)
       {
         return node;

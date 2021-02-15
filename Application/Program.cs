@@ -15,7 +15,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CommandLine;
-using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using RhinoMocksToMoqRewriter.Core;
 
 namespace RhinoMocksToMoqRewriter.Application
 {
@@ -23,11 +24,11 @@ namespace RhinoMocksToMoqRewriter.Application
   {
     public static async Task<int> Main (string[] args)
     {
-      var documents = new List<Document>();
+      var compilations = new List<CSharpCompilation>();
       try
       {
         await Parser.Default.ParseArguments<Options> (args)
-            .WithParsedAsync (async opt => { documents.AddRange (await ParseArguments (opt)); });
+            .WithParsedAsync (async opt => { compilations.AddRange (await ParseArguments (opt)); });
       }
       catch (System.IO.FileNotFoundException e)
       {
@@ -35,29 +36,24 @@ namespace RhinoMocksToMoqRewriter.Application
         return 1;
       }
 
-      foreach (var document in documents)
-      {
-        // TODO: Create Syntax Tree from document
-        // TODO: Create Semantic Model from document
-        Console.WriteLine (document.Name);
-      }
+      RewriterOrchestrator.Rewrite (compilations);
 
       return 0;
     }
 
-    private static async Task<IReadOnlyList<Document>> ParseArguments (Options opt)
+    private static async Task<IReadOnlyList<CSharpCompilation>> ParseArguments (Options opt)
     {
-      var documentLoader = new DocumentLoader();
+      var compilationLoader = new CompilationLoader();
       if (!string.IsNullOrEmpty (opt.SolutionPath))
       {
-        var solution = await documentLoader.LoadSolution (opt.SolutionPath);
-        return await documentLoader.LoadDocuments (solution.Projects);
+        var solution = await compilationLoader.LoadSolution (opt.SolutionPath);
+        return await compilationLoader.LoadCompilations (solution.Projects);
       }
 
       if (!string.IsNullOrEmpty (opt.ProjectPath))
       {
-        var project = await documentLoader.LoadProject (opt.ProjectPath);
-        return await documentLoader.LoadDocuments (new[] { project });
+        var project = await compilationLoader.LoadProject (opt.ProjectPath);
+        return await compilationLoader.LoadCompilations (new[] { project });
       }
 
       throw new ArgumentException ("Unable to load documents!");
