@@ -17,15 +17,18 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using RhinoMocksToMoqRewriter.Core.Extensions;
+using RhinoMocksToMoqRewriter.Core.Rewriters;
+using RhinoMocksToMoqRewriter.Core.Utilities;
 
 namespace RhinoMocksToMoqRewriter.Core
 {
   public static class RewriterOrchestrator
   {
-    private static readonly List<RewriterBase> s_rewriter =
+    private static readonly List<RewriterBase> s_rewriters =
         new List<RewriterBase>
         {
-            new MockInstantiationRewriter()
+            new MockInstantiationRewriter (new Formatter())
         };
 
     public static async Task Rewrite (IEnumerable<CSharpCompilation> compilations)
@@ -36,22 +39,22 @@ namespace RhinoMocksToMoqRewriter.Core
         var currentCompilation = compilation;
         foreach (var syntaxTree in compilation.SyntaxTrees)
         {
-          var newTree = syntaxTree;
-          foreach (var rewriter in s_rewriter)
+          var currentTree = syntaxTree;
+          foreach (var rewriter in s_rewriters)
           {
-            var model = currentCompilation.GetSemanticModel (syntaxTree);
+            var model = currentCompilation.GetSemanticModel (currentTree);
             rewriter.Model = model;
 
-            var newRoot = rewriter.Visit (await syntaxTree.GetRootAsync());
-            newTree = syntaxTree.WithRootAndOptions (newRoot, syntaxTree.Options);
+            var newRoot = rewriter.Visit (await currentTree.GetRootAsync());
+            var newTree = currentTree.WithRootAndOptions (newRoot, currentTree.Options);
 
-            currentCompilation = currentCompilation.ReplaceSyntaxTree (syntaxTree, newTree);
-            currentCompilation = UpdateCompilation (currentCompilation);
+            currentCompilation = currentCompilation.ReplaceSyntaxTreeAndUpdateCompilation (currentTree, newTree);
+            currentTree = newTree;
           }
 
-          if (newTree != syntaxTree)
+          if (currentTree != syntaxTree)
           {
-            syntaxTrees.Add (newTree);
+            syntaxTrees.Add (currentTree);
           }
         }
       }
@@ -67,15 +70,6 @@ namespace RhinoMocksToMoqRewriter.Core
             syntaxTree.FilePath!,
             (await syntaxTree.GetRootAsync()).ToFullString());
       }
-    }
-
-    private static CSharpCompilation UpdateCompilation (Compilation compilation)
-    {
-      return CSharpCompilation.Create (
-          compilation.AssemblyName,
-          compilation.SyntaxTrees,
-          compilation.References,
-          compilation.Options as CSharpCompilationOptions);
     }
   }
 }

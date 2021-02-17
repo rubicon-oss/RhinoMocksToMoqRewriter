@@ -12,15 +12,29 @@
 //
 
 using System;
+using Microsoft.CodeAnalysis;
+using Moq;
 using NUnit.Framework;
-using RhinoMocksToMoqRewriter.Core;
+using RhinoMocksToMoqRewriter.Core.Rewriters;
+using RhinoMocksToMoqRewriter.Core.Utilities;
 
-namespace RhinoMocksToMoqRewriter.Tests
+namespace RhinoMocksToMoqRewriter.Tests.Rewriters
 {
   [TestFixture]
   public class MockInstantiationRewriterTests
   {
-    private readonly MockInstantiationRewriter _rewriter = new MockInstantiationRewriter();
+    private MockInstantiationRewriter _rewriter;
+    private Mock<IFormatter> _formatter;
+    private const string c_whiteSpace = " ";
+
+    [SetUp]
+    public void SetUp ()
+    {
+      _formatter = new Mock<IFormatter>();
+      _formatter.Setup (f => f.Format (It.IsAny<SyntaxNode>()))
+          .Returns<SyntaxNode> (s => s);
+      _rewriter = new MockInstantiationRewriter (_formatter.Object);
+    }
 
     [Test]
     [TestCase ("_mock = MockRepository.GenerateMock<string>();", "_mock = new Mock<string>();")]
@@ -50,8 +64,7 @@ namespace RhinoMocksToMoqRewriter.Tests
           32,
           43);",
         @"_mock = new Mock<string> (
-          MockBehaviour.Strict,
-          42,
+          MockBehaviour.Strict,42,
           32,
           43);")]
     [TestCase (
@@ -60,8 +73,7 @@ namespace RhinoMocksToMoqRewriter.Tests
     32,
     43);",
         @"_mock = new Mock<string> (
-    MockBehaviour.Strict,
-    42,
+    MockBehaviour.Strict,42,
     32,
     43);")]
     [TestCase (
@@ -69,10 +81,12 @@ namespace RhinoMocksToMoqRewriter.Tests
         @"_mock = new Mock<string> (new Mock<string> (MockBehaviour.Strict));")]
     public void Rewrite_ExpressionStatement (string source, string expected)
     {
-      var (model, node) = CompiledSourceFileProvider.CompileExpressionStatement (source);
+      var (model, actualNode) = CompiledSourceFileProvider.CompileExpressionStatement (source);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatement (expected);
       _rewriter.Model = model;
-      var newNode = _rewriter.VisitExpressionStatement (node);
-      Assert.AreEqual (expected, newNode!.ToString());
+      var newNode = actualNode.Accept (_rewriter);
+      Assert.NotNull (newNode);
+      Assert.IsTrue (expectedNode.IsEquivalentTo (newNode, false));
     }
 
     [Test]
@@ -83,26 +97,17 @@ namespace RhinoMocksToMoqRewriter.Tests
           32,
           43);",
         @"var mock = new Mock<string> (
-          MockBehaviour.Strict,
-          42,
+          MockBehaviour.Strict,42,
           32,
           43);")]
-    [TestCase (
-        @"  var mock = MockRepository.GenerateStrictMock<string> (
-      42,
-      32,
-      43);",
-        @"var mock = new Mock<string> (
-      MockBehaviour.Strict,
-      42,
-      32,
-      43);")]
     public void Rewrite_LocalDeclarationStatement (string source, string expected)
     {
-      var (model, node) = CompiledSourceFileProvider.CompileLocalDeclarationStatement (source);
+      var (model, actualNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatement (source);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatement (expected);
       _rewriter.Model = model;
-      var newNode = _rewriter.VisitLocalDeclarationStatement (node);
-      Assert.AreEqual (expected, newNode!.ToString());
+      var newNode = actualNode.Accept (_rewriter);
+      Assert.NotNull (newNode);
+      Assert.IsTrue (expectedNode.IsEquivalentTo (newNode, false));
     }
 
     [Test]
@@ -116,30 +121,14 @@ namespace RhinoMocksToMoqRewriter.Tests
         42,
         32,
         43);")]
-    [TestCase (
-        @"        public Mock<string> Mock = MockRepository.GenerateMock<string> (
-            42,
-            32,
-            43);",
-        @"public Mock<string> Mock = new Mock<string> (
-            42,
-            32,
-            43);")]
-    [TestCase (
-        @"                public Mock<string> Mock = MockRepository.GenerateMock<string> (
-                    42,
-                    32,
-                    43);",
-        @"public Mock<string> Mock = new Mock<string> (
-                    42,
-                    32,
-                    43);")]
     public void Rewrite_FieldDeclarationStatement (string source, string expected)
     {
-      var (model, node) = CompiledSourceFileProvider.CompileFieldDeclaration (source);
+      var (model, actualNode) = CompiledSourceFileProvider.CompileFieldDeclaration (source);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileFieldDeclaration (expected);
       _rewriter.Model = model;
-      var newNode = _rewriter.VisitFieldDeclaration (node);
-      Assert.AreEqual (expected, newNode!.ToString());
+      var newNode = actualNode.Accept (_rewriter);
+      Assert.NotNull (newNode);
+      Assert.IsTrue (expectedNode.IsEquivalentTo (newNode, false));
     }
   }
 }
