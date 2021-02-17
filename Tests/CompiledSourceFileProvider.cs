@@ -25,11 +25,11 @@ namespace RhinoMocksToMoqRewriter.Tests
     public static (SemanticModel, LocalDeclarationStatementSyntax) CompileLocalDeclarationStatement (string statementSource)
     {
       var (semanticModel, syntaxNode) = CompileInMethod ("Test", statementSource);
-      var localeDeclaration = syntaxNode.DescendantNodes()
+      var localDeclaration = syntaxNode.DescendantNodes()
           .OfType<LocalDeclarationStatementSyntax>()
           .SingleOrDefault();
 
-      return (semanticModel, localeDeclaration);
+      return (semanticModel, localDeclaration);
     }
 
     public static (SemanticModel, ExpressionStatementSyntax) CompileExpressionStatement (string statementSource)
@@ -40,6 +40,26 @@ namespace RhinoMocksToMoqRewriter.Tests
           .SingleOrDefault();
 
       return (semanticModel, expression);
+    }
+
+    public static (SemanticModel, ObjectCreationExpressionSyntax) CompileObjectCreationExpression (string source)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethod ("Test", source);
+      var expression = syntaxNode.DescendantNodes()
+          .OfType<ObjectCreationExpressionSyntax>()
+          .SingleOrDefault();
+
+      return (semanticModel, expression);
+    }
+
+    public static (SemanticModel, ArgumentListSyntax) CompileArgumentList (string source)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethod ("Test", $"test{source}");
+      var argumentList = syntaxNode.DescendantNodes()
+          .OfType<ArgumentListSyntax>()
+          .SingleOrDefault();
+
+      return (semanticModel, argumentList);
     }
 
     public static (SemanticModel, FieldDeclarationSyntax) CompileFieldDeclaration (string statementSource)

@@ -12,15 +12,29 @@
 //
 
 using System;
+using Microsoft.CodeAnalysis;
+using Moq;
 using NUnit.Framework;
-using RhinoMocksToMoqRewriter.Core;
+using RhinoMocksToMoqRewriter.Core.Rewriters;
+using RhinoMocksToMoqRewriter.Core.Utilities;
 
-namespace RhinoMocksToMoqRewriter.Tests
+namespace RhinoMocksToMoqRewriter.Tests.Rewriters
 {
   [TestFixture]
   public class MockInstantiationRewriterTests
   {
-    private readonly MockInstantiationRewriter _rewriter = new MockInstantiationRewriter();
+    private MockInstantiationRewriter _rewriter;
+    private Mock<IFormatter> _formatter;
+    private const string c_whiteSpace = " ";
+
+    [SetUp]
+    public void SetUp ()
+    {
+      _formatter = new Mock<IFormatter>();
+      _formatter.Setup (f => f.Format (It.IsAny<SyntaxNode>()))
+          .Returns<SyntaxNode> (s => s);
+      _rewriter = new MockInstantiationRewriter (_formatter.Object);
+    }
 
     [Test]
     [TestCase ("_mock = MockRepository.GenerateMock<string>();", "_mock = new Mock<string>();")]
@@ -50,8 +64,7 @@ namespace RhinoMocksToMoqRewriter.Tests
           32,
           43);",
         @"_mock = new Mock<string> (
-          MockBehaviour.Strict,
-          42,
+          MockBehaviour.Strict,42,
           32,
           43);")]
     [TestCase (
@@ -60,8 +73,7 @@ namespace RhinoMocksToMoqRewriter.Tests
     32,
     43);",
         @"_mock = new Mock<string> (
-    MockBehaviour.Strict,
-    42,
+    MockBehaviour.Strict,42,
     32,
     43);")]
     [TestCase (
@@ -72,7 +84,7 @@ namespace RhinoMocksToMoqRewriter.Tests
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatement (source);
       _rewriter.Model = model;
       var newNode = _rewriter.VisitExpressionStatement (node);
-      Assert.AreEqual (expected, newNode!.ToString());
+      Assert.AreEqual (expected.Replace (c_whiteSpace, string.Empty), newNode!.ToString().Replace (c_whiteSpace, string.Empty));
     }
 
     [Test]
@@ -83,26 +95,15 @@ namespace RhinoMocksToMoqRewriter.Tests
           32,
           43);",
         @"var mock = new Mock<string> (
-          MockBehaviour.Strict,
-          42,
+          MockBehaviour.Strict,42,
           32,
           43);")]
-    [TestCase (
-        @"  var mock = MockRepository.GenerateStrictMock<string> (
-      42,
-      32,
-      43);",
-        @"var mock = new Mock<string> (
-      MockBehaviour.Strict,
-      42,
-      32,
-      43);")]
     public void Rewrite_LocalDeclarationStatement (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileLocalDeclarationStatement (source);
       _rewriter.Model = model;
       var newNode = _rewriter.VisitLocalDeclarationStatement (node);
-      Assert.AreEqual (expected, newNode!.ToString());
+      Assert.AreEqual (expected.Replace (c_whiteSpace, string.Empty), newNode!.ToString().Replace (c_whiteSpace, string.Empty));
     }
 
     [Test]
@@ -116,30 +117,12 @@ namespace RhinoMocksToMoqRewriter.Tests
         42,
         32,
         43);")]
-    [TestCase (
-        @"        public Mock<string> Mock = MockRepository.GenerateMock<string> (
-            42,
-            32,
-            43);",
-        @"public Mock<string> Mock = new Mock<string> (
-            42,
-            32,
-            43);")]
-    [TestCase (
-        @"                public Mock<string> Mock = MockRepository.GenerateMock<string> (
-                    42,
-                    32,
-                    43);",
-        @"public Mock<string> Mock = new Mock<string> (
-                    42,
-                    32,
-                    43);")]
     public void Rewrite_FieldDeclarationStatement (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileFieldDeclaration (source);
       _rewriter.Model = model;
       var newNode = _rewriter.VisitFieldDeclaration (node);
-      Assert.AreEqual (expected, newNode!.ToString());
+      Assert.AreEqual (expected.Replace (c_whiteSpace, string.Empty), newNode!.ToString().Replace (c_whiteSpace, string.Empty));
     }
   }
 }
