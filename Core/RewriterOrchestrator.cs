@@ -14,6 +14,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -27,7 +28,7 @@ namespace RhinoMocksToMoqRewriter.Core
             new MockInstantiationRewriter()
         };
 
-    public static async void Rewrite (IEnumerable<CSharpCompilation> compilations)
+    public static async Task Rewrite (IEnumerable<CSharpCompilation> compilations)
     {
       var syntaxTrees = new List<SyntaxTree>();
       foreach (var compilation in compilations)
@@ -55,10 +56,10 @@ namespace RhinoMocksToMoqRewriter.Core
         }
       }
 
-      WriteBackChanges (syntaxTrees);
+      await WriteBackChanges (syntaxTrees);
     }
 
-    private static async void WriteBackChanges (IEnumerable<SyntaxTree> syntaxTrees)
+    private static async Task WriteBackChanges (IEnumerable<SyntaxTree> syntaxTrees)
     {
       foreach (var syntaxTree in syntaxTrees)
       {
