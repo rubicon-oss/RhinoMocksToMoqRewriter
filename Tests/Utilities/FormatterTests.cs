@@ -55,10 +55,21 @@ MockBehavior.Strict,    42,
     42,
     32,
     43)")]
+    [TestCase ("new Mock<string>(){ CallBase = true }", "new Mock<string>() { CallBase = true }")]
+    [TestCase (
+        @"new Mock<string> (
+MockBehavior.Strict,    42,
+    32){ CallBase = true }",
+        @"new Mock<string> (
+    MockBehavior.Strict,
+    42,
+    32)
+    { CallBase = true }")]
     public void FormatNodes (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileObjectCreationExpression (source);
       var formattedNode = _formatter.Format (node);
+
       Assert.AreEqual (expected, formattedNode.ToString());
     }
   }

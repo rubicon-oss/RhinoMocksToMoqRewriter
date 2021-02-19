@@ -22,13 +22,12 @@ namespace RhinoMocksToMoqRewriter.Tests.Extensions
   {
     [Test]
     [TestCase ("(42)", "")]
-    [TestCase ("(  42)", "  ")]
     [TestCase ("(\r\n 42)", " ")]
     public void GetLeadingWhiteSpaces (string source, string expected)
     {
       var (_, argumentList) = CompiledSourceFileProvider.CompileArgumentList (source);
-      argumentList.Arguments.First().GetLeadingWhiteSpaces();
-      Assert.AreEqual (expected, expected);
+      var actual = argumentList.Arguments.First().GetLeadingWhiteSpaces();
+      Assert.AreEqual (expected, actual);
     }
   }
 }
