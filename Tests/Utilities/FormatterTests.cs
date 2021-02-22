@@ -36,22 +36,22 @@ namespace RhinoMocksToMoqRewriter.Tests.Utilities
           32,
           43)")]
     [TestCase (
-        @"      new Mock<string> (MockBehaviour.Strict,
+        @"      new Mock<string> (MockBehavior.Strict,
           42,
           32,
           43)",
         @"new Mock<string> (
-          MockBehaviour.Strict,
+          MockBehavior.Strict,
           42,
           32,
           43)")]
     [TestCase (
         @"new Mock<string> (
-MockBehaviour.Strict,    42,
+MockBehavior.Strict,    42,
     32,
     43)",
         @"new Mock<string> (
-    MockBehaviour.Strict,
+    MockBehavior.Strict,
     42,
     32,
     43)")]

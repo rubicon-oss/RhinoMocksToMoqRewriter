@@ -42,9 +42,9 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
     [TestCase ("_mock = MockRepository.GenerateMock<string, IDisposable, IConvertible>();", "_mock = new Mock<string>();")]
     [TestCase ("_mock = MockRepository.GeneratePartialMock<string> (42);", "_mock = new Mock<string> (42);")]
     [TestCase ("_mock = MockRepository.GeneratePartialMock<string>();", "_mock = new Mock<string>();")]
-    [TestCase ("_mock = MockRepository.GenerateStrictMock<string>();", "_mock = new Mock<string> (MockBehaviour.Strict);")]
-    [TestCase ("_mock = MockRepository.GenerateStrictMock<string> (42);", "_mock = new Mock<string> (MockBehaviour.Strict, 42);")]
-    [TestCase ("_mock = MockRepository.GenerateStrictMock<string, IDisposable>();", "_mock = new Mock<string> (MockBehaviour.Strict);")]
+    [TestCase ("_mock = MockRepository.GenerateStrictMock<string>();", "_mock = new Mock<string> (MockBehavior.Strict);")]
+    [TestCase ("_mock = MockRepository.GenerateStrictMock<string> (42);", "_mock = new Mock<string> (MockBehavior.Strict, 42);")]
+    [TestCase ("_mock = MockRepository.GenerateStrictMock<string, IDisposable>();", "_mock = new Mock<string> (MockBehavior.Strict);")]
     [TestCase ("_mock = MockRepository.GenerateStub<string>();", "_mock = new Mock<string>();")]
     [TestCase ("_symbol = GetSymbolInfo();", "_symbol = GetSymbolInfo();")]
     [TestCase ("_mock = MockRepository.GenerateMock<string>();", "_mock = new Mock<string>();")]
@@ -64,7 +64,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
           32,
           43);",
         @"_mock = new Mock<string> (
-          MockBehaviour.Strict,42,
+          MockBehavior.Strict,42,
           32,
           43);")]
     [TestCase (
@@ -73,12 +73,12 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
     32,
     43);",
         @"_mock = new Mock<string> (
-    MockBehaviour.Strict,42,
+    MockBehavior.Strict,42,
     32,
     43);")]
     [TestCase (
         @"_mock = MockRepository.GenerateMock<string> (MockRepository.GenerateStrictMock<string>());",
-        @"_mock = new Mock<string> (new Mock<string> (MockBehaviour.Strict));")]
+        @"_mock = new Mock<string> (new Mock<string> (MockBehavior.Strict));")]
     public void Rewrite_ExpressionStatement (string source, string expected)
     {
       var (model, actualNode) = CompiledSourceFileProvider.CompileExpressionStatement (source);
@@ -86,7 +86,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
       _rewriter.Model = model;
       var newNode = actualNode.Accept (_rewriter);
       Assert.NotNull (newNode);
-      Assert.IsTrue (expectedNode.IsEquivalentTo (newNode, false));
+      Assert.That (expectedNode.IsEquivalentTo (newNode, false));
     }
 
     [Test]
@@ -97,7 +97,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
           32,
           43);",
         @"var mock = new Mock<string> (
-          MockBehaviour.Strict,42,
+          MockBehavior.Strict,42,
           32,
           43);")]
     public void Rewrite_LocalDeclarationStatement (string source, string expected)
@@ -107,7 +107,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
       _rewriter.Model = model;
       var newNode = actualNode.Accept (_rewriter);
       Assert.NotNull (newNode);
-      Assert.IsTrue (expectedNode.IsEquivalentTo (newNode, false));
+      Assert.That (expectedNode.IsEquivalentTo (newNode, false));
     }
 
     [Test]

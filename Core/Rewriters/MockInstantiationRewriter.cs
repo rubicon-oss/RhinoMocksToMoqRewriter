@@ -67,7 +67,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       if (methodSymbol.Name == c_generateStrictMock)
       {
-        var strictArgument = CreateMockBehaviourStrictArgument();
+        var strictArgument = CreateMockBehaviorStrictArgument();
         moqMockArgumentSyntaxList = moqMockArgumentSyntaxList.WithArguments (moqMockArgumentSyntaxList.Arguments.Insert (0, strictArgument));
       }
 
@@ -83,12 +83,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return formattedNode;
     }
 
-    private static ArgumentSyntax CreateMockBehaviourStrictArgument ()
+    private static ArgumentSyntax CreateMockBehaviorStrictArgument ()
     {
       return SyntaxFactory.Argument (
           SyntaxFactory.MemberAccessExpression (
                   SyntaxKind.SimpleMemberAccessExpression,
-                  SyntaxFactory.IdentifierName ("MockBehaviour"),
+                  SyntaxFactory.IdentifierName ("MockBehavior"),
                   SyntaxFactory.IdentifierName ("Strict"))
               .WithOperatorToken (
                   SyntaxFactory.Token (SyntaxKind.DotToken)));
