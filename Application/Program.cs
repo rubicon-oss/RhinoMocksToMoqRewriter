@@ -28,7 +28,7 @@ namespace RhinoMocksToMoqRewriter.Application
       try
       {
         await Parser.Default.ParseArguments<Options> (args)
-            .WithParsedAsync (async opt => { compilations.AddRange (await ParseArguments (opt)); });
+            .WithParsedAsync (async opt => { compilations.AddRange (await ParseArgumentsAsync (opt)); });
       }
       catch (System.IO.FileNotFoundException e)
       {
@@ -36,24 +36,24 @@ namespace RhinoMocksToMoqRewriter.Application
         return 1;
       }
 
-      await RewriterOrchestrator.Rewrite (compilations);
+      await RewriterOrchestrator.RewriteAsync (compilations);
 
       return 0;
     }
 
-    private static async Task<IReadOnlyList<CSharpCompilation>> ParseArguments (Options opt)
+    private static async Task<IReadOnlyList<CSharpCompilation>> ParseArgumentsAsync (Options opt)
     {
       var compilationLoader = new CompilationLoader();
       if (!string.IsNullOrEmpty (opt.SolutionPath))
       {
-        var solution = await compilationLoader.LoadSolution (opt.SolutionPath);
-        return await compilationLoader.LoadCompilations (solution.Projects);
+        var solution = await compilationLoader.LoadSolutionAsync (opt.SolutionPath);
+        return await compilationLoader.LoadCompilationsAsync (solution.Projects);
       }
 
       if (!string.IsNullOrEmpty (opt.ProjectPath))
       {
-        var project = await compilationLoader.LoadProject (opt.ProjectPath);
-        return await compilationLoader.LoadCompilations (new[] { project });
+        var project = await compilationLoader.LoadProjectAsync (opt.ProjectPath);
+        return await compilationLoader.LoadCompilationsAsync (new[] { project });
       }
 
       throw new ArgumentException ("Unable to load documents!");

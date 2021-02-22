@@ -33,17 +33,17 @@ namespace RhinoMocksToMoqRewriter.Application
       _workspace = MSBuildWorkspace.Create();
     }
 
-    public async Task<Solution> LoadSolution (string pathToSolution)
+    public async Task<Solution> LoadSolutionAsync (string pathToSolution)
     {
       return await _workspace.OpenSolutionAsync (pathToSolution);
     }
 
-    public async Task<Project> LoadProject (string pathToProject)
+    public async Task<Project> LoadProjectAsync (string pathToProject)
     {
       return await _workspace.OpenProjectAsync (pathToProject);
     }
 
-    public async Task<IReadOnlyList<CSharpCompilation>> LoadCompilations (IEnumerable<Project> projects)
+    public async Task<IReadOnlyList<CSharpCompilation>> LoadCompilationsAsync (IEnumerable<Project> projects)
     {
       var allCompilations = await Task
           .WhenAll (projects.Select (async p => await p.GetCompilationAsync()));
