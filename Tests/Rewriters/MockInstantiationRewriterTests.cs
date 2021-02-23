@@ -25,7 +25,6 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
   {
     private MockInstantiationRewriter _rewriter;
     private Mock<IFormatter> _formatter;
-    private const string c_whiteSpace = " ";
 
     [SetUp]
     public void SetUp ()
@@ -40,8 +39,6 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
     [TestCase ("_mock = MockRepository.GenerateMock<string>();", "_mock = new Mock<string>();")]
     [TestCase ("_mock = MockRepository.GenerateMock<string, IDisposable>();", "_mock = new Mock<string>();")]
     [TestCase ("_mock = MockRepository.GenerateMock<string, IDisposable, IConvertible>();", "_mock = new Mock<string>();")]
-    [TestCase ("_mock = MockRepository.GeneratePartialMock<string> (42);", "_mock = new Mock<string> (42);")]
-    [TestCase ("_mock = MockRepository.GeneratePartialMock<string>();", "_mock = new Mock<string>();")]
     [TestCase ("_mock = MockRepository.GenerateStrictMock<string>();", "_mock = new Mock<string> (MockBehavior.Strict);")]
     [TestCase ("_mock = MockRepository.GenerateStrictMock<string> (42);", "_mock = new Mock<string> (MockBehavior.Strict, 42);")]
     [TestCase ("_mock = MockRepository.GenerateStrictMock<string, IDisposable>();", "_mock = new Mock<string> (MockBehavior.Strict);")]
@@ -79,12 +76,15 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
     [TestCase (
         @"_mock = MockRepository.GenerateMock<string> (MockRepository.GenerateStrictMock<string>());",
         @"_mock = new Mock<string> (new Mock<string> (MockBehavior.Strict));")]
+    [TestCase ("_mock = MockRepository.GeneratePartialMock<string>();", "_mock = new Mock<string>(){ CallBase = true };")]
+    [TestCase ("_mock = MockRepository.GeneratePartialMock<string> (1, 2);", "_mock = new Mock<string>(1, 2){ CallBase = true };")]
     public void Rewrite_ExpressionStatement (string source, string expected)
     {
       var (model, actualNode) = CompiledSourceFileProvider.CompileExpressionStatement (source);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatement (expected);
       _rewriter.Model = model;
       var newNode = actualNode.Accept (_rewriter);
+
       Assert.NotNull (newNode);
       Assert.That (expectedNode.IsEquivalentTo (newNode, false));
     }
@@ -100,12 +100,22 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
           MockBehavior.Strict,42,
           32,
           43);")]
+    [TestCase ("var mock = MockRepository.GeneratePartialMock<string>();", "var mock = new Mock<string>(){ CallBase = true };")]
+    [TestCase ("var mock = MockRepository.GeneratePartialMock<string> (1, 2);", "var mock = new Mock<string>(1, 2) { CallBase = true };")]
+    [TestCase (
+        @"var mock = MockRepository.GeneratePartialMock<string>(
+    1,
+    2);",
+        @"var mock = new Mock<string>(
+    1,
+    2) { CallBase = true };")]
     public void Rewrite_LocalDeclarationStatement (string source, string expected)
     {
       var (model, actualNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatement (source);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatement (expected);
       _rewriter.Model = model;
       var newNode = actualNode.Accept (_rewriter);
+
       Assert.NotNull (newNode);
       Assert.That (expectedNode.IsEquivalentTo (newNode, false));
     }
@@ -121,14 +131,18 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
         42,
         32,
         43);")]
+    [TestCase (
+        "private Mock<string> _mock = MockRepository.GeneratePartialMock<string>();",
+        "private Mock<string> _mock = new Mock<string>(){ CallBase = true };")]
     public void Rewrite_FieldDeclarationStatement (string source, string expected)
     {
       var (model, actualNode) = CompiledSourceFileProvider.CompileFieldDeclaration (source);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileFieldDeclaration (expected);
       _rewriter.Model = model;
       var newNode = actualNode.Accept (_rewriter);
+
       Assert.NotNull (newNode);
-      Assert.IsTrue (expectedNode.IsEquivalentTo (newNode, false));
+      Assert.That (expectedNode.IsEquivalentTo (newNode, false));
     }
   }
 }

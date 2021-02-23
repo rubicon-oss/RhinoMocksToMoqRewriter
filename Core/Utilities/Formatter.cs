@@ -39,13 +39,17 @@ namespace RhinoMocksToMoqRewriter.Core.Utilities
     [Pure]
     private ObjectCreationExpressionSyntax FormatObjectCreationExpression (ObjectCreationExpressionSyntax node)
     {
-      var formattedArgumentList = FormatArgumentList (node.ArgumentList!);
+      var newLineCharacter = node.ArgumentList!.GetNewLineCharacter();
+      var indentation = node.ArgumentList!.GetIndentation();
 
+      var formattedArgumentList = FormatArgumentList (node.ArgumentList!, indentation, newLineCharacter);
       var genericNameSyntax = node.DescendantNodes().FirstOrDefault (n => n.IsKind (SyntaxKind.GenericName)) as GenericNameSyntax;
       if (genericNameSyntax == null)
       {
         return node.WithArgumentList (formattedArgumentList);
       }
+
+      var formattedObjectInitializer = FormatObjectInitializer (node.Initializer, indentation, newLineCharacter);
 
       return SyntaxFactory.ObjectCreationExpression (
               SyntaxFactory.GenericName (genericNameSyntax.Identifier)
@@ -53,12 +57,12 @@ namespace RhinoMocksToMoqRewriter.Core.Utilities
                       genericNameSyntax.TypeArgumentList
                           .WithoutTrivia())
                   .WithLeadingTrivia (SyntaxFactory.Space))
-          .WithArgumentList (
-              formattedArgumentList);
+          .WithArgumentList (formattedArgumentList)
+          .WithInitializer (formattedObjectInitializer);
     }
 
     [Pure]
-    private ArgumentListSyntax FormatArgumentList (ArgumentListSyntax argumentList)
+    private ArgumentListSyntax FormatArgumentList (ArgumentListSyntax argumentList, string indentation, string newLineCharacter)
     {
       if (argumentList.IsEmpty())
       {
@@ -66,16 +70,14 @@ namespace RhinoMocksToMoqRewriter.Core.Utilities
       }
 
       return argumentList.HasMultiLineArguments()
-          ? FormatMultiLineArgumentList (argumentList)
+          ? FormatMultiLineArgumentList (argumentList, indentation, newLineCharacter)
           : FormatSingleLineArgumentList (argumentList);
     }
 
     [Pure]
-    private ArgumentListSyntax FormatMultiLineArgumentList (ArgumentListSyntax argumentList)
+    private ArgumentListSyntax FormatMultiLineArgumentList (ArgumentListSyntax argumentList, string indentation, string newLineCharacter)
     {
       var arguments = SyntaxFactory.SeparatedList<ArgumentSyntax>().AddRange (argumentList.Arguments);
-      var newLineCharacter = argumentList.GetNewLineCharacter();
-      var indentation = argumentList.GetIndentation();
 
       for (var i = 0; i < arguments.Count; i++)
       {
@@ -106,6 +108,23 @@ namespace RhinoMocksToMoqRewriter.Core.Utilities
       }
 
       return SyntaxFactory.ArgumentList (arguments).WithLeadingTrivia (SyntaxFactory.Space);
+    }
+
+    [Pure]
+    private InitializerExpressionSyntax? FormatObjectInitializer (InitializerExpressionSyntax? initializer, string indentation, string newLineCharacter)
+    {
+      if (initializer == null)
+      {
+        return initializer;
+      }
+
+      if (newLineCharacter == string.Empty)
+      {
+        indentation = SyntaxFactory.Space.ToString();
+      }
+
+      return initializer.WithLeadingTrivia (
+          SyntaxFactory.Whitespace (newLineCharacter + indentation));
     }
   }
 }

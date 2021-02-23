@@ -22,9 +22,9 @@ namespace RhinoMocksToMoqRewriter.Tests
 {
   public static class CompiledSourceFileProvider
   {
-    public static (SemanticModel, LocalDeclarationStatementSyntax) CompileLocalDeclarationStatement (string statementSource)
+    public static (SemanticModel, LocalDeclarationStatementSyntax) CompileLocalDeclarationStatement (string source)
     {
-      var (semanticModel, syntaxNode) = CompileInMethod ("Test", statementSource);
+      var (semanticModel, syntaxNode) = CompileInMethod ("Test", source);
       var localDeclaration = syntaxNode.DescendantNodes()
           .OfType<LocalDeclarationStatementSyntax>()
           .SingleOrDefault();
@@ -32,9 +32,9 @@ namespace RhinoMocksToMoqRewriter.Tests
       return (semanticModel, localDeclaration);
     }
 
-    public static (SemanticModel, ExpressionStatementSyntax) CompileExpressionStatement (string statementSource)
+    public static (SemanticModel, ExpressionStatementSyntax) CompileExpressionStatement (string source)
     {
-      var (semanticModel, syntaxNode) = CompileInMethod ("Test", statementSource);
+      var (semanticModel, syntaxNode) = CompileInMethod ("Test", source);
       var expression = syntaxNode.DescendantNodes()
           .OfType<ExpressionStatementSyntax>()
           .SingleOrDefault();
@@ -70,6 +70,16 @@ namespace RhinoMocksToMoqRewriter.Tests
           .SingleOrDefault();
 
       return (semanticModel, fieldDeclaration);
+    }
+
+    public static (SemanticModel, InvocationExpressionSyntax) CompileInvocationExpression (string statementSource)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethod ("Test", statementSource);
+      var invocationExpression = syntaxNode.DescendantNodes()
+          .OfType<InvocationExpressionSyntax>()
+          .SingleOrDefault();
+
+      return (semanticModel, invocationExpression);
     }
 
     public static (SemanticModel, MethodDeclarationSyntax) CompileMethod (string methodSource)

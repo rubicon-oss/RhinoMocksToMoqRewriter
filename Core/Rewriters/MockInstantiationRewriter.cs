@@ -23,6 +23,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   public class MockInstantiationRewriter : RewriterBase
   {
     private const string c_generateStrictMock = "GenerateStrictMock";
+    private const string c_generatePartialMock = "GeneratePartialMock";
     private readonly IFormatter _formatter;
 
     public MockInstantiationRewriter (IFormatter formatter)
@@ -64,34 +65,28 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var nodeWithRewrittenDescendants = (InvocationExpressionSyntax) base.VisitInvocationExpression (node)!;
       var moqMockTypeArgumentList = SyntaxFactory.TypeArgumentList().AddArguments (rhinoMethodGenericName.TypeArgumentList.Arguments.First());
       var moqMockArgumentSyntaxList = nodeWithRewrittenDescendants.ArgumentList;
-
       if (methodSymbol.Name == c_generateStrictMock)
       {
-        var strictArgument = CreateMockBehaviorStrictArgument();
-        moqMockArgumentSyntaxList = moqMockArgumentSyntaxList.WithArguments (moqMockArgumentSyntaxList.Arguments.Insert (0, strictArgument));
+        moqMockArgumentSyntaxList = moqMockArgumentSyntaxList.WithArguments (
+            moqMockArgumentSyntaxList.Arguments.Insert (
+                0,
+                MoqSyntaxFactory.MockBehaviorStrictArgument()));
+      }
+
+      InitializerExpressionSyntax? initializer = null;
+      if (methodSymbol.Name == c_generatePartialMock)
+      {
+        initializer = MoqSyntaxFactory.CallBaseInitializer();
       }
 
       var newNode =
-          SyntaxFactory.ObjectCreationExpression (
-                  SyntaxFactory.GenericName ("Mock")
-                      .WithTypeArgumentList (moqMockTypeArgumentList)
-                      .WithLeadingTrivia (SyntaxFactory.Space))
-              .WithArgumentList (
-                  moqMockArgumentSyntaxList);
+          MoqSyntaxFactory.MockCreationExpression (
+              moqMockTypeArgumentList,
+              moqMockArgumentSyntaxList,
+              initializer);
 
       var formattedNode = _formatter.Format (newNode);
       return formattedNode;
-    }
-
-    private static ArgumentSyntax CreateMockBehaviorStrictArgument ()
-    {
-      return SyntaxFactory.Argument (
-          SyntaxFactory.MemberAccessExpression (
-                  SyntaxKind.SimpleMemberAccessExpression,
-                  SyntaxFactory.IdentifierName ("MockBehavior"),
-                  SyntaxFactory.IdentifierName ("Strict"))
-              .WithOperatorToken (
-                  SyntaxFactory.Token (SyntaxKind.DotToken)));
     }
   }
 }
