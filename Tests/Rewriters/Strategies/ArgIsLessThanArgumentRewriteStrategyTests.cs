@@ -12,14 +12,25 @@
 //
 
 using System;
-using JetBrains.Annotations;
-using Microsoft.CodeAnalysis;
+using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies;
 
-namespace RhinoMocksToMoqRewriter.Core.Utilities
+namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies
 {
-  public interface IFormatter
+  [TestFixture]
+  public class ArgIsLessThanArgumentRewriteStrategyTests
   {
-    [Pure]
-    public SyntaxNode Format (SyntaxNode node);
+    private readonly IArgumentRewriteStrategy _strategy = new ArgIsLessThanArgumentArgumentRewriteStrategy();
+
+    [Test]
+    [TestCase ("mock.DoSomething (Arg<int>.Is.LessThan (1));", "mock.DoSomething (It.Is<int> (param => param < 1));")]
+    public void Rewrite_ArgIsLessThan (string source, string expected)
+    {
+      var (_, node) = CompiledSourceFileProvider.CompileArgument (source);
+      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgument (expected);
+      var actualNode = _strategy.Rewrite (node);
+
+      Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));
+    }
   }
 }

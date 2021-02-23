@@ -135,6 +135,7 @@ namespace RhinoMocksToMoqRewriter.Tests
     {
       var nameSpaceTemplate =
           "using System;\r\n" +
+          "using System.Collections.Generic;\r\n" +
           "using Rhino.Mocks;\r\n" +
           $"namespace {nameSpaceName} {{\r\n" +
           $"{nameSpaceContent}\r\n" +
@@ -160,6 +161,62 @@ namespace RhinoMocksToMoqRewriter.Tests
       var semanticModel = compilation.GetSemanticModel (syntaxTree);
 
       return (semanticModel, rootNode);
+    }
+
+    private static (SemanticModel, SyntaxNode) CompileInMethodWithContext (string methodName, string source, string[] context)
+    {
+      var methodTemplate =
+          $"public void {methodName} () {{\r\n" +
+          $"{context[0]}\r\n" +
+          $"{source}" +
+          "}";
+
+      return CompileInClassWithContext ("TestClass", methodTemplate, context.Skip (1).ToArray());
+    }
+
+    private static (SemanticModel, SyntaxNode) CompileInClassWithContext (string className, string source, string[] context)
+    {
+      var classTemplateWithContext =
+          $"public class {className} {{\r\n" +
+          $"{context[0]}\r\n" +
+          $"{source}\r\n" +
+          "}";
+
+      return CompileInNameSpaceWithContext ("TestNameSpace", classTemplateWithContext, context.Skip (1).ToArray());
+    }
+
+    public static (SemanticModel, ExpressionStatementSyntax) CompileExpressionStatementWithContext (string source, string[] context)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context);
+      var expression = syntaxNode.DescendantNodes()
+          .OfType<ExpressionStatementSyntax>()
+          .SingleOrDefault();
+
+      return (semanticModel, expression);
+    }
+
+    private static (SemanticModel, SyntaxNode) CompileInNameSpaceWithContext (string nameSpaceName, string nameSpaceContent, string[] context)
+    {
+      var nameSpaceTemplate =
+          "using System;\r\n" +
+          "using System.Collections.Generic;\r\n" +
+          "using Rhino.Mocks;\r\n" +
+          $"namespace {nameSpaceName} {{\r\n" +
+          $"interface ITestInterface {{{context[0]}}} \r\n" +
+          $"{nameSpaceContent}\r\n" +
+          "}";
+
+      return Compile (nameSpaceTemplate);
+    }
+
+    public static (SemanticModel, ArgumentSyntax) CompileArgument (string source)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethod ("Test", source);
+      var argument = syntaxNode.DescendantNodes()
+          .OfType<ArgumentSyntax>()
+          .FirstOrDefault();
+
+      return (semanticModel, argument);
     }
   }
 }

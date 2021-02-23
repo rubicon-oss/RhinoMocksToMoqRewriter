@@ -65,9 +65,28 @@ MockBehavior.Strict,    42,
     42,
     32)
     { CallBase = true }")]
-    public void FormatNodes (string source, string expected)
+    public void Format_ObjectCreationExpression (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileObjectCreationExpression (source);
+      var formattedNode = _formatter.Format (node);
+
+      Assert.AreEqual (expected, formattedNode.ToString());
+    }
+
+    [Test]
+    [TestCase ("(1,2,3,4)", "(1, 2, 3, 4)")]
+    [TestCase (
+        @"(1,
+  2,  3,
+  4)",
+        @"(
+  1,
+  2,
+  3,
+  4)")]
+    public void Format_ArgumentList (string source, string expected)
+    {
+      var (_, node) = CompiledSourceFileProvider.CompileArgumentList (source);
       var formattedNode = _formatter.Format (node);
 
       Assert.AreEqual (expected, formattedNode.ToString());

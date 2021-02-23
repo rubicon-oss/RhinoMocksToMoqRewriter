@@ -12,14 +12,12 @@
 //
 
 using System;
-using JetBrains.Annotations;
-using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace RhinoMocksToMoqRewriter.Core.Utilities
+namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies
 {
-  public interface IFormatter
+  public class DefaultArgumentRewriteStrategy : IArgumentRewriteStrategy
   {
-    [Pure]
-    public SyntaxNode Format (SyntaxNode node);
+    public ArgumentSyntax Rewrite (ArgumentSyntax node) => node;
   }
 }

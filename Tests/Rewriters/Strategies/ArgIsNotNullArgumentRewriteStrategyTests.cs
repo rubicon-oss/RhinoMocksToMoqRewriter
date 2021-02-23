@@ -12,14 +12,25 @@
 //
 
 using System;
-using JetBrains.Annotations;
-using Microsoft.CodeAnalysis;
+using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies;
 
-namespace RhinoMocksToMoqRewriter.Core.Utilities
+namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies
 {
-  public interface IFormatter
+  [TestFixture]
+  public class ArgIsNotNullArgumentRewriteStrategyTests
   {
-    [Pure]
-    public SyntaxNode Format (SyntaxNode node);
+    private readonly IArgumentRewriteStrategy _strategy = new ArgIsNotNullArgumentArgumentRewriteStrategy();
+
+    [Test]
+    [TestCase ("mock.DoSomething (Arg<int>.Is.NotNull);", "mock.DoSomething (It.IsNotNull<int>());")]
+    public void Rewrite_ArgIsNotNull (string source, string expected)
+    {
+      var (_, node) = CompiledSourceFileProvider.CompileArgument (source);
+      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgument (expected);
+      var actualNode = _strategy.Rewrite (node);
+
+      Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));
+    }
   }
 }

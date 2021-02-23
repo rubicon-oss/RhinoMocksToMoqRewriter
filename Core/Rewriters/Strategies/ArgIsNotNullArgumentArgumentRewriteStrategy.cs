@@ -12,14 +12,25 @@
 //
 
 using System;
-using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RhinoMocksToMoqRewriter.Core.Extensions;
+using RhinoMocksToMoqRewriter.Core.Utilities;
 
-namespace RhinoMocksToMoqRewriter.Core.Utilities
+namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies
 {
-  public interface IFormatter
+  public class ArgIsNotNullArgumentArgumentRewriteStrategy : IArgumentRewriteStrategy
   {
-    [Pure]
-    public SyntaxNode Format (SyntaxNode node);
+    public ArgumentSyntax Rewrite (ArgumentSyntax node)
+    {
+      var typeArgumentList = node.GetTypeArgumentListOrDefault();
+      if (typeArgumentList == null)
+      {
+        throw new InvalidOperationException ("Node must contain an Argument");
+      }
+
+      return MoqSyntaxFactory.IsNotNullArgument (typeArgumentList)
+          .WithLeadingTrivia (node.GetLeadingTrivia());
+    }
   }
 }

@@ -12,14 +12,26 @@
 //
 
 using System;
-using JetBrains.Annotations;
-using Microsoft.CodeAnalysis;
+using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies;
 
-namespace RhinoMocksToMoqRewriter.Core.Utilities
+namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies
 {
-  public interface IFormatter
+  [TestFixture]
+  public class ArgListEqualArgumentRewriteStrategyTests
   {
-    [Pure]
-    public SyntaxNode Format (SyntaxNode node);
+    private readonly IArgumentRewriteStrategy _strategy = new ArgListEqualArgumentArgumentRewriteStrategy();
+
+    [Test]
+    [TestCase ("mock.DoSomething (Arg<int[]>.List.Equal (new[] {1, 2, 3}));", "mock.DoSomething (new[] {1, 2, 3});")]
+    [TestCase ("mock.DoSomething (Arg<int[]>.List.Equal (new List<int>() {1, 2, 3}));", "mock.DoSomething (new List<int>() {1, 2, 3});")]
+    public void Rewrite_ArgListIsEqual (string source, string expected)
+    {
+      var (_, node) = CompiledSourceFileProvider.CompileArgument (source);
+      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgument (expected);
+      var actualNode = _strategy.Rewrite (node);
+
+      Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));
+    }
   }
 }

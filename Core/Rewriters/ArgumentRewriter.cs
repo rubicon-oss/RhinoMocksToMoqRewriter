@@ -12,14 +12,37 @@
 //
 
 using System;
-using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RhinoMocksToMoqRewriter.Core.Utilities;
 
-namespace RhinoMocksToMoqRewriter.Core.Utilities
+namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
-  public interface IFormatter
+  public class ArgumentRewriter : RewriterBase
   {
-    [Pure]
-    public SyntaxNode Format (SyntaxNode node);
+    private readonly IFormatter _formatter;
+
+    public ArgumentRewriter (IFormatter formatter)
+    {
+      _formatter = formatter;
+    }
+
+    public override SyntaxNode? VisitArgument (ArgumentSyntax node)
+    {
+      if (Model == null)
+      {
+        throw new InvalidOperationException ("SemanticModel must not be null!");
+      }
+
+      var strategy = ArgumentRewriterStrategyFactory.GetRewriterStrategy (node, Model);
+      return strategy.Rewrite (node);
+    }
+
+    public override SyntaxNode? VisitArgumentList (ArgumentListSyntax node)
+    {
+      node = (ArgumentListSyntax) base.VisitArgumentList (node)!;
+      var formattedNode = _formatter.Format (node);
+      return formattedNode;
+    }
   }
 }

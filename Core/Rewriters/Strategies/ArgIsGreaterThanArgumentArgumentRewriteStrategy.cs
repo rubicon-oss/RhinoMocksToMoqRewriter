@@ -12,14 +12,29 @@
 //
 
 using System;
-using JetBrains.Annotations;
-using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RhinoMocksToMoqRewriter.Core.Extensions;
+using RhinoMocksToMoqRewriter.Core.Utilities;
 
-namespace RhinoMocksToMoqRewriter.Core.Utilities
+namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies
 {
-  public interface IFormatter
+  public class ArgIsGreaterThanArgumentArgumentRewriteStrategy : IArgumentRewriteStrategy
   {
-    [Pure]
-    public SyntaxNode Format (SyntaxNode node);
+    public ArgumentSyntax Rewrite (ArgumentSyntax node)
+    {
+      var typeArgumentList = node.GetTypeArgumentListOrDefault();
+      var objectToCompare = node.GetFirstArgumentOrDefault();
+      if (typeArgumentList == null)
+      {
+        throw new InvalidOperationException ("Node must contain a TypeArgumentList");
+      }
+
+      if (objectToCompare == null)
+      {
+        throw new InvalidOperationException ("Node must contain an Argument");
+      }
+
+      return MoqSyntaxFactory.IsGreaterThanArgument (typeArgumentList, objectToCompare.Expression);
+    }
   }
 }
