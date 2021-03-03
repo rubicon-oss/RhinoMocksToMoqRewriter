@@ -248,5 +248,26 @@ namespace RhinoMocksToMoqRewriter.Tests
 
       return (semanticModel, expressionStatements);
     }
+
+    public static (SemanticModel, FieldDeclarationSyntax) CompileFieldDeclarationWithContext (string source, Context context)
+    {
+      context.ClassContext += Environment.NewLine + source;
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", string.Empty, context);
+      var fieldDeclarationSyntax = syntaxNode.DescendantNodes()
+          .OfType<FieldDeclarationSyntax>()
+          .Last();
+
+      return (semanticModel, fieldDeclarationSyntax);
+    }
+
+    public static (SemanticModel, ArgumentListSyntax) CompileArgumentListWithContext (string source, Context context)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context);
+      var fieldDeclarationSyntax = syntaxNode.DescendantNodes()
+          .OfType<ArgumentListSyntax>()
+          .Last();
+
+      return (semanticModel, fieldDeclarationSyntax);
+    }
   }
 }
