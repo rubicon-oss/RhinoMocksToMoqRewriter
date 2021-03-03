@@ -14,6 +14,8 @@
 using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualBasic;
 
 namespace RhinoMocksToMoqRewriter.Core.Extensions
@@ -29,6 +31,33 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
 
       var numberOfSpaces = node.GetLeadingTrivia().ToString().Count (c => c.ToString() == " ");
       return Strings.Space (numberOfSpaces);
+    }
+
+    public static TypeArgumentListSyntax? GetTypeArgumentListOrDefault (this ArgumentSyntax node)
+    {
+      return node.DescendantNodes().FirstOrDefault (
+          s => s.IsKind (SyntaxKind.TypeArgumentList) && s.Parent.IsKind (SyntaxKind.GenericName)) as TypeArgumentListSyntax;
+    }
+
+    public static LambdaExpressionSyntax? GetLambdaExpressionOrDefault (this ArgumentSyntax node)
+    {
+      return node.DescendantNodes().FirstOrDefault (
+          s => s.IsKind (SyntaxKind.SimpleLambdaExpression)) as LambdaExpressionSyntax;
+    }
+
+    public static ArgumentSyntax? GetFirstArgumentOrDefault (this SyntaxNode node)
+    {
+      return node.DescendantNodes()
+          .FirstOrDefault (s => s.IsKind (SyntaxKind.Argument)) as ArgumentSyntax;
+    }
+
+    public static MemberAccessExpressionSyntax? GetFirstAncestorMemberAccessExpressionOrDefault (this ArgumentListSyntax node)
+    {
+      var invocationExpressionNode = node.Ancestors()
+          .FirstOrDefault (s => s.IsKind (SyntaxKind.InvocationExpression)) as InvocationExpressionSyntax;
+
+      return invocationExpressionNode?.DescendantNodes()
+          .FirstOrDefault (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression)) as MemberAccessExpressionSyntax;
     }
   }
 }

@@ -24,12 +24,19 @@ namespace RhinoMocksToMoqRewriter.Core.Utilities
   public class Formatter : IFormatter
   {
     [Pure]
-    public SyntaxNode Format<T> (T node)
-        where T : SyntaxNode
+    public SyntaxNode Format (SyntaxNode node)
     {
       if (node is ObjectCreationExpressionSyntax objectCreationNode)
       {
         var formattedNode = FormatObjectCreationExpression (objectCreationNode);
+        return formattedNode;
+      }
+
+      if (node is ArgumentListSyntax argumentListNode)
+      {
+        var indentation = argumentListNode.GetIndentation();
+        var newLineCharacter = argumentListNode.GetNewLineCharacter();
+        var formattedNode = FormatArgumentList (argumentListNode, indentation, newLineCharacter);
         return formattedNode;
       }
 
@@ -69,9 +76,17 @@ namespace RhinoMocksToMoqRewriter.Core.Utilities
         return argumentList;
       }
 
-      return argumentList.HasMultiLineArguments()
+      var newArgumentList = argumentList.HasMultiLineArguments()
           ? FormatMultiLineArgumentList (argumentList, indentation, newLineCharacter)
           : FormatSingleLineArgumentList (argumentList);
+
+      var memberAccessExpressionNode = argumentList.GetFirstAncestorMemberAccessExpressionOrDefault();
+      if (memberAccessExpressionNode != null && memberAccessExpressionNode.HasTrailingTrivia && !argumentList.HasLeadingTrivia)
+      {
+        return newArgumentList;
+      }
+
+      return newArgumentList.WithLeadingTrivia (SyntaxFactory.Space);
     }
 
     [Pure]
@@ -90,7 +105,7 @@ namespace RhinoMocksToMoqRewriter.Core.Utilities
                         SyntaxFactory.Whitespace (newLineCharacter + indentation)));
       }
 
-      return SyntaxFactory.ArgumentList (arguments).WithLeadingTrivia (SyntaxFactory.Space);
+      return SyntaxFactory.ArgumentList (arguments);
     }
 
     [Pure]
@@ -107,7 +122,7 @@ namespace RhinoMocksToMoqRewriter.Core.Utilities
                     SyntaxFactory.Space));
       }
 
-      return SyntaxFactory.ArgumentList (arguments).WithLeadingTrivia (SyntaxFactory.Space);
+      return SyntaxFactory.ArgumentList (arguments);
     }
 
     [Pure]
