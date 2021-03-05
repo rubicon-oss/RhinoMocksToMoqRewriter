@@ -15,7 +15,7 @@ using System;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 
-namespace RhinoMocksToMoqRewriter.Core.Utilities
+namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public interface IFormatter
   {

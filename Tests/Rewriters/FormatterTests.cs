@@ -13,9 +13,9 @@
 
 using System;
 using NUnit.Framework;
-using RhinoMocksToMoqRewriter.Core.Utilities;
+using RhinoMocksToMoqRewriter.Core.Rewriters;
 
-namespace RhinoMocksToMoqRewriter.Tests.Utilities
+namespace RhinoMocksToMoqRewriter.Tests.Rewriters
 {
   [TestFixture]
   public class FormatterTests

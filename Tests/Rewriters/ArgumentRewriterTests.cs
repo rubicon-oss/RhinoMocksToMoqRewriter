@@ -16,7 +16,6 @@ using Microsoft.CodeAnalysis;
 using Moq;
 using NUnit.Framework;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
-using RhinoMocksToMoqRewriter.Core.Utilities;
 
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters
 {

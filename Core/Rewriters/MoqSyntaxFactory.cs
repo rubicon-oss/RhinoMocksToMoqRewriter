@@ -16,7 +16,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace RhinoMocksToMoqRewriter.Core.Utilities
+namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public static class MoqSyntaxFactory
   {
@@ -293,5 +293,13 @@ namespace RhinoMocksToMoqRewriter.Core.Utilities
                                                     SyntaxFactory.SingletonSeparatedList (
                                                         SyntaxFactory.Argument (expression)))))))))
                 .WithLeadingTrivia (SyntaxFactory.Space));
+
+    public static ExpressionStatementSyntax VerifyStatement (SyntaxToken identifierName) =>
+        SyntaxFactory.ExpressionStatement (
+            SyntaxFactory.InvocationExpression (
+                SyntaxFactory.MemberAccessExpression (
+                    SyntaxKind.SimpleMemberAccessExpression,
+                    SyntaxFactory.IdentifierName (identifierName),
+                    SyntaxFactory.IdentifierName ("Verify"))));
   }
 }

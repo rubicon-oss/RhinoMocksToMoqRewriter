@@ -19,7 +19,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using RhinoMocksToMoqRewriter.Core.Extensions;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
-using RhinoMocksToMoqRewriter.Core.Utilities;
 
 namespace RhinoMocksToMoqRewriter.Core
 {
