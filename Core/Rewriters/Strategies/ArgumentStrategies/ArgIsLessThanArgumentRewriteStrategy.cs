@@ -12,38 +12,29 @@
 //
 
 using System;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies;
+using RhinoMocksToMoqRewriter.Core.Extensions;
 using RhinoMocksToMoqRewriter.Core.Utilities;
 
-namespace RhinoMocksToMoqRewriter.Core.Rewriters
+namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
 {
-  public class ArgumentRewriter : RewriterBase
+  public class ArgIsLessThanArgumentRewriteStrategy : IArgumentRewriteStrategy
   {
-    private readonly IFormatter _formatter;
-
-    public ArgumentRewriter (IFormatter formatter)
+    public ArgumentSyntax Rewrite (ArgumentSyntax node)
     {
-      _formatter = formatter;
-    }
-
-    public override SyntaxNode? VisitArgument (ArgumentSyntax node)
-    {
-      if (Model == null)
+      var typeArgumentList = node.GetTypeArgumentListOrDefault();
+      var objectToCompare = node.GetFirstArgumentOrDefault();
+      if (typeArgumentList == null)
       {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
+        throw new InvalidOperationException ("Node must contain a TypeArgumentList");
       }
 
-      var strategy = ArgumentRewriteStrategyFactory.GetRewriteStrategy (node, Model);
-      return strategy.Rewrite (node);
-    }
+      if (objectToCompare == null)
+      {
+        throw new InvalidOperationException ("Node must contain an Argument");
+      }
 
-    public override SyntaxNode? VisitArgumentList (ArgumentListSyntax node)
-    {
-      node = (ArgumentListSyntax) base.VisitArgumentList (node)!;
-      var formattedNode = _formatter.Format (node);
-      return formattedNode;
+      return MoqSyntaxFactory.IsLessThanArgument (typeArgumentList, objectToCompare.Expression);
     }
   }
 }

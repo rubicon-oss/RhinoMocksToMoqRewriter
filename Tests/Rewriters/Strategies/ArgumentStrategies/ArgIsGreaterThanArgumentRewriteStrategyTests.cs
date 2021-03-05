@@ -12,38 +12,25 @@
 //
 
 using System;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using NUnit.Framework;
 using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies;
-using RhinoMocksToMoqRewriter.Core.Utilities;
 
-namespace RhinoMocksToMoqRewriter.Core.Rewriters
+namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
 {
-  public class ArgumentRewriter : RewriterBase
+  [TestFixture]
+  public class ArgIsGreaterThanArgumentRewriteStrategyTests
   {
-    private readonly IFormatter _formatter;
+    private readonly IArgumentRewriteStrategy _strategy = new ArgIsGreaterThanArgumentRewriteStrategy();
 
-    public ArgumentRewriter (IFormatter formatter)
+    [Test]
+    [TestCase ("mock.DoSomething (Arg<int>.Is.GreaterThan (1));", "mock.DoSomething (It.Is<int> (param => param > 1));")]
+    public void Rewrite_ArgIsGreaterThan (string source, string expected)
     {
-      _formatter = formatter;
-    }
+      var (_, node) = CompiledSourceFileProvider.CompileArgument (source);
+      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgument (expected);
+      var actualNode = _strategy.Rewrite (node);
 
-    public override SyntaxNode? VisitArgument (ArgumentSyntax node)
-    {
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
-      var strategy = ArgumentRewriteStrategyFactory.GetRewriteStrategy (node, Model);
-      return strategy.Rewrite (node);
-    }
-
-    public override SyntaxNode? VisitArgumentList (ArgumentListSyntax node)
-    {
-      node = (ArgumentListSyntax) base.VisitArgumentList (node)!;
-      var formattedNode = _formatter.Format (node);
-      return formattedNode;
+      Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));
     }
   }
 }

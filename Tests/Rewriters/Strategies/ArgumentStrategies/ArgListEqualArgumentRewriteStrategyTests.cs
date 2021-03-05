@@ -12,38 +12,26 @@
 //
 
 using System;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using NUnit.Framework;
 using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies;
-using RhinoMocksToMoqRewriter.Core.Utilities;
 
-namespace RhinoMocksToMoqRewriter.Core.Rewriters
+namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
 {
-  public class ArgumentRewriter : RewriterBase
+  [TestFixture]
+  public class ArgListEqualArgumentRewriteStrategyTests
   {
-    private readonly IFormatter _formatter;
+    private readonly IArgumentRewriteStrategy _strategy = new ArgListEqualArgumentRewriteStrategy();
 
-    public ArgumentRewriter (IFormatter formatter)
+    [Test]
+    [TestCase ("mock.DoSomething (Arg<int[]>.List.Equal (new[] {1, 2, 3}));", "mock.DoSomething (new[] {1, 2, 3});")]
+    [TestCase ("mock.DoSomething (Arg<int[]>.List.Equal (new List<int>() {1, 2, 3}));", "mock.DoSomething (new List<int>() {1, 2, 3});")]
+    public void Rewrite_ArgListIsEqual (string source, string expected)
     {
-      _formatter = formatter;
-    }
+      var (_, node) = CompiledSourceFileProvider.CompileArgument (source);
+      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgument (expected);
+      var actualNode = _strategy.Rewrite (node);
 
-    public override SyntaxNode? VisitArgument (ArgumentSyntax node)
-    {
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
-      var strategy = ArgumentRewriteStrategyFactory.GetRewriteStrategy (node, Model);
-      return strategy.Rewrite (node);
-    }
-
-    public override SyntaxNode? VisitArgumentList (ArgumentListSyntax node)
-    {
-      node = (ArgumentListSyntax) base.VisitArgumentList (node)!;
-      var formattedNode = _formatter.Format (node);
-      return formattedNode;
+      Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));
     }
   }
 }
