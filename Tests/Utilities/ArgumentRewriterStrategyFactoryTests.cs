@@ -22,14 +22,15 @@ namespace RhinoMocksToMoqRewriter.Tests.Utilities
   [TestFixture]
   public class ArgumentRewriterStrategyFactoryTests
   {
-    private readonly string[] _context =
-    {
-        string.Empty,
-        string.Empty,
-        @"; 
-void DoSomething(int b);
-void DoSomething(IEnumerable<int> b);"
-    };
+    private readonly Context _context =
+        new Context
+        {
+            InterfaceContext =
+                //language=C#
+                @"
+  void DoSomething (int b);
+  void DoSomething (IEnumerable<int> b);"
+        };
 
     [Test]
     [TestCase ("mock.DoSomething (1)", typeof (DefaultArgumentRewriteStrategy))]

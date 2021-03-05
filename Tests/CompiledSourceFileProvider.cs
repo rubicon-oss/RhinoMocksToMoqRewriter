@@ -12,6 +12,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -163,46 +164,46 @@ namespace RhinoMocksToMoqRewriter.Tests
       return (semanticModel, rootNode);
     }
 
-    private static (SemanticModel, SyntaxNode) CompileInMethodWithContext (string methodName, string source, string[] context)
+    private static (SemanticModel, SyntaxNode) CompileInMethodWithContext (string methodName, string source, Context context)
     {
       var methodTemplate =
           $"public void {methodName} () {{\r\n" +
-          $"{context[0]}\r\n" +
+          $"{context.MethodContext}\r\n" +
           $"{source}" +
           "}";
 
-      return CompileInClassWithContext ("TestClass", methodTemplate, context.Skip (1).ToArray());
+      return CompileInClassWithContext ("TestClass", methodTemplate, context);
     }
 
-    private static (SemanticModel, SyntaxNode) CompileInClassWithContext (string className, string source, string[] context)
+    private static (SemanticModel, SyntaxNode) CompileInClassWithContext (string className, string source, Context context)
     {
       var classTemplateWithContext =
           $"public class {className} {{\r\n" +
-          $"{context[0]}\r\n" +
+          $"{context.ClassContext}\r\n" +
           $"{source}\r\n" +
           "}";
 
-      return CompileInNameSpaceWithContext ("TestNameSpace", classTemplateWithContext, context.Skip (1).ToArray());
+      return CompileInNameSpaceWithContext ("TestNameSpace", classTemplateWithContext, context);
     }
 
-    public static (SemanticModel, ExpressionStatementSyntax) CompileExpressionStatementWithContext (string source, string[] context)
+    public static (SemanticModel, ExpressionStatementSyntax) CompileExpressionStatementWithContext (string source, Context context)
     {
       var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context);
       var expression = syntaxNode.DescendantNodes()
           .OfType<ExpressionStatementSyntax>()
-          .SingleOrDefault();
+          .LastOrDefault();
 
       return (semanticModel, expression);
     }
 
-    private static (SemanticModel, SyntaxNode) CompileInNameSpaceWithContext (string nameSpaceName, string nameSpaceContent, string[] context)
+    private static (SemanticModel, SyntaxNode) CompileInNameSpaceWithContext (string nameSpaceName, string nameSpaceContent, Context context)
     {
       var nameSpaceTemplate =
           "using System;\r\n" +
           "using System.Collections.Generic;\r\n" +
           "using Rhino.Mocks;\r\n" +
           $"namespace {nameSpaceName} {{\r\n" +
-          $"interface ITestInterface {{{context[0]}}} \r\n" +
+          $"interface ITestInterface {{{context.InterfaceContext}}} \r\n" +
           $"{nameSpaceContent}\r\n" +
           "}";
 
@@ -217,6 +218,35 @@ namespace RhinoMocksToMoqRewriter.Tests
           .FirstOrDefault();
 
       return (semanticModel, argument);
+    }
+
+    public static (SemanticModel, InvocationExpressionSyntax) CompileInvocationExpressionWithContext (string source, Context context)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context);
+      var invocationExpression = syntaxNode.DescendantNodes()
+          .OfType<InvocationExpressionSyntax>()
+          .LastOrDefault();
+
+      return (semanticModel, invocationExpression);
+    }
+
+    public static (SemanticModel, MethodDeclarationSyntax) CompileMethodDeclarationWithContext (string source, Context context)
+    {
+      var (semanticModel, node) = CompileInMethodWithContext ("Test", source, context);
+      var methodDeclaration = node.DescendantNodes()
+          .OfType<MethodDeclarationSyntax>()
+          .LastOrDefault();
+
+      return (semanticModel, methodDeclaration);
+    }
+
+    public static (SemanticModel, IEnumerable<ExpressionStatementSyntax>) CompileExpressionStatementsWithContext (string source, Context context)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context);
+      var expressionStatements = syntaxNode.DescendantNodes()
+          .OfType<ExpressionStatementSyntax>();
+
+      return (semanticModel, expressionStatements);
     }
   }
 }

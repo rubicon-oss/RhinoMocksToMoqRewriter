@@ -26,25 +26,32 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
     private ArgumentRewriter _rewriter;
     private Mock<IFormatter> _formatter;
 
-    private readonly string[] _context =
-    {
-        @"
-var mock = MockRepository.GenerateMock<ITestInterface>();
-int a = new[] {1, 2, 3, 4};
-int b = new[] {1, 2};",
-        @"
+    private readonly Context _context =
+        new Context
+        {
+            InterfaceContext =
+                //language=C#
+                @"
+void DoSomething (string a); 
+void DoSomething (int b);
+void DoSomething (int b, bool c);
+void DoSomething (string a, int b, bool c);
+void DoSomething (IEnumerable<int> b);
+void DoSomething (IEnumerable<int> b, IEnumerable<string> d);
+void DoSomethingWithDateTime (DateTime? dateTime);",
+            ClassContext =
+                //language=C#
+                @"
 private string _aString; 
 private int _bInt; 
 private bool _cBool;",
-        @"
-void DoSomething(string a); 
-void DoSomething(int b);
-void DoSomething(int b, bool c);
-void DoSomething(string a, int b, bool c);
-void DoSomething(IEnumerable<int> b);
-void DoSomething(IEnumerable<int> b, IEnumerable<string> d);
-void DoSomethingWithDateTime(DateTime? dateTime);"
-    };
+            MethodContext =
+                //language=C#
+                @"
+var mock = MockRepository.GenerateMock<ITestInterface>();
+int a = new[] { 1, 2, 3, 4 };
+int b = new[] { 1, 2 };"
+        };
 
     [SetUp]
     public void SetUp ()
