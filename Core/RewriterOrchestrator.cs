@@ -31,7 +31,8 @@ namespace RhinoMocksToMoqRewriter.Core
             new MockSetupRewriter(),
             new MethodRewriter(),
             new ArgumentRewriter (new Formatter()),
-            new MockInstantiationRewriter (new Formatter())
+            new MockInstantiationRewriter (new Formatter()),
+            new NoMoqRewriter(),
         };
 
     public static async Task RewriteAsync (IEnumerable<CSharpCompilation> compilations)
