@@ -59,5 +59,13 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
       return invocationExpressionNode?.DescendantNodes()
           .FirstOrDefault (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression)) as MemberAccessExpressionSyntax;
     }
+
+    public static IdentifierNameSyntax GetFirstIdentifierName (this SyntaxNode node)
+    {
+      var identifierName = node.DescendantNodes()
+          .FirstOrDefault (s => s.IsKind (SyntaxKind.IdentifierName)) as IdentifierNameSyntax;
+
+      return identifierName ?? throw new InvalidOperationException ("Node must contain a IdentifierName");
+    }
   }
 }

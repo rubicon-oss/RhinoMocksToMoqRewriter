@@ -12,6 +12,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -301,5 +302,44 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                     SyntaxKind.SimpleMemberAccessExpression,
                     SyntaxFactory.IdentifierName (identifierName),
                     SyntaxFactory.IdentifierName ("Verify"))));
+
+    public static FieldDeclarationSyntax MockFieldDeclaration (
+        SyntaxList<AttributeListSyntax> attributeList,
+        SyntaxTokenList modifiers,
+        TypeSyntax declarationType,
+        IEnumerable<VariableDeclaratorSyntax> variableDeclarators)
+    {
+      return SyntaxFactory.FieldDeclaration (
+          attributeList,
+          modifiers,
+          SyntaxFactory.VariableDeclaration (
+                  SyntaxFactory.GenericName (SyntaxFactory.Identifier ("Mock"))
+                      .WithTypeArgumentList (
+                          SyntaxFactory.TypeArgumentList (
+                              SyntaxFactory.SingletonSeparatedList (
+                                  declarationType))))
+              .WithVariables (
+                  SyntaxFactory.SeparatedList (
+                      variableDeclarators)));
+    }
+
+    public static ArgumentSyntax MockObjectArgument (IdentifierNameSyntax identifierName)
+    {
+      return SyntaxFactory.Argument (
+          SyntaxFactory.MemberAccessExpression (
+                  SyntaxKind.SimpleMemberAccessExpression,
+                  identifierName,
+                  SyntaxFactory.IdentifierName ("Object"))
+              .WithOperatorToken (
+                  SyntaxFactory.Token (SyntaxKind.DotToken)));
+    }
+
+    public static MemberAccessExpressionSyntax MockObjectExpression (IdentifierNameSyntax firstIdentifierName)
+    {
+      return SyntaxFactory.MemberAccessExpression (
+          SyntaxKind.SimpleMemberAccessExpression,
+          firstIdentifierName,
+          SyntaxFactory.IdentifierName ("Object"));
+    }
   }
 }

@@ -91,5 +91,34 @@ MockBehavior.Strict,    42,
 
       Assert.AreEqual (expected, formattedNode.ToString());
     }
+
+    [Test]
+    [TestCase (
+        //language=C#
+        @"private Mock<IA> a,b,c,d;",
+        //language=C#
+        @"private Mock<IA> a, b, c, d;")]
+    [TestCase (
+        //language=C#
+        @"private Mock<IA> a;",
+        //language=C#
+        @"private Mock<IA> a;")]
+    [TestCase (
+        //language=C#
+        @"private Mock<IA>a,
+    b,
+    c;",
+        //language=C#
+        @"private Mock<IA>
+    a,
+    b,
+    c;")]
+    public void Format_FieldDeclaration (string source, string expected)
+    {
+      var (_, node) = CompiledSourceFileProvider.CompileFieldDeclaration (source);
+      var formattedNode = _formatter.Format (node);
+
+      Assert.AreEqual (expected, formattedNode.ToString());
+    }
   }
 }

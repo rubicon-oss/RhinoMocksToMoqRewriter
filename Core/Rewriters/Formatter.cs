@@ -40,7 +40,47 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return formattedNode;
       }
 
+      if (node is FieldDeclarationSyntax fieldDeclarationNode)
+      {
+        var formattedVariableDeclaration = FormatVariableDeclaration (fieldDeclarationNode.Declaration);
+        return fieldDeclarationNode.WithDeclaration (formattedVariableDeclaration);
+      }
+
       return node;
+    }
+
+    [Pure]
+    private VariableDeclarationSyntax FormatVariableDeclaration (VariableDeclarationSyntax node)
+    {
+      var newLineCharacter = node.GetNewLineCharacter();
+      var indentation = node.GetIndentation();
+      var separatedSyntaxList = new SeparatedSyntaxList<SyntaxNode>().AddRange (node.Variables);
+
+      var formattedType = FormatType (node.Type, newLineCharacter);
+      var formattedVariables = FormatVariableDeclarator (separatedSyntaxList, indentation, newLineCharacter);
+
+      return node
+          .WithType (formattedType)
+          .WithVariables (formattedVariables);
+    }
+
+    [Pure]
+    private TypeSyntax FormatType (TypeSyntax node, string newLineCharacter)
+    {
+      return newLineCharacter == string.Empty
+          ? node.WithTrailingTrivia (SyntaxFactory.Space)
+          : node;
+    }
+
+    [Pure]
+    private SeparatedSyntaxList<VariableDeclaratorSyntax> FormatVariableDeclarator (
+        SeparatedSyntaxList<VariableDeclaratorSyntax> variables,
+        string indentation,
+        string newLineCharacter)
+    {
+      return newLineCharacter == string.Empty
+          ? FormatSingleLineSyntaxNodeList (variables)
+          : FormatMultiLineSyntaxNodeList (variables, indentation, newLineCharacter);
     }
 
     [Pure]
@@ -76,9 +116,18 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return argumentList;
       }
 
-      var newArgumentList = argumentList.HasMultiLineArguments()
-          ? FormatMultiLineArgumentList (argumentList, indentation, newLineCharacter)
-          : FormatSingleLineArgumentList (argumentList);
+      var separatedList = new SeparatedSyntaxList<SyntaxNode>().AddRange (argumentList.Arguments);
+      ArgumentListSyntax newArgumentList;
+      if (argumentList.Arguments.HasMultiLineItems())
+      {
+        var formattedList = FormatMultiLineSyntaxNodeList (separatedList, indentation, newLineCharacter);
+        newArgumentList = SyntaxFactory.ArgumentList (formattedList);
+      }
+      else
+      {
+        var formattedList = FormatSingleLineSyntaxNodeList (separatedList);
+        newArgumentList = SyntaxFactory.ArgumentList (formattedList);
+      }
 
       var memberAccessExpressionNode = argumentList.GetFirstAncestorMemberAccessExpressionOrDefault();
       if (memberAccessExpressionNode != null && memberAccessExpressionNode.HasTrailingTrivia && !argumentList.HasLeadingTrivia)
@@ -90,14 +139,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     }
 
     [Pure]
-    private ArgumentListSyntax FormatMultiLineArgumentList (ArgumentListSyntax argumentList, string indentation, string newLineCharacter)
+    private SeparatedSyntaxList<SyntaxNode> FormatMultiLineSyntaxNodeList (
+        SeparatedSyntaxList<SyntaxNode> separatedSyntaxList,
+        string indentation,
+        string newLineCharacter)
     {
-      var arguments = SyntaxFactory.SeparatedList<ArgumentSyntax>().AddRange (argumentList.Arguments);
-
-      for (var i = 0; i < arguments.Count; i++)
+      for (var i = 0; i < separatedSyntaxList.Count; i++)
       {
-        var argument = arguments[i];
-        arguments = arguments
+        var argument = separatedSyntaxList[i];
+        separatedSyntaxList = separatedSyntaxList
             .Replace (
                 argument,
                 argument
@@ -105,24 +155,23 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                         SyntaxFactory.Whitespace (newLineCharacter + indentation)));
       }
 
-      return SyntaxFactory.ArgumentList (arguments);
+      return separatedSyntaxList;
     }
 
     [Pure]
-    private ArgumentListSyntax FormatSingleLineArgumentList (ArgumentListSyntax argumentList)
+    private SeparatedSyntaxList<SyntaxNode> FormatSingleLineSyntaxNodeList (SeparatedSyntaxList<SyntaxNode> separatedSyntaxList)
     {
-      var arguments = SyntaxFactory.SeparatedList<ArgumentSyntax>().AddRange (argumentList.Arguments);
-      for (var i = 1; i < arguments.Count; i++)
+      for (var i = 1; i < separatedSyntaxList.Count; i++)
       {
-        var argument = arguments[i];
-        arguments = arguments
+        var item = separatedSyntaxList[i];
+        separatedSyntaxList = separatedSyntaxList
             .Replace (
-                argument,
-                argument.WithLeadingTrivia (
+                item,
+                item.WithLeadingTrivia (
                     SyntaxFactory.Space));
       }
 
-      return SyntaxFactory.ArgumentList (arguments);
+      return separatedSyntaxList;
     }
 
     [Pure]
