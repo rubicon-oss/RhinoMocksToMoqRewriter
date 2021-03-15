@@ -32,8 +32,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
             InterfaceContext =
                 @"
 void DoSomething();
-int DoSomething (int b);
-List<ITestInterface> DoSomething (int b, int c);",
+int DoSomething (int b);",
             //language=C#
             ClassContext =
                 @"
@@ -108,6 +107,80 @@ stub
 stub
   .Setup (m => m.DoSomething (1))
   .Returns (2);")]
+    [TestCase (
+        //language=C#
+        @"
+mock
+  .Expect (m => m.DoSomething (1))
+  .Return (2)
+  .Callback();",
+        //language=C#
+        @"
+mock
+  .Setup (m => m.DoSomething (1))
+  .Return (2)
+  .Callback()
+  .Verifiable;")]
+    [TestCase (
+        //language=C#
+        @"
+mock
+  .Stub (m => m.DoSomething (1))
+  .WhenCalled();",
+        //language=C#
+        @"
+mock
+  .Setup (m => m.DoSomething (1))
+  .Callback();")]
+    [TestCase (
+        //language=C#
+        @"
+mock
+  .Expect (m => m.DoSomething (1))
+  .Return (2)
+  .WhenCalled();",
+        //language=C#
+        @"
+mock
+  .Setup (m => m.DoSomething (1))
+  .Returns (2)
+  .Callback()
+  .Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"
+mock
+  .Expect (m => m.DoSomething())
+  .WhenCalled();",
+        //language=C#
+        @"
+mock
+  .Setup (m => m.DoSomething())
+  .Callback()
+  .Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"
+mock
+  .Stub (m => m.DoSomething())
+  .Callback();",
+        //language=C#
+        @"
+mock
+  .Setup (m => m.DoSomething())
+  .Callback();")]
+    [TestCase (
+        //language=C#
+        @"
+mock
+  .Expect (m => m.DoSomething())
+  .Callback();",
+        //language=C#
+        @"
+mock
+  .Setup (m => m.DoSomething())
+  .Callback()
+  .Verifiable();")]
     public void Rewrite_Setup (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);

@@ -341,5 +341,25 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           firstIdentifierName,
           SyntaxFactory.IdentifierName ("Object"));
     }
+
+    public static IdentifierNameSyntax SetupIdentifierName ()
+    {
+      return SyntaxFactory.IdentifierName ("Setup");
+    }
+
+    public static IdentifierNameSyntax ReturnsIdentifierName ()
+    {
+      return SyntaxFactory.IdentifierName ("Returns");
+    }
+
+    public static IdentifierNameSyntax CallbackIdentifierName ()
+    {
+      return SyntaxFactory.IdentifierName ("Callback");
+    }
+
+    public static IdentifierNameSyntax VerifiableIdentifierName ()
+    {
+      return SyntaxFactory.IdentifierName ("Verifiable");
+    }
   }
 }
