@@ -357,9 +357,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.IdentifierName ("Callback");
     }
 
-    public static IdentifierNameSyntax VerifiableIdentifierName ()
+    public static SyntaxNode VerifiableMock (ExpressionSyntax expression)
     {
-      return SyntaxFactory.IdentifierName ("Verifiable");
+      return SyntaxFactory.ExpressionStatement (
+          SyntaxFactory.InvocationExpression (
+              SyntaxFactory.MemberAccessExpression (
+                  SyntaxKind.SimpleMemberAccessExpression,
+                  expression,
+                  SyntaxFactory.IdentifierName ("Verifiable"))));
     }
   }
 }

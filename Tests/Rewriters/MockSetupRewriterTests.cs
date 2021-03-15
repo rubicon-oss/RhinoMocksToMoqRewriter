@@ -12,8 +12,6 @@
 //
 
 using System;
-using Microsoft.CodeAnalysis;
-using Moq;
 using NUnit.Framework;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
@@ -23,7 +21,6 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
   public class MockSetupRewriterTests
   {
     private MockSetupRewriter _rewriter;
-    private Mock<IFormatter> _formatter;
 
     private readonly Context _context =
         new Context
@@ -46,10 +43,7 @@ var mock = MockRepository.GenerateMock<ITestInterface>();"
     [SetUp]
     public void SetUp ()
     {
-      _formatter = new Mock<IFormatter>();
-      _formatter.Setup (f => f.Format (It.IsAny<SyntaxNode>()))
-          .Returns<SyntaxNode> (s => s);
-      _rewriter = new MockSetupRewriter (_formatter.Object);
+      _rewriter = new MockSetupRewriter();
     }
 
     [Test]
@@ -118,9 +112,9 @@ mock
         @"
 mock
   .Setup (m => m.DoSomething (1))
-  .Return (2)
+  .Returns (2)
   .Callback()
-  .Verifiable;")]
+  .Verifiable();")]
     [TestCase (
         //language=C#
         @"
