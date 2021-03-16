@@ -21,23 +21,32 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
   {
     private readonly IArgumentRewriteStrategy _strategy = new ArgIsArgumentRewriteStrategy();
 
+    private readonly Context _context =
+        new Context
+        {
+            //language=C#
+            InterfaceContext = @"void DoSomething (int b);",
+            //language=C#
+            MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
+        };
+
     [Test]
     [TestCase ("mock.DoSomething (Arg.Is (1));", "mock.DoSomething (1);")]
     public void Rewrite_ArgIs (string source, string expected)
     {
-      var (_, node) = CompiledSourceFileProvider.CompileArgument (source);
-      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgument (expected);
+      var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
+      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgumentWithContext (expected, _context);
       var actualNode = _strategy.Rewrite (node);
 
       Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));
     }
 
     [Test]
-    [TestCase ("mock.DoSomething (Arg<int>.Is.Equal (1);", "mock.DoSomething (1);")]
+    [TestCase ("mock.DoSomething (Arg<int>.Is.Equal (1));", "mock.DoSomething (1);")]
     public void Rewrite_ArgIsSame (string source, string expected)
     {
-      var (_, node) = CompiledSourceFileProvider.CompileArgument (source);
-      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgument (expected);
+      var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
+      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgumentWithContext (expected, _context);
       var actualNode = _strategy.Rewrite (node);
 
       Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));
@@ -47,8 +56,8 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
     [TestCase ("mock.DoSomething (Arg<int>.Is.Same (1));", "mock.DoSomething (1);")]
     public void Rewrite_ArgIsEqual (string source, string expected)
     {
-      var (_, node) = CompiledSourceFileProvider.CompileArgument (source);
-      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgument (expected);
+      var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
+      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgumentWithContext (expected, _context);
       var actualNode = _strategy.Rewrite (node);
 
       Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));

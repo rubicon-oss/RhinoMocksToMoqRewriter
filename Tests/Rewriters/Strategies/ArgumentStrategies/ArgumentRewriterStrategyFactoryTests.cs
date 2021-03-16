@@ -24,27 +24,29 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
     private readonly Context _context =
         new Context
         {
+            //language=C#
             InterfaceContext =
-                //language=C#
                 @"
   void DoSomething (int b);
-  void DoSomething (IEnumerable<int> b);"
+  void DoSomething (IEnumerable<int> b);",
+            //language=C#
+            MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
         };
 
     [Test]
-    [TestCase (@"mock.DoSomething (1)", typeof (DefaultArgumentRewriteStrategy))]
+    [TestCase (@"mock.DoSomething (1);", typeof (DefaultArgumentRewriteStrategy))]
     [TestCase (@"mock.DoSomething (Arg<int>.Is.Anything);", typeof (ArgIsAnythingArgumentRewriteStrategy))]
     [TestCase ("mock.DoSomething (Arg.Is (1));", typeof (ArgIsArgumentRewriteStrategy))]
     [TestCase ("mock.DoSomething (Arg<int>.Is.GreaterThan (1));", typeof (ArgIsGreaterThanArgumentRewriteStrategy))]
     [TestCase ("mock.DoSomething (Arg<int>.Is.GreaterThanOrEqual (1));", typeof (ArgIsGreaterThanOrEqualArgumentRewriteStrategy))]
     [TestCase ("mock.DoSomething (Arg<int>.Is.LessThan (1));", typeof (ArgIsLessThanArgumentRewriteStrategy))]
-    [TestCase ("mock.DoSomething (Arg<int>.Is.LessThanOrEqual (1))", typeof (ArgIsLessThanOrEqualArgumentRewriteStrategy))]
-    [TestCase ("mock.DoSomething (Arg<int>.Is.NotNull)", typeof (ArgIsNotNullArgumentRewriteStrategy))]
-    [TestCase ("mock.DoSomething (Arg<int>.Is.Null)", typeof (ArgIsNullArgumentRewriteStrategy))]
-    [TestCase ("mock.DoSomething (Arg<int[]>.List.ContainsAll (new[] {1, 2, 3}))", typeof (ArgListContainsAllArgumentRewriteStrategy))]
-    [TestCase ("mock.DoSomething (Arg<int[]>.List.Equal (new[] {1, 2, 3}))", typeof (ArgListEqualArgumentRewriteStrategy))]
-    [TestCase ("mock.DoSomething (Arg<int[]>.List.IsIn (3))", typeof (ArgListIsInArgumentRewriteStrategy))]
-    [TestCase ("mock.DoSomething (Arg<int>.Matches (3))", typeof (ArgMatchesArgumentRewriteStrategy))]
+    [TestCase ("mock.DoSomething (Arg<int>.Is.LessThanOrEqual (1));", typeof (ArgIsLessThanOrEqualArgumentRewriteStrategy))]
+    [TestCase ("mock.DoSomething (Arg<int>.Is.NotNull);", typeof (ArgIsNotNullArgumentRewriteStrategy))]
+    [TestCase ("mock.DoSomething (Arg<int>.Is.Null);", typeof (ArgIsNullArgumentRewriteStrategy))]
+    [TestCase ("mock.DoSomething (Arg<int[]>.List.ContainsAll (new[] {1, 2, 3}));", typeof (ArgListContainsAllArgumentRewriteStrategy))]
+    [TestCase ("mock.DoSomething (Arg<int[]>.List.Equal (new[] {1, 2, 3}));", typeof (ArgListEqualArgumentRewriteStrategy))]
+    [TestCase ("mock.DoSomething (Arg<int[]>.List.IsIn (3));", typeof (ArgListIsInArgumentRewriteStrategy))]
+    [TestCase ("mock.DoSomething (Arg<int>.Matches (param => param == 3));", typeof (ArgMatchesArgumentRewriteStrategy))]
     public void GetRewriteStrategy (string source, Type expectedType)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);

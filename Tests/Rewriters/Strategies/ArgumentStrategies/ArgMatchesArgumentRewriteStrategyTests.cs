@@ -22,12 +22,21 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
   {
     private readonly IArgumentRewriteStrategy _strategy = new ArgMatchesArgumentRewriteStrategy();
 
+    private readonly Context _context =
+        new Context
+        {
+            //language=C#
+            InterfaceContext = @"void DoSomething (IEnumerable<int> b);",
+            //language=C#
+            MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
+        };
+
     [Test]
     [TestCase ("mock.DoSomething (Arg<int[]>.Matches (s => s.Length == 2));", "mock.DoSomething (It.Is<int[]> (s => s.Length == 2));")]
     public void Rewrite_ArgMatches (string source, string expected)
     {
-      var (_, node) = CompiledSourceFileProvider.CompileArgument (source);
-      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgument (expected);
+      var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
+      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgumentWithContext (expected, _context);
       var actualNode = _strategy.Rewrite (node);
 
       Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));

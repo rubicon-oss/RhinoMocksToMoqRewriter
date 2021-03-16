@@ -20,12 +20,21 @@ namespace RhinoMocksToMoqRewriter.Tests.Extensions
   [TestFixture]
   public class SyntaxNodeExtensionsTests
   {
+    private readonly Context _context =
+        new Context
+        {
+            //language=C#
+            InterfaceContext = @"void DoSomething (int b);",
+            //language=C#
+            MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
+        };
+
     [Test]
-    [TestCase ("(42)", "")]
-    [TestCase ("(\r\n 42)", " ")]
+    [TestCase ("mock.DoSomething (42);", "")]
+    [TestCase ("mock.DoSomething (\r\n 42);", " ")]
     public void GetLeadingWhiteSpaces (string source, string expected)
     {
-      var (_, argumentList) = CompiledSourceFileProvider.CompileArgumentList (source);
+      var (_, argumentList) = CompiledSourceFileProvider.CompileArgumentListWithContext (source, _context);
       var actual = argumentList.Arguments.First().GetLeadingWhiteSpaces();
       Assert.AreEqual (expected, actual);
     }

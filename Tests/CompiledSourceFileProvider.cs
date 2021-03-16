@@ -12,40 +12,23 @@
 //
 
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Moq;
 using NUnit.Framework;
 
 namespace RhinoMocksToMoqRewriter.Tests
 {
   public static class CompiledSourceFileProvider
   {
-    public static (SemanticModel, LocalDeclarationStatementSyntax) CompileLocalDeclarationStatement (string source)
+    public static (SemanticModel, ObjectCreationExpressionSyntax) CompileObjectCreationExpression (string source, bool ignoreErrors = false)
     {
-      var (semanticModel, syntaxNode) = CompileInMethod ("Test", source);
-      var localDeclaration = syntaxNode.DescendantNodes()
-          .OfType<LocalDeclarationStatementSyntax>()
-          .SingleOrDefault();
-
-      return (semanticModel, localDeclaration);
-    }
-
-    public static (SemanticModel, ExpressionStatementSyntax) CompileExpressionStatement (string source)
-    {
-      var (semanticModel, syntaxNode) = CompileInMethod ("Test", source);
-      var expression = syntaxNode.DescendantNodes()
-          .OfType<ExpressionStatementSyntax>()
-          .SingleOrDefault();
-
-      return (semanticModel, expression);
-    }
-
-    public static (SemanticModel, ObjectCreationExpressionSyntax) CompileObjectCreationExpression (string source)
-    {
-      var (semanticModel, syntaxNode) = CompileInMethod ("Test", source);
+      var (semanticModel, syntaxNode) = CompileInMethod ("Test", source, ignoreErrors);
       var expression = syntaxNode.DescendantNodes()
           .OfType<ObjectCreationExpressionSyntax>()
           .SingleOrDefault();
@@ -53,9 +36,20 @@ namespace RhinoMocksToMoqRewriter.Tests
       return (semanticModel, expression);
     }
 
-    public static (SemanticModel, ArgumentListSyntax) CompileArgumentList (string source)
+    public static (SemanticModel, ArgumentSyntax) CompileArgumentWithContext (string source, Context context, bool ignoreErrors = false)
     {
-      var (semanticModel, syntaxNode) = CompileInMethod ("Test", $"test{source}");
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
+      var argument = syntaxNode.DescendantNodes()
+                         .OfType<ArgumentSyntax>()
+                         .LastOrDefault (a => a.ToString().Contains ("Arg") || a.ToString().Contains ("It"))
+                     ?? syntaxNode.DescendantNodes().OfType<ArgumentSyntax>().Last();
+
+      return (semanticModel, argument);
+    }
+
+    public static (SemanticModel, ArgumentListSyntax) CompileArgumentList (string source, bool ignoreErrors = false)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethod ("Test", $"test{source}", ignoreErrors);
       var argumentList = syntaxNode.DescendantNodes()
           .OfType<ArgumentListSyntax>()
           .SingleOrDefault();
@@ -63,9 +57,19 @@ namespace RhinoMocksToMoqRewriter.Tests
       return (semanticModel, argumentList);
     }
 
-    public static (SemanticModel, FieldDeclarationSyntax) CompileFieldDeclaration (string statementSource)
+    public static (SemanticModel, ArgumentListSyntax) CompileArgumentListWithContext (string source, Context context, bool ignoreErrors = false)
     {
-      var (semanticModel, syntaxNode) = CompileInClass ("Test", statementSource);
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
+      var fieldDeclarationSyntax = syntaxNode.DescendantNodes()
+          .OfType<ArgumentListSyntax>()
+          .Last();
+
+      return (semanticModel, fieldDeclarationSyntax);
+    }
+
+    public static (SemanticModel, FieldDeclarationSyntax) CompileFieldDeclaration (string statementSource, bool ignoreErrors = false)
+    {
+      var (semanticModel, syntaxNode) = CompileInClass ("Test", statementSource, ignoreErrors);
       var fieldDeclaration = syntaxNode.DescendantNodes()
           .OfType<FieldDeclarationSyntax>()
           .SingleOrDefault();
@@ -73,186 +77,16 @@ namespace RhinoMocksToMoqRewriter.Tests
       return (semanticModel, fieldDeclaration);
     }
 
-    public static (SemanticModel, InvocationExpressionSyntax) CompileInvocationExpression (string statementSource)
+    public static (SemanticModel, FieldDeclarationSyntax) CompileFieldDeclarationWithContext (string source, Context context, bool ignoreErrors = false)
     {
-      var (semanticModel, syntaxNode) = CompileInMethod ("Test", statementSource);
-      var invocationExpression = syntaxNode.DescendantNodes()
-          .OfType<InvocationExpressionSyntax>()
-          .SingleOrDefault();
-
-      return (semanticModel, invocationExpression);
-    }
-
-    public static (SemanticModel, MethodDeclarationSyntax) CompileMethod (string methodSource)
-    {
-      var (semanticModel, syntaxNode) = CompileInClass ("TestClass", methodSource);
-      var methodDeclaration = syntaxNode.DescendantNodes()
-          .OfType<MethodDeclarationSyntax>()
-          .SingleOrDefault();
-
-      return (semanticModel, methodDeclaration);
-    }
-
-    public static (SemanticModel, ClassDeclarationSyntax) CompileClass (string classSource)
-    {
-      var (semanticModel, syntaxNode) = CompileInNameSpace ("TestNameSpace", classSource);
-      var classDeclaration = syntaxNode.DescendantNodes()
-          .OfType<ClassDeclarationSyntax>()
-          .Single();
-
-      return (semanticModel, classDeclaration);
-    }
-
-    public static (SemanticModel, MethodDeclarationSyntax) CompileMethodInClass (string classSource, string methodName)
-    {
-      var (semanticModel, syntaxNode) = CompileInNameSpace ("TestNameSpace", classSource);
-      var methodSyntax = syntaxNode.DescendantNodes()
-          .OfType<MethodDeclarationSyntax>()
-          .Single (method => method.Identifier.ToString() == methodName);
-      return (semanticModel, methodSyntax);
-    }
-
-    public static (SemanticModel, SyntaxNode) CompileInClass (string className, string classContentSource)
-    {
-      var classTemplate =
-          $"public class {className} {{\r\n" +
-          $"{classContentSource}" +
-          "}";
-
-      return CompileInNameSpace ("TestNameSpace", classTemplate);
-    }
-
-    private static (SemanticModel, SyntaxNode) CompileInMethod (string methodName, string methodContentSource)
-    {
-      var methodTemplate =
-          $"public void {methodName} () {{\r\n" +
-          $"{methodContentSource}" +
-          "}";
-
-      return CompileInClass ("TestClass", methodTemplate);
-    }
-
-    public static (SemanticModel, SyntaxNode) CompileInNameSpace (string nameSpaceName, string nameSpaceContent)
-    {
-      var nameSpaceTemplate =
-          "using System;\r\n" +
-          "using System.Collections.Generic;\r\n" +
-          "using Rhino.Mocks;\r\n" +
-          $"namespace {nameSpaceName} {{\r\n" +
-          $"{nameSpaceContent}\r\n" +
-          "}";
-
-      return Compile (nameSpaceTemplate);
-    }
-
-    private static (SemanticModel, SyntaxNode) Compile (string sourceCode)
-    {
-      var syntaxTree = CSharpSyntaxTree.ParseText (sourceCode);
-      var rootNode = syntaxTree.GetRoot();
-
-      var compilation = CSharpCompilation.Create ("TestCompilation")
-          .AddReferences (
-              MetadataReference.CreateFromFile (typeof (object).Assembly.Location),
-              MetadataReference.CreateFromFile (TestContext.CurrentContext.TestDirectory + @"/../../../Resources/Rhino.Mocks.dll"))
-          .AddSyntaxTrees (syntaxTree);
-
-      compilation = compilation.WithOptions (
-          compilation.Options.WithNullableContextOptions (NullableContextOptions.Enable));
-
-      var semanticModel = compilation.GetSemanticModel (syntaxTree);
-
-      return (semanticModel, rootNode);
-    }
-
-    private static (SemanticModel, SyntaxNode) CompileInMethodWithContext (string methodName, string source, Context context)
-    {
-      var methodTemplate =
-          $"public void {methodName} () {{\r\n" +
-          $"{context.MethodContext}\r\n" +
-          $"{source}" +
-          "}";
-
-      return CompileInClassWithContext ("TestClass", methodTemplate, context);
-    }
-
-    private static (SemanticModel, SyntaxNode) CompileInClassWithContext (string className, string source, Context context)
-    {
-      var classTemplateWithContext =
-          $"public class {className} {{\r\n" +
-          $"{context.ClassContext}\r\n" +
-          $"{source}\r\n" +
-          "}";
-
-      return CompileInNameSpaceWithContext ("TestNameSpace", classTemplateWithContext, context);
-    }
-
-    public static (SemanticModel, ExpressionStatementSyntax) CompileExpressionStatementWithContext (string source, Context context)
-    {
-      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context);
-      var expression = syntaxNode.DescendantNodes()
-          .OfType<ExpressionStatementSyntax>()
-          .LastOrDefault();
-
-      return (semanticModel, expression);
-    }
-
-    private static (SemanticModel, SyntaxNode) CompileInNameSpaceWithContext (string nameSpaceName, string nameSpaceContent, Context context)
-    {
-      var nameSpaceTemplate =
-          "using System;\r\n" +
-          "using System.Collections.Generic;\r\n" +
-          "using Rhino.Mocks;\r\n" +
-          $"namespace {nameSpaceName} {{\r\n" +
-          $"interface ITestInterface {{{context.InterfaceContext}}} \r\n" +
-          $"{nameSpaceContent}\r\n" +
-          "}";
-
-      return Compile (nameSpaceTemplate);
-    }
-
-    public static (SemanticModel, ArgumentSyntax) CompileArgument (string source)
-    {
-      var (semanticModel, syntaxNode) = CompileInMethod ("Test", source);
-      var argument = syntaxNode.DescendantNodes()
-          .OfType<ArgumentSyntax>()
-          .FirstOrDefault();
-
-      return (semanticModel, argument);
-    }
-
-    public static (SemanticModel, InvocationExpressionSyntax) CompileInvocationExpressionWithContext (string source, Context context)
-    {
-      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context);
-      var invocationExpression = syntaxNode.DescendantNodes()
-          .OfType<InvocationExpressionSyntax>()
-          .LastOrDefault();
-
-      return (semanticModel, invocationExpression);
-    }
-
-    public static (SemanticModel, MethodDeclarationSyntax) CompileMethodDeclarationWithContext (string source, Context context)
-    {
-      var (semanticModel, node) = CompileInMethodWithContext ("Test", source, context);
-      var methodDeclaration = node.DescendantNodes()
-          .OfType<MethodDeclarationSyntax>()
-          .LastOrDefault();
-
-      return (semanticModel, methodDeclaration);
-    }
-
-    public static (SemanticModel, IEnumerable<ExpressionStatementSyntax>) CompileExpressionStatementsWithContext (string source, Context context)
-    {
-      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context);
-      var expressionStatements = syntaxNode.DescendantNodes()
-          .OfType<ExpressionStatementSyntax>();
-
-      return (semanticModel, expressionStatements);
-    }
-
-    public static (SemanticModel, FieldDeclarationSyntax) CompileFieldDeclarationWithContext (string source, Context context)
-    {
-      context.ClassContext += Environment.NewLine + source;
-      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", string.Empty, context);
+      var tempContext =
+          new Context
+          {
+              ClassContext = context.ClassContext + Environment.NewLine + source,
+              InterfaceContext = context.InterfaceContext,
+              MethodContext = context.MethodContext
+          };
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", string.Empty, tempContext, ignoreErrors);
       var fieldDeclarationSyntax = syntaxNode.DescendantNodes()
           .OfType<FieldDeclarationSyntax>()
           .Last();
@@ -260,14 +94,139 @@ namespace RhinoMocksToMoqRewriter.Tests
       return (semanticModel, fieldDeclarationSyntax);
     }
 
-    public static (SemanticModel, ArgumentListSyntax) CompileArgumentListWithContext (string source, Context context)
+    public static (SemanticModel, ExpressionStatementSyntax) CompileExpressionStatementWithContext (string source, Context context, bool ignoreErrors = false)
     {
-      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context);
-      var fieldDeclarationSyntax = syntaxNode.DescendantNodes()
-          .OfType<ArgumentListSyntax>()
-          .Last();
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
+      var expression = syntaxNode.DescendantNodes()
+          .OfType<ExpressionStatementSyntax>()
+          .LastOrDefault();
 
-      return (semanticModel, fieldDeclarationSyntax);
+      return (semanticModel, expression);
+    }
+
+    public static (SemanticModel, MethodDeclarationSyntax) CompileMethodDeclarationWithContext (string source, Context context, bool ignoreErrors = false)
+    {
+      var (semanticModel, node) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
+      var methodDeclaration = node.DescendantNodes()
+          .OfType<MethodDeclarationSyntax>()
+          .LastOrDefault();
+
+      return (semanticModel, methodDeclaration);
+    }
+
+    public static (SemanticModel, LocalDeclarationStatementSyntax) CompileLocalDeclarationStatementWithContext (string source, Context context, bool ignoreErrors = false)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
+      var localDeclaration = syntaxNode.DescendantNodes()
+          .OfType<LocalDeclarationStatementSyntax>()
+          .LastOrDefault();
+
+      return (semanticModel, localDeclaration);
+    }
+
+    private static (SemanticModel, SyntaxNode) CompileInMethod (string methodName, string methodContentSource, bool ignoreErrors = false)
+    {
+      var methodTemplate =
+          $"public void {methodName} () {{\r\n" +
+          $"{methodContentSource}" +
+          "}";
+
+      return CompileInClass ("TestClass", methodTemplate, ignoreErrors);
+    }
+
+    private static (SemanticModel, SyntaxNode) CompileInMethodWithContext (string methodName, string source, Context context, bool ignoreErrors = false)
+    {
+      var methodTemplate =
+          $"public void {methodName} () {{\r\n" +
+          $"{context.MethodContext}\r\n" +
+          $"{source}" +
+          "}";
+
+      return CompileInClassWithContext ("TestClass", methodTemplate, context, ignoreErrors);
+    }
+
+    private static (SemanticModel, SyntaxNode) CompileInClass (string className, string classContentSource, bool ignoreErrors = false)
+    {
+      var classTemplate =
+          $"public class {className} {{\r\n" +
+          $"{classContentSource}" +
+          "}";
+
+      return CompileInNameSpace ("TestNameSpace", classTemplate, ignoreErrors);
+    }
+
+    private static (SemanticModel, SyntaxNode) CompileInClassWithContext (string className, string source, Context context, bool ignoreErrors = false)
+    {
+      var classTemplateWithContext =
+          $"public class {className} {{\r\n" +
+          $"{context.ClassContext}\r\n" +
+          $"{source}\r\n" +
+          "}";
+
+      return CompileInNameSpaceWithContext ("TestNameSpace", classTemplateWithContext, context, ignoreErrors);
+    }
+
+    private static (SemanticModel, SyntaxNode) CompileInNameSpace (string nameSpaceName, string nameSpaceContent, bool ignoreErrors = false)
+    {
+      var nameSpaceTemplate =
+          "using System;\r\n" +
+          "using System.Collections.Generic;\r\n" +
+          "using Rhino.Mocks;\r\n" +
+          "using Moq;\r\n" +
+          "using MockRepository = Rhino.Mocks.MockRepository;\r\n" +
+          $"namespace {nameSpaceName} {{\r\n" +
+          $"{nameSpaceContent}\r\n" +
+          "}";
+
+      return Compile (nameSpaceTemplate, ignoreErrors);
+    }
+
+    private static (SemanticModel, SyntaxNode) CompileInNameSpaceWithContext (string nameSpaceName, string nameSpaceContent, Context context, bool ignoreErrors = false)
+    {
+      var nameSpaceTemplate =
+          "using System;\r\n" +
+          "using System.Collections.Generic;\r\n" +
+          "using System.Linq;\r\n" +
+          "using Rhino.Mocks;\r\n" +
+          "using Moq;\r\n" +
+          "using MockRepository = Rhino.Mocks.MockRepository;\r\n" +
+          $"namespace {nameSpaceName} {{\r\n" +
+          $"public interface ITestInterface {{{context.InterfaceContext}}} \r\n" +
+          $"{nameSpaceContent}\r\n" +
+          "}";
+
+      return Compile (nameSpaceTemplate, ignoreErrors);
+    }
+
+    private static (SemanticModel, SyntaxNode) Compile (string sourceCode, bool ignoreErrors = false)
+    {
+      var syntaxTree = CSharpSyntaxTree.ParseText (sourceCode);
+      var rootNode = syntaxTree.GetRoot();
+      var objectAssemblyPath = Path.GetDirectoryName (typeof (object).Assembly.Location);
+      var moqAssemblyPath = Path.GetDirectoryName (typeof (Mock<>).Assembly.Location);
+      var linqAssemblyPath = Path.GetDirectoryName (typeof (Expression<>).Assembly.Location);
+      var systemConsolePath = Path.GetDirectoryName (typeof (Console).Assembly.Location);
+      var netstandardAssemblyPath = Directory.GetParent (typeof (Enumerable).GetTypeInfo().Assembly.Location)?.FullName;
+      var compilation = CSharpCompilation.Create ("TestCompilation")
+          .AddReferences (
+              MetadataReference.CreateFromFile (typeof (object).Assembly.Location),
+              MetadataReference.CreateFromFile (TestContext.CurrentContext.TestDirectory + @"/../../../Resources/Rhino.Mocks.dll"),
+              MetadataReference.CreateFromFile (Path.Combine (objectAssemblyPath!, "System.Runtime.dll")),
+              MetadataReference.CreateFromFile (Path.Combine (moqAssemblyPath!, "Moq.dll")),
+              MetadataReference.CreateFromFile (Path.Combine (netstandardAssemblyPath!, "netstandard.dll")),
+              MetadataReference.CreateFromFile (Path.Combine (linqAssemblyPath!, "System.Linq.Expressions.dll")),
+              MetadataReference.CreateFromFile (Path.Combine (linqAssemblyPath!, "System.Linq.dll")),
+              MetadataReference.CreateFromFile (Path.Combine (systemConsolePath!, "System.Console.dll")))
+          .AddSyntaxTrees (syntaxTree);
+
+      compilation = compilation.WithOptions (
+          compilation.Options.WithNullableContextOptions (NullableContextOptions.Disable)
+              .WithOutputKind (OutputKind.DynamicallyLinkedLibrary));
+      if (!ignoreErrors)
+        Assert.IsEmpty (compilation.GetDiagnostics().Where (d => d.Severity == DiagnosticSeverity.Error));
+      var semanticModel = compilation.GetSemanticModel (syntaxTree);
+
+      return (semanticModel, rootNode);
     }
   }
 }

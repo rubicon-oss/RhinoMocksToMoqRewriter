@@ -14,7 +14,6 @@
 using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
 {
@@ -22,7 +21,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
   {
     public static IArgumentRewriteStrategy GetRewriteStrategy (ArgumentSyntax node, SemanticModel model)
     {
-      var symbol = model.GetSymbolInfo (node.Expression).GetFirstOverloadOrDefault();
+      var symbol = model.GetSymbolInfo (node.Expression).Symbol;
       if (symbol == null)
       {
         return new DefaultArgumentRewriteStrategy();

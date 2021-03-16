@@ -67,7 +67,7 @@ MockBehavior.Strict,    42,
     { CallBase = true }")]
     public void Format_ObjectCreationExpression (string source, string expected)
     {
-      var (_, node) = CompiledSourceFileProvider.CompileObjectCreationExpression (source);
+      var (_, node) = CompiledSourceFileProvider.CompileObjectCreationExpression (source, true);
       var formattedNode = _formatter.Format (node);
 
       Assert.AreEqual (expected, formattedNode.ToString());
@@ -86,7 +86,7 @@ MockBehavior.Strict,    42,
   4)")]
     public void Format_ArgumentList (string source, string expected)
     {
-      var (_, node) = CompiledSourceFileProvider.CompileArgumentList (source);
+      var (_, node) = CompiledSourceFileProvider.CompileArgumentList (source, true);
       var formattedNode = _formatter.Format (node);
 
       Assert.AreEqual (expected, formattedNode.ToString());
@@ -115,7 +115,7 @@ MockBehavior.Strict,    42,
     c;")]
     public void Format_FieldDeclaration (string source, string expected)
     {
-      var (_, node) = CompiledSourceFileProvider.CompileFieldDeclaration (source);
+      var (_, node) = CompiledSourceFileProvider.CompileFieldDeclaration (source, true);
       var formattedNode = _formatter.Format (node);
 
       Assert.AreEqual (expected, formattedNode.ToString());

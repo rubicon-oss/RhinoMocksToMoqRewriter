@@ -22,13 +22,22 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
   {
     private readonly IArgumentRewriteStrategy _strategy = new ArgListEqualArgumentRewriteStrategy();
 
+    private readonly Context _context =
+        new Context
+        {
+            //language=C#
+            InterfaceContext = @"void DoSomething (IEnumerable<int> b);",
+            //language=C#
+            MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
+        };
+
     [Test]
     [TestCase ("mock.DoSomething (Arg<int[]>.List.Equal (new[] {1, 2, 3}));", "mock.DoSomething (new[] {1, 2, 3});")]
     [TestCase ("mock.DoSomething (Arg<int[]>.List.Equal (new List<int>() {1, 2, 3}));", "mock.DoSomething (new List<int>() {1, 2, 3});")]
     public void Rewrite_ArgListIsEqual (string source, string expected)
     {
-      var (_, node) = CompiledSourceFileProvider.CompileArgument (source);
-      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgument (expected);
+      var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
+      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgumentWithContext (expected, _context);
       var actualNode = _strategy.Rewrite (node);
 
       Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));
