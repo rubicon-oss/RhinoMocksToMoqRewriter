@@ -107,78 +107,109 @@ stub
 mock
   .Expect (m => m.DoSomething (1))
   .Return (2)
-  .Callback();",
+  .Callback (null);",
         //language=C#
         @"
 mock
   .Setup (m => m.DoSomething (1))
   .Returns (2)
-  .Callback()
+  .Callback (null)
   .Verifiable();")]
     [TestCase (
         //language=C#
         @"
 mock
   .Stub (m => m.DoSomething (1))
-  .WhenCalled();",
+  .WhenCalled (null);",
         //language=C#
         @"
 mock
   .Setup (m => m.DoSomething (1))
-  .Callback();")]
+  .Callback (null);")]
     [TestCase (
         //language=C#
         @"
 mock
   .Expect (m => m.DoSomething (1))
   .Return (2)
-  .WhenCalled();",
+  .WhenCalled (null);",
         //language=C#
         @"
 mock
   .Setup (m => m.DoSomething (1))
   .Returns (2)
-  .Callback()
+  .Callback (null)
   .Verifiable();")]
     [TestCase (
         //language=C#
         @"
 mock
   .Expect (m => m.DoSomething())
-  .WhenCalled();",
+  .WhenCalled (null);",
         //language=C#
         @"
 mock
   .Setup (m => m.DoSomething())
-  .Callback()
+  .Callback (null)
   .Verifiable();")]
     [TestCase (
         //language=C#
         @"
 mock
   .Stub (m => m.DoSomething())
-  .Callback();",
+  .Callback (null);",
         //language=C#
         @"
 mock
   .Setup (m => m.DoSomething())
-  .Callback();")]
+  .Callback (null);")]
     [TestCase (
         //language=C#
         @"
 mock
   .Expect (m => m.DoSomething())
-  .Callback();",
+  .Callback (null);",
         //language=C#
         @"
 mock
   .Setup (m => m.DoSomething())
-  .Callback()
+  .Callback (null)
   .Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.Stub (mock, m => m.DoSomething());",
+        //language=C#
+        @"mock.Setup (m => m.DoSomething());")]
+    [TestCase (
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.Expect (mock, m => m.DoSomething ());",
+        //language=C#
+        @"mock.Setup (m => m.DoSomething()).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"
+Rhino.Mocks.RhinoMocksExtensions.Expect (mock, m => m.DoSomething (1))
+  .Return (2);",
+        //language=C#
+        @"
+mock
+  .Setup (m => m.DoSomething (1))
+  .Returns (2)
+  .Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"
+Rhino.Mocks.RhinoMocksExtensions.Stub (mock, m => m.DoSomething())
+  .WhenCalled (null);",
+        //language=C#
+        @"
+mock
+  .Setup (m => m.DoSomething())
+  .Callback (null);")]
     public void Rewrite_Setup (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context, true);
       _rewriter.Model = model;
       var actualNode = _rewriter.Visit (node);
 

@@ -13,12 +13,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
@@ -40,26 +38,26 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       var expectSymbols = rhinoMocksExtensionsCompilationSymbol.GetMembers ("Expect");
       var stubSymbols = rhinoMocksExtensionsCompilationSymbol.GetMembers ("Stub");
-      var returnIdentifierName = SyntaxFactory.IdentifierName ("Return");
-      var whenCalledIdentifierName = SyntaxFactory.IdentifierName ("WhenCalled");
+      var returnSymbols = rhinoMocksIMethodOptionsSymbol.GetMembers ("Return");
+      var whenCalledSymbols = rhinoMocksIMethodOptionsSymbol.GetMembers ("WhenCalled");
 
-      var identifierNames = GetAllRhinoMocksIdentifierNames (node, expectSymbols, stubSymbols, returnIdentifierName, whenCalledIdentifierName).ToList();
+      var nodesToBeReplaced = GetAllNodesToBeReplaced (node, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols).ToList();
 
-      var treeWithTrackedNodes = node.TrackNodes (identifierNames);
-      foreach (var identifierName in identifierNames)
+      var treeWithTrackedNodes = node.TrackNodes (nodesToBeReplaced);
+      foreach (var currentNode in nodesToBeReplaced)
       {
-        var trackedIdentifierName = treeWithTrackedNodes.GetCurrentNode (identifierName);
+        var trackedNode = treeWithTrackedNodes.GetCurrentNode (currentNode);
         treeWithTrackedNodes = treeWithTrackedNodes.ReplaceNode (
-            trackedIdentifierName,
+            trackedNode,
             ComputeReplacementNode (
-                identifierName,
+                currentNode,
                 expectSymbols,
                 stubSymbols,
-                returnIdentifierName,
-                whenCalledIdentifierName));
+                returnSymbols,
+                whenCalledSymbols));
       }
 
-      if (ContainsExceptMethodSymbol (identifierNames, expectSymbols))
+      if (ContainsExceptMethodSymbol (nodesToBeReplaced, expectSymbols))
       {
         return MoqSyntaxFactory.VerifiableMock (treeWithTrackedNodes.Expression)
             .WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine));
@@ -68,37 +66,40 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return treeWithTrackedNodes;
     }
 
-    private bool ContainsExceptMethodSymbol (List<IdentifierNameSyntax> identifierNames, IEnumerable<ISymbol> expectSymbols)
+    private bool ContainsExceptMethodSymbol (IEnumerable<SyntaxNode> nodes, IEnumerable<ISymbol> expectSymbols)
     {
-      return identifierNames
-          .Select (s => Model!.GetSymbolInfo (s).GetFirstOverloadOrDefault())
-          .Any (s => expectSymbols.Contains ((s as IMethodSymbol)?.ReducedFrom ?? s, SymbolEqualityComparer.Default));
+      return nodes
+          .Select (s => Model!.GetSymbolInfo (s).Symbol)
+          .Any (s => expectSymbols.Contains ((s as IMethodSymbol)?.ReducedFrom ?? s?.OriginalDefinition, SymbolEqualityComparer.Default));
     }
 
-    private IdentifierNameSyntax ComputeReplacementNode (
-        IdentifierNameSyntax originalNode,
+    private SyntaxNode ComputeReplacementNode (
+        SyntaxNode originalNode,
         IEnumerable<ISymbol> expectSymbols,
         IEnumerable<ISymbol> stubSymbols,
-        IdentifierNameSyntax returnIdentifierName,
-        IdentifierNameSyntax whenCalledIdentifierName)
+        IEnumerable<ISymbol> returnSymbols,
+        IEnumerable<ISymbol> whenCalledSymbols)
     {
-      var symbol = Model!.GetSymbolInfo (originalNode).GetFirstOverloadOrDefault() as IMethodSymbol;
-      if (stubSymbols.Contains (symbol?.ReducedFrom, SymbolEqualityComparer.Default))
-      {
-        return MoqSyntaxFactory.SetupIdentifierName();
-      }
-
-      if (expectSymbols.Contains (symbol?.ReducedFrom, SymbolEqualityComparer.Default))
+      var symbol = Model!.GetSymbolInfo (originalNode).Symbol as IMethodSymbol;
+      if (stubSymbols.Contains (symbol?.ReducedFrom, SymbolEqualityComparer.Default)
+          || expectSymbols.Contains (symbol?.ReducedFrom, SymbolEqualityComparer.Default))
       {
         return MoqSyntaxFactory.SetupIdentifierName().WithTrailingTrivia (SyntaxFactory.Space);
       }
 
-      if (returnIdentifierName.IsEquivalentTo (originalNode, true))
+      if (stubSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+          || expectSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default))
+      {
+        var (identifierName, lambdaExpression) = GetIdentifierNameAndLambdaExpression (originalNode);
+        return MoqSyntaxFactory.SetupExpression (identifierName, lambdaExpression);
+      }
+
+      if (returnSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default))
       {
         return MoqSyntaxFactory.ReturnsIdentifierName().WithTrailingTrivia (SyntaxFactory.Space);
       }
 
-      if (whenCalledIdentifierName.IsEquivalentTo (originalNode, true))
+      if (whenCalledSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default))
       {
         return MoqSyntaxFactory.CallbackIdentifierName().WithTrailingTrivia (SyntaxFactory.Space);
       }
@@ -106,21 +107,58 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       throw new InvalidOperationException ("Cannot resolve MethodSymbol from RhinoMocks Method");
     }
 
-    private IEnumerable<IdentifierNameSyntax> GetAllRhinoMocksIdentifierNames (
-        ExpressionStatementSyntax node,
-        ImmutableArray<ISymbol> expectSymbols,
-        ImmutableArray<ISymbol> stubSymbols,
-        IdentifierNameSyntax returnsIdentifierName,
-        IdentifierNameSyntax whenCalledIdentifierName)
+    private static (IdentifierNameSyntax, LambdaExpressionSyntax) GetIdentifierNameAndLambdaExpression (SyntaxNode originalNode)
+    {
+      if (originalNode is not InvocationExpressionSyntax invocationExpression)
+      {
+        throw new InvalidOperationException ("Node must be an InvocationExpression");
+      }
+
+      var identifierName = (IdentifierNameSyntax) invocationExpression.ArgumentList.Arguments.First()!.Expression;
+      var lambdaExpression = (LambdaExpressionSyntax) invocationExpression.ArgumentList.Arguments.Last()!.Expression;
+
+      return (identifierName, lambdaExpression)!;
+    }
+
+    private IEnumerable<SyntaxNode> GetAllNodesToBeReplaced (
+        SyntaxNode node,
+        IEnumerable<ISymbol> expectSymbols,
+        IEnumerable<ISymbol> stubSymbols,
+        IEnumerable<ISymbol> returnSymbols,
+        IEnumerable<ISymbol> whenCalledSymbols)
+
+    {
+      return GetAllRhinoMocksIdentifierNames (node, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols)
+          .Concat (GetAllStaticRhinoMocksMemberExpressions (node, expectSymbols, stubSymbols));
+    }
+
+    private IEnumerable<SyntaxNode> GetAllStaticRhinoMocksMemberExpressions (
+        SyntaxNode node,
+        IEnumerable<ISymbol> expectSymbols,
+        IEnumerable<ISymbol> stubSymbols)
+    {
+      return node.DescendantNodes()
+          .Where (s => s.IsKind (SyntaxKind.InvocationExpression))
+          .Where (
+              s => Model!.GetSymbolInfo (s).Symbol?.OriginalDefinition is IMethodSymbol methodSymbol
+                   && (stubSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) || expectSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default)));
+    }
+
+    private IEnumerable<SyntaxNode> GetAllRhinoMocksIdentifierNames (
+        SyntaxNode node,
+        IEnumerable<ISymbol> expectSymbols,
+        IEnumerable<ISymbol> stubSymbols,
+        IEnumerable<ISymbol> returnSymbols,
+        IEnumerable<ISymbol> whenCalledSymbols)
     {
       return node.DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.IdentifierName))
           .Where (
-              s => (Model!.GetSymbolInfo (s).GetFirstOverloadOrDefault() is IMethodSymbol methodSymbol
-                    && (expectSymbols.Contains (methodSymbol.ReducedFrom ?? methodSymbol, SymbolEqualityComparer.Default)
-                        || stubSymbols.Contains (methodSymbol.ReducedFrom ?? methodSymbol, SymbolEqualityComparer.Default))
-                    || returnsIdentifierName.IsEquivalentTo (s, true)
-                    || whenCalledIdentifierName.IsEquivalentTo (s, true)))
+              s => (Model!.GetSymbolInfo (s).Symbol is IMethodSymbol methodSymbol
+                    && (expectSymbols.Contains (methodSymbol.ReducedFrom, SymbolEqualityComparer.Default)
+                        || stubSymbols.Contains (methodSymbol.ReducedFrom, SymbolEqualityComparer.Default)
+                        || returnSymbols.Contains (methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)
+                        || whenCalledSymbols.Contains (methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default))))
           .Select (s => (IdentifierNameSyntax) s);
     }
   }

@@ -357,7 +357,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.IdentifierName ("Callback");
     }
 
-    public static SyntaxNode VerifiableMock (ExpressionSyntax expression)
+    public static ExpressionStatementSyntax VerifiableMock (ExpressionSyntax expression)
     {
       return SyntaxFactory.ExpressionStatement (
           SyntaxFactory.InvocationExpression (
@@ -365,6 +365,20 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                   SyntaxKind.SimpleMemberAccessExpression,
                   expression,
                   SyntaxFactory.IdentifierName ("Verifiable"))));
+    }
+
+    public static InvocationExpressionSyntax SetupExpression (IdentifierNameSyntax identifierName, LambdaExpressionSyntax lambdaExpression)
+    {
+      return SyntaxFactory.InvocationExpression (
+          SyntaxFactory.MemberAccessExpression (
+              SyntaxKind.SimpleMemberAccessExpression,
+              identifierName,
+              SyntaxFactory.IdentifierName ("Setup")
+                  .WithTrailingTrivia (SyntaxFactory.Space)),
+          SyntaxFactory.ArgumentList (
+              SyntaxFactory.SingletonSeparatedList (
+                  SyntaxFactory.Argument (
+                      lambdaExpression))));
     }
   }
 }

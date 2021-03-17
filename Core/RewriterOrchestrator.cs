@@ -27,11 +27,11 @@ namespace RhinoMocksToMoqRewriter.Core
     private static readonly List<RewriterBase> s_rewriters =
         new List<RewriterBase>
         {
-            new MockSetupRewriter()
-            // new FieldRewriter (new Formatter()),
-            // new MethodRewriter(),
-            // new ArgumentRewriter (new Formatter()),
-            // new MockInstantiationRewriter (new Formatter())
+            new FieldRewriter (new Formatter()),
+            new MockSetupRewriter(),
+            new MethodRewriter(),
+            new ArgumentRewriter (new Formatter()),
+            new MockInstantiationRewriter (new Formatter())
         };
 
     public static async Task RewriteAsync (IEnumerable<CSharpCompilation> compilations)
