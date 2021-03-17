@@ -134,7 +134,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       return expressionStatements
           .Where (
-              s => Model!.GetSymbolInfo (s.Expression).GetFirstOverloadOrDefault() is IMethodSymbol methodSymbol
+              s => Model!.GetSymbolInfo (s.Expression).Symbol is IMethodSymbol methodSymbol
                    && (verifyAllMethodSymbol.Equals (methodSymbol, SymbolEqualityComparer.Default)
                        || verifyAllExpectationsMethodSymbol.Equals (methodSymbol.ReducedFrom ?? methodSymbol, SymbolEqualityComparer.Default)));
     }
@@ -151,7 +151,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Where (s => mockRepositoryIdentifierName.IsEquivalentTo (s.Right.GetFirstIdentifierName(), false))
           .Where (
               s => mockSymbols.Contains (
-                  Model.GetSymbolInfo (((InvocationExpressionSyntax) s.Right).Expression).GetFirstOverloadOrDefault()!.OriginalDefinition,
+                  Model.GetSymbolInfo (((InvocationExpressionSyntax) s.Right).Expression).Symbol!.OriginalDefinition,
                   SymbolEqualityComparer.Default))
           .Where (s => s.Left.IsKind (SyntaxKind.IdentifierName))
           .Select (s => ((IdentifierNameSyntax) s.Left).Identifier)

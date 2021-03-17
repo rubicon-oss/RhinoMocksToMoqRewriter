@@ -30,9 +30,12 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
             //language=C#
             ClassContext =
                 @"
-private string _mock1;
-private string _mock2;
-private string _mock3;
+private ITestInterface _mock1;
+private ITestInterface _mock2;
+private ITestInterface _mock3;
+private ITestInterface _mock4;
+private ITestInterface _mock5;
+private ITestInterface _mock6;
 private MockRepository _mockRepository1;
 private MockRepository _mockRepository2;",
             //language=C#
@@ -40,13 +43,13 @@ private MockRepository _mockRepository2;",
                 @"
 _mockRepository1 = new MockRepository();
 _mockRepository2 = new MockRepository();
-var mock = MockRepository.GenerateMock<string>();
-_mock1 = _mockRepository1.StrictMock<string>();
-_mock2 = _mockRepository1.PartialMock<string>();
-_mock3 = _mockRepository1.PartialMultiMock<string>();
-_mock4 = _mockRepository1.DynamicMock<string>();
-_mock5 = _mockRepository2.StrictMock<string>();
-_mock6 = _mockRepository2.StrictMock<string>();"
+var mock = MockRepository.GenerateMock<ITestInterface>();
+_mock1 = _mockRepository1.StrictMock<ITestInterface>();
+_mock2 = _mockRepository1.PartialMock<ITestInterface>();
+_mock3 = _mockRepository1.PartialMultiMock<ITestInterface>();
+_mock4 = _mockRepository1.DynamicMock<ITestInterface>();
+_mock5 = _mockRepository2.StrictMock<ITestInterface>();
+_mock6 = _mockRepository2.StrictMock<ITestInterface>();"
         };
 
     [SetUp]
@@ -117,7 +120,7 @@ _mock6.Verify();")]
     public void Rewrite_MethodDeclaration (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context, true);
       _rewriter.Model = model;
       var actualNode = node.Accept (_rewriter);
 

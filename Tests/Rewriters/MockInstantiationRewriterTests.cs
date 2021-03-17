@@ -25,6 +25,15 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
     private MockInstantiationRewriter _rewriter;
     private Mock<IFormatter> _formatter;
 
+    private readonly Context _context =
+        new Context
+        {
+            //language=C#
+            ClassContext = @"private ITestInterface _mock;",
+            //language=C#
+            MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
+        };
+
     [SetUp]
     public void SetUp ()
     {
@@ -35,52 +44,52 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
     }
 
     [Test]
-    [TestCase ("_mock = MockRepository.GenerateMock<string>();", "_mock = new Mock<string>();")]
-    [TestCase ("_mock = MockRepository.GenerateMock<string, IDisposable>();", "_mock = new Mock<string>();")]
-    [TestCase ("_mock = MockRepository.GenerateMock<string, IDisposable, IConvertible>();", "_mock = new Mock<string>();")]
-    [TestCase ("_mock = MockRepository.GenerateStrictMock<string>();", "_mock = new Mock<string> (MockBehavior.Strict);")]
-    [TestCase ("_mock = MockRepository.GenerateStrictMock<string> (42);", "_mock = new Mock<string> (MockBehavior.Strict, 42);")]
-    [TestCase ("_mock = MockRepository.GenerateStrictMock<string, IDisposable>();", "_mock = new Mock<string> (MockBehavior.Strict);")]
-    [TestCase ("_mock = MockRepository.GenerateStub<string>();", "_mock = new Mock<string>();")]
-    [TestCase ("_symbol = GetSymbolInfo();", "_symbol = GetSymbolInfo();")]
-    [TestCase ("_mock = MockRepository.GenerateMock<string>();", "_mock = new Mock<string>();")]
-    [TestCase ("_mock = MockRepository.GenerateMock<string> (42, 32);", "_mock = new Mock<string> (42, 32);")]
+    [TestCase ("_mock = MockRepository.GenerateMock<ITestInterface>();", "_mock = new Mock<ITestInterface>();")]
+    [TestCase ("_mock = MockRepository.GenerateMock<ITestInterface, IDisposable>();", "_mock = new Mock<ITestInterface>();")]
+    [TestCase ("_mock = MockRepository.GenerateMock<ITestInterface, IDisposable, IConvertible>();", "_mock = new Mock<ITestInterface>();")]
+    [TestCase ("_mock = MockRepository.GenerateStrictMock<ITestInterface>();", "_mock = new Mock<ITestInterface> (MockBehavior.Strict);")]
+    [TestCase ("_mock = MockRepository.GenerateStrictMock<ITestInterface> (42);", "_mock = new Mock<ITestInterface> (MockBehavior.Strict, 42);")]
+    [TestCase ("_mock = MockRepository.GenerateStrictMock<ITestInterface, IDisposable>();", "_mock = new Mock<ITestInterface> (MockBehavior.Strict);")]
+    [TestCase ("_mock = MockRepository.GenerateStub<ITestInterface>();", "_mock = new Mock<ITestInterface>();")]
+    [TestCase ("Console.WriteLine(1);", "Console.WriteLine(1);")]
+    [TestCase ("_mock = MockRepository.GenerateMock<ITestInterface>();", "_mock = new Mock<ITestInterface>();")]
+    [TestCase ("_mock = MockRepository.GenerateMock<ITestInterface> (42, 32);", "_mock = new Mock<ITestInterface> (42, 32);")]
     [TestCase (
-        @"      _mock = MockRepository.GenerateMock<string> (
+        @"      _mock = MockRepository.GenerateMock<ITestInterface> (
           42,
           32,
           43);",
-        @"_mock = new Mock<string> (
+        @"_mock = new Mock<ITestInterface> (
           42,
           32,
           43);")]
     [TestCase (
-        @"      _mock = MockRepository.GenerateStrictMock<string> (
+        @"      _mock = MockRepository.GenerateStrictMock<ITestInterface> (
           42,
           32,
           43);",
-        @"_mock = new Mock<string> (
+        @"_mock = new Mock<ITestInterface> (
           MockBehavior.Strict,42,
           32,
           43);")]
     [TestCase (
-        @"_mock = MockRepository.GenerateStrictMock<string> (
+        @"_mock = MockRepository.GenerateStrictMock<ITestInterface> (
     42,
     32,
     43);",
-        @"_mock = new Mock<string> (
+        @"_mock = new Mock<ITestInterface> (
     MockBehavior.Strict,42,
     32,
     43);")]
     [TestCase (
-        @"_mock = MockRepository.GenerateMock<string> (MockRepository.GenerateStrictMock<string>());",
-        @"_mock = new Mock<string> (new Mock<string> (MockBehavior.Strict));")]
-    [TestCase ("_mock = MockRepository.GeneratePartialMock<string>();", "_mock = new Mock<string>(){ CallBase = true };")]
-    [TestCase ("_mock = MockRepository.GeneratePartialMock<string> (1, 2);", "_mock = new Mock<string>(1, 2){ CallBase = true };")]
+        @"_mock = MockRepository.GenerateMock<ITestInterface> (MockRepository.GenerateStrictMock<ITestInterface>());",
+        @"_mock = new Mock<ITestInterface> (new Mock<ITestInterface> (MockBehavior.Strict));")]
+    [TestCase ("_mock = MockRepository.GeneratePartialMock<ITestInterface>();", "_mock = new Mock<ITestInterface>(){ CallBase = true };")]
+    [TestCase ("_mock = MockRepository.GeneratePartialMock<ITestInterface> (1, 2);", "_mock = new Mock<ITestInterface>(1, 2){ CallBase = true };")]
     public void Rewrite_ExpressionStatement (string source, string expected)
     {
-      var (model, actualNode) = CompiledSourceFileProvider.CompileExpressionStatement (source);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatement (expected);
+      var (model, actualNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context, true);
       _rewriter.Model = model;
       var newNode = actualNode.Accept (_rewriter);
 
@@ -89,29 +98,29 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
     }
 
     [Test]
-    [TestCase ("var mock = MockRepository.GenerateStub<string>();", "var mock = new Mock<string>();")]
+    [TestCase ("var anotherMock = MockRepository.GenerateStub<ITestInterface>();", "var anotherMock = new Mock<ITestInterface>();")]
     [TestCase (
-        @"      var mock = MockRepository.GenerateStrictMock<string> (
+        @"      var anotherMock = MockRepository.GenerateStrictMock<ITestInterface> (
           42,
           32,
           43);",
-        @"var mock = new Mock<string> (
+        @"var anotherMock = new Mock<ITestInterface> (
           MockBehavior.Strict,42,
           32,
           43);")]
-    [TestCase ("var mock = MockRepository.GeneratePartialMock<string>();", "var mock = new Mock<string>(){ CallBase = true };")]
-    [TestCase ("var mock = MockRepository.GeneratePartialMock<string> (1, 2);", "var mock = new Mock<string>(1, 2) { CallBase = true };")]
+    [TestCase ("var anotherMock = MockRepository.GeneratePartialMock<ITestInterface>();", "var anotherMock = new Mock<ITestInterface>(){ CallBase = true };")]
+    [TestCase ("var anotherMock = MockRepository.GeneratePartialMock<ITestInterface> (1, 2);", "var anotherMock = new Mock<ITestInterface>(1, 2) { CallBase = true };")]
     [TestCase (
-        @"var mock = MockRepository.GeneratePartialMock<string>(
+        @"var anotherMock = MockRepository.GeneratePartialMock<ITestInterface>(
     1,
     2);",
-        @"var mock = new Mock<string>(
+        @"var anotherMock = new Mock<ITestInterface>(
     1,
     2) { CallBase = true };")]
     public void Rewrite_LocalDeclarationStatement (string source, string expected)
     {
-      var (model, actualNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatement (source);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatement (expected);
+      var (model, actualNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatementWithContext (source, _context);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatementWithContext (expected, _context, true);
       _rewriter.Model = model;
       var newNode = actualNode.Accept (_rewriter);
 
@@ -120,23 +129,25 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
     }
 
     [Test]
-    [TestCase ("private Mock<string> _mock = MockRepository.GenerateMock<string>();", "private Mock<string> _mock = new Mock<string>();")]
     [TestCase (
-        @"    public Mock<string> Mock = MockRepository.GenerateMock<string> (
+        "private ITestInterface _anotherMock = MockRepository.GenerateMock<ITestInterface>();",
+        "private ITestInterface _anotherMock = new Mock<ITestInterface>();")]
+    [TestCase (
+        @"public ITestInterface Mock = MockRepository.GenerateMock<ITestInterface> (
         42,
         32,
         43);",
-        @"public Mock<string> Mock = new Mock<string> (
+        @"public ITestInterface Mock = new Mock<ITestInterface> (
         42,
         32,
         43);")]
     [TestCase (
-        "private Mock<string> _mock = MockRepository.GeneratePartialMock<string>();",
-        "private Mock<string> _mock = new Mock<string>(){ CallBase = true };")]
+        "private ITestInterface _anotherMock = MockRepository.GeneratePartialMock<ITestInterface>();",
+        "private ITestInterface _anotherMock = new Mock<ITestInterface>(){ CallBase = true };")]
     public void Rewrite_FieldDeclarationStatement (string source, string expected)
     {
-      var (model, actualNode) = CompiledSourceFileProvider.CompileFieldDeclaration (source);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileFieldDeclaration (expected);
+      var (model, actualNode) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (source, _context);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (expected, _context, true);
       _rewriter.Model = model;
       var newNode = actualNode.Accept (_rewriter);
 

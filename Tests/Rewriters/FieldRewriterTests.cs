@@ -35,8 +35,9 @@ void DoSomething();
 void DoSomething (int b);
 List<ITestInterface> DoSomething (int b, int c);
 void DoSomething (int b, ITestInterface c);
-ITestInterface DoSomething (int b);
-ITestInterface DoSomething (bool b);",
+ITestInterface DoSomething (string b);
+ITestInterface DoSomething (bool b);
+ITestInterface DoSomething (ITestInterface b);",
             //language=C#
             ClassContext =
                 @"
@@ -86,13 +87,13 @@ _mockI = MockRepository.GenerateMock<ITestInterface>();"
         @"private Mock<ITestInterface> _mockB, _mockC, _mockD;")]
     [TestCase (
         //language=C#
-        @"private ITestInterface _mockE = MockRepository.GenerateMock<IA>();",
+        @"private ITestInterface _mockE = MockRepository.GenerateMock<ITestInterface>();",
         //language=C#
-        @"private Mock<ITestInterface> _mockE = MockRepository.GenerateMock<IA>();")]
+        @"private Mock<ITestInterface> _mockE = MockRepository.GenerateMock<ITestInterface>();")]
     public void Rewrite_MockFieldDeclaration (string source, string expected)
     {
-      var (model, node) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (source, _context);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (expected, _context);
+      var (model, node) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (source, _context, true);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (expected, _context, true);
       _rewriter.Model = model;
       var actualNode = _rewriter.Visit (node);
 
@@ -118,9 +119,9 @@ _mockI = MockRepository.GenerateMock<ITestInterface>();"
         @"rhinoMock.DoSomething (1, _mock.Object);")]
     [TestCase (
         //language=C#
-        @"rhinoMock.DoSomething (1, _mock.DoSomething(2));",
+        @"rhinoMock.DoSomething (1, _mock.DoSomething(""anyString""));",
         //language=C#
-        @"rhinoMock.DoSomething (1, _mock.Object.DoSomething(2));")]
+        @"rhinoMock.DoSomething (1, _mock.Object.DoSomething(""anyString"");")]
     [TestCase (
         //language=C#
         @"rhinoMock.DoSomething (1, _mock.DoSomething(_mock));",
@@ -128,8 +129,8 @@ _mockI = MockRepository.GenerateMock<ITestInterface>();"
         @"rhinoMock.DoSomething (1, _mock.Object.DoSomething(_mock.Object));")]
     public void Rewrite_MockArgument (string source, string expected)
     {
-      var (model, node) = CompiledSourceFileProvider.CompileArgumentListWithContext (source, _context);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileArgumentListWithContext (expected, _context);
+      var (model, node) = CompiledSourceFileProvider.CompileArgumentListWithContext (source, _context, true);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileArgumentListWithContext (expected, _context, true);
       _rewriter.Model = model;
       var actualNode = _rewriter.Visit (node);
 
@@ -175,8 +176,8 @@ _mockI = MockRepository.GenerateMock<ITestInterface>();"
         "Console.WriteLine (1);")]
     public void Rewrite_MockInvocationExpression (string source, string expected)
     {
-      var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
+      var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context, true);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context, true);
       _rewriter.Model = model;
       var actualNode = _rewriter.Visit (node);
 

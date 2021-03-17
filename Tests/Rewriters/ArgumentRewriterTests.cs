@@ -48,8 +48,10 @@ private bool _cBool;",
                 //language=C#
                 @"
 var mock = MockRepository.GenerateMock<ITestInterface>();
-int a = new[] { 1, 2, 3, 4 };
-int b = new[] { 1, 2 };"
+int[] aArray = new[] { 1, 2, 3, 4 };
+int[] bArray = new[] { 1, 2 };
+int a = 1;
+int b = 2;"
         };
 
     [SetUp]
@@ -285,7 +287,7 @@ int b = new[] { 1, 2 };"
     }
 
     [Test]
-    [TestCase ("mock.DoSomething (Arg<int[]>.List.ContainsAll (a));", "mock.DoSomething (It.Is<int[]> (param => a.All(param.Contains)));")]
+    [TestCase ("mock.DoSomething (Arg<int[]>.List.ContainsAll (aArray));", "mock.DoSomething (It.Is<int[]> (param => aArray.All(param.Contains)));")]
     [TestCase ("mock.DoSomething (Arg<int[]>.List.ContainsAll (new[] {1, 2, 3}));", "mock.DoSomething (It.Is<int[]> (param => new[] {1, 2, 3}.All(param.Contains)));")]
     public void Rewrite_ArgListContainsAll (string source, string expected)
     {

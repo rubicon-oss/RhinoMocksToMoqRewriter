@@ -22,12 +22,21 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
   {
     private readonly IArgumentRewriteStrategy _strategy = new ArgIsNotSameArgumentRewriteStrategy();
 
+    private readonly Context _context =
+        new Context
+        {
+            //language=C#
+            InterfaceContext = @"void DoSomething (int b);",
+            //language=C#
+            MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
+        };
+
     [Test]
-    [TestCase ("mock.DoSomething (Arg<int>.Is.NoSame (2));", "mock.DoSomething (It.Is<int> (param => param != 2);")]
+    [TestCase ("mock.DoSomething (Arg<int>.Is.NotSame (2));", "mock.DoSomething (It.Is<int> (param => param != 2));")]
     public void Rewrite_ArgIsNotSame (string source, string expected)
     {
-      var (_, node) = CompiledSourceFileProvider.CompileArgument (source);
-      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgument (expected);
+      var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
+      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgumentWithContext (expected, _context);
       var actualNode = _strategy.Rewrite (node);
 
       Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));

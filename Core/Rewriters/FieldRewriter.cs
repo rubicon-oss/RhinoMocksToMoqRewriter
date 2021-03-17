@@ -140,7 +140,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
       }
 
-      var methodSymbol = Model.GetSymbolInfo (node).GetFirstOverloadOrDefault() as IMethodSymbol;
+      var methodSymbol = Model.GetSymbolInfo (node).Symbol as IMethodSymbol;
       if (methodSymbol == null)
       {
         return (InvocationExpressionSyntax) base.VisitInvocationExpression (node)!;
@@ -215,7 +215,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Where (
               s =>
                   s.Initializer != null &&
-                  Model.GetSymbolInfo (s.Initializer.Value).GetFirstOverloadOrDefault() is IMethodSymbol symbol &&
+                  Model.GetSymbolInfo (s.Initializer.Value).Symbol is IMethodSymbol symbol &&
                   generateMockMethodSymbols.Contains (
                       symbol.OriginalDefinition,
                       SymbolEqualityComparer.Default))
@@ -233,7 +233,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Select (s => (AssignmentExpressionSyntax) s.Expression)
           .Where (
               s =>
-                  Model.GetSymbolInfo (s.Right).GetFirstOverloadOrDefault() is IMethodSymbol symbol &&
+                  Model.GetSymbolInfo (s.Right).Symbol is IMethodSymbol symbol &&
                   generateMockMethodSymbols.Contains (
                       symbol.OriginalDefinition,
                       SymbolEqualityComparer.Default))
