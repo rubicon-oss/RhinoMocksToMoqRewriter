@@ -12,6 +12,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -102,6 +103,18 @@ namespace RhinoMocksToMoqRewriter.Tests
           .LastOrDefault();
 
       return (semanticModel, expression);
+    }
+
+    public static (SemanticModel, IEnumerable<ExpressionStatementSyntax>) CompileExpressionStatementsWithContext (
+        string source,
+        Context context,
+        bool ignoreErrors = false)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
+      var expressions = syntaxNode.DescendantNodes()
+          .OfType<ExpressionStatementSyntax>();
+
+      return (semanticModel, expressions);
     }
 
     public static (SemanticModel, MethodDeclarationSyntax) CompileMethodDeclarationWithContext (string source, Context context, bool ignoreErrors = false)

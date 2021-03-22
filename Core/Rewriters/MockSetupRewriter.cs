@@ -75,10 +75,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private SyntaxNode ComputeReplacementNode (
         SyntaxNode originalNode,
-        IEnumerable<ISymbol> expectSymbols,
-        IEnumerable<ISymbol> stubSymbols,
-        IEnumerable<ISymbol> returnSymbols,
-        IEnumerable<ISymbol> whenCalledSymbols)
+        IReadOnlyCollection<ISymbol> expectSymbols,
+        IReadOnlyCollection<ISymbol> stubSymbols,
+        IReadOnlyCollection<ISymbol> returnSymbols,
+        IReadOnlyCollection<ISymbol> whenCalledSymbols)
     {
       var symbol = Model!.GetSymbolInfo (originalNode).Symbol as IMethodSymbol;
       if (stubSymbols.Contains (symbol?.ReducedFrom, SymbolEqualityComparer.Default)
@@ -122,10 +122,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private IEnumerable<SyntaxNode> GetAllNodesToBeReplaced (
         SyntaxNode node,
-        IEnumerable<ISymbol> expectSymbols,
-        IEnumerable<ISymbol> stubSymbols,
-        IEnumerable<ISymbol> returnSymbols,
-        IEnumerable<ISymbol> whenCalledSymbols)
+        IReadOnlyCollection<ISymbol> expectSymbols,
+        IReadOnlyCollection<ISymbol> stubSymbols,
+        IReadOnlyCollection<ISymbol> returnSymbols,
+        IReadOnlyCollection<ISymbol> whenCalledSymbols)
 
     {
       return GetAllRhinoMocksIdentifierNames (node, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols)
@@ -134,8 +134,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private IEnumerable<SyntaxNode> GetAllStaticRhinoMocksMemberExpressions (
         SyntaxNode node,
-        IEnumerable<ISymbol> expectSymbols,
-        IEnumerable<ISymbol> stubSymbols)
+        IReadOnlyCollection<ISymbol> expectSymbols,
+        IReadOnlyCollection<ISymbol> stubSymbols)
     {
       return node.DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.InvocationExpression))
@@ -146,10 +146,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private IEnumerable<SyntaxNode> GetAllRhinoMocksIdentifierNames (
         SyntaxNode node,
-        IEnumerable<ISymbol> expectSymbols,
-        IEnumerable<ISymbol> stubSymbols,
-        IEnumerable<ISymbol> returnSymbols,
-        IEnumerable<ISymbol> whenCalledSymbols)
+        IReadOnlyCollection<ISymbol> expectSymbols,
+        IReadOnlyCollection<ISymbol> stubSymbols,
+        IReadOnlyCollection<ISymbol> returnSymbols,
+        IReadOnlyCollection<ISymbol> whenCalledSymbols)
     {
       return node.DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.IdentifierName))
