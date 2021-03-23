@@ -12,7 +12,6 @@
 //
 
 using System;
-using System.Linq;
 using NUnit.Framework;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
@@ -208,21 +207,10 @@ Rhino.Mocks.RhinoMocksExtensions.Stub (mock, m => m.DoSomething())
 mock
   .Setup (m => m.DoSomething())
   .Callback (null);")]
-    public void Rewrite_Setup (string source, string expected)
-    {
-      var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context, true);
-      _rewriter.Model = model;
-      var actualNode = _rewriter.Visit (node);
-
-      Assert.NotNull (actualNode);
-      Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
-    }
-
     [TestCase (
         //language=C#
         @"
-mock.Do(
+mock.Do (
   () =>
   {
     mock
@@ -231,20 +219,17 @@ mock.Do(
   });",
         //language=C#
         @"
-mock.Do(
+mock.Do (
   () =>
   {
     mock
-      .Setup (m => m.DoSomething (1)).Return (2);
+      .Setup (m => m.DoSomething (1)).Returns (2).Verifiable();
     return mock;
   });")]
-    public void Rewrite_SetupWithBaseCall (string source, string expected)
+    public void Rewrite_Setup (string source, string expected)
     {
-      var (model, nodes) = CompiledSourceFileProvider.CompileExpressionStatementsWithContext (source, _context);
-      var (_, expectedNodes) = CompiledSourceFileProvider.CompileExpressionStatementsWithContext (expected, _context, true);
-      var node = nodes.ToArray()[^2];
-      var expectedNode = expectedNodes.ToArray()[^2];
-
+      var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context, true);
       _rewriter.Model = model;
       var actualNode = _rewriter.Visit (node);
 
