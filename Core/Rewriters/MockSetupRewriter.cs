@@ -33,7 +33,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var rhinoMocksIMethodOptionsSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Interfaces.IMethodOptions`1");
       if (rhinoMocksExtensionsCompilationSymbol == null || rhinoMocksIMethodOptionsSymbol == null)
       {
-        throw new ArgumentException ("Rhino.Mocks cannot be found.");
+        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
       }
 
       var expectSymbols = rhinoMocksExtensionsCompilationSymbol.GetMembers ("Expect");
