@@ -32,6 +32,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
             InterfaceContext =
                 @"
 void DoSomething();
+int DoSomething(string a);
 void DoSomething (int b);
 List<ITestInterface> DoSomething (int b, int c);
 void DoSomething (int b, ITestInterface c);
@@ -156,9 +157,9 @@ _mockI = MockRepository.GenerateMock<ITestInterface>();"
         @"_mock.Object.DoSomething (1, 4).First();")]
     [TestCase (
         //language=C#
-        "_mock.DoSomething (false).DoSomething();",
+        @"_mock.DoSomething (false).DoSomething();",
         //language=C#
-        "_mock.Object.DoSomething (false).DoSomething();")]
+        @"_mock.Object.DoSomething (false).DoSomething();")]
     [TestCase (
         //language=C#
         @"_mock.DoSomething (1, 4).First().DoSomething();",
@@ -166,14 +167,59 @@ _mockI = MockRepository.GenerateMock<ITestInterface>();"
         @"_mock.Object.DoSomething (1, 4).First().DoSomething();")]
     [TestCase (
         //language=C#
-        "_mock.Verify();",
+        @"_mock.Verify();",
         //language=C#
-        "_mock.Verify();")]
+        @"_mock.Verify();")]
     [TestCase (
         //language=C#
-        "Console.WriteLine (1);",
+        @"Console.WriteLine (1);",
         //language=C#
-        "Console.WriteLine (1);")]
+        @"Console.WriteLine (1);")]
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (m => m.DoSomething());",
+        //language=C#
+        @"_mock.Expect (m => m.DoSomething());")]
+    [TestCase (
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.Expect (rhinoMock, m => m.DoSomething());",
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.Expect (rhinoMock, m => m.DoSomething());")]
+    [TestCase (
+        //language=C#
+        @"_mock.Stub (m => m.DoSomething());",
+        //language=C#
+        @"_mock.Stub (m => m.DoSomething());")]
+    [TestCase (
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.Stub (rhinoMock, m => m.DoSomething (""anyString"")).Return (1);",
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.Stub (rhinoMock, m => m.DoSomething (""anyString"")).Return (1);")]
+    [TestCase (
+        //language=C#
+        @"_mock.VerifyAllExpectations();",
+        //language=C#
+        @"_mock.VerifyAllExpectations();")]
+    [TestCase (
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.VerifyAllExpectations (rhinoMock);",
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.VerifyAllExpectations (rhinoMock);")]
+    [TestCase (
+        //language=C#
+        @"rhinoMock.Replay();",
+        //language=C#
+        @"rhinoMock.Replay();")]
+    [TestCase (
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.Replay (rhinoMock);",
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.Replay (rhinoMock);")]
+    [TestCase (
+        //language=C#
+        @"_mock.Verify();",
+        //language=C#
+        @"_mock.Verify();")]
     public void Rewrite_MockInvocationExpression (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context, true);

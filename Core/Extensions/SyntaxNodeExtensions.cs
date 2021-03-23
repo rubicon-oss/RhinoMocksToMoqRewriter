@@ -62,18 +62,16 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
 
     public static IdentifierNameSyntax GetFirstIdentifierName (this SyntaxNode node)
     {
-      var identifierName = node.DescendantNodes()
-          .FirstOrDefault (s => s.IsKind (SyntaxKind.IdentifierName)) as IdentifierNameSyntax;
-
+      var identifierName = GetFirstIdentifierNameOrDefault (node);
       return identifierName ?? throw new InvalidOperationException ("Node must have an IdentifierName");
     }
 
-    public static IdentifierNameSyntax GetLastIdentifierName (this SyntaxNode node)
+    public static IdentifierNameSyntax? GetFirstIdentifierNameOrDefault (this SyntaxNode node)
     {
       var identifierName = node.DescendantNodes()
-          .LastOrDefault (s => s.IsKind (SyntaxKind.IdentifierName)) as IdentifierNameSyntax;
+          .FirstOrDefault (s => s.IsKind (SyntaxKind.IdentifierName)) as IdentifierNameSyntax;
 
-      return identifierName ?? throw new InvalidOperationException ("Node must have an IdentifierName");
+      return identifierName;
     }
   }
 }

@@ -106,11 +106,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       }
 
       var fieldSymbol = Model.GetSymbolInfo (node.Expression).Symbol;
-      if (fieldSymbol == null)
-      {
-        throw new InvalidOperationException ("Unable to get FieldSymbol from FieldDeclaration");
-      }
-
       if (_generateMockFieldSymbols == null)
       {
         throw new InvalidOperationException ("FieldSymbolList must not be null!");
@@ -134,25 +129,33 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         throw new InvalidOperationException ("SemanticModel must not be null!");
       }
 
-      var mockRepositorySymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
-      if (mockRepositorySymbol == null)
+      var rhinoMocksExtensionsCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.RhinoMocksExtensions");
+      var rhinoMocksMockRepositoryCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
+      if (rhinoMocksExtensionsCompilationSymbol == null || rhinoMocksMockRepositoryCompilationSymbol == null)
       {
         throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
       }
 
+      var rhinoMocksSymbols = GetRhinoMocksSymbolsFromRhinoMocksCompilationSymbols (rhinoMocksExtensionsCompilationSymbol, rhinoMocksMockRepositoryCompilationSymbol)
+          .ToList();
       var methodSymbol = Model.GetSymbolInfo (node).Symbol as IMethodSymbol;
       if (methodSymbol == null)
       {
         return (InvocationExpressionSyntax) base.VisitInvocationExpression (node)!;
       }
 
-      var isRhinoMocksMethod = SymbolEqualityComparer.Default.Equals (methodSymbol.ContainingType, mockRepositorySymbol);
-      if (isRhinoMocksMethod)
+      if (rhinoMocksSymbols.Contains (methodSymbol.ReducedFrom ?? methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)
+          || rhinoMocksSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default))
       {
         return node;
       }
 
-      var identifierName = node.GetFirstIdentifierName();
+      var identifierName = node.GetFirstIdentifierNameOrDefault();
+      if (identifierName == null)
+      {
+        return node;
+      }
+
       var fieldSymbol = Model.GetSymbolInfo (identifierName).Symbol;
       if (fieldSymbol == null)
       {
@@ -172,6 +175,18 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var nodeWithObjectExpression = MoqSyntaxFactory.MockObjectExpression (identifierName);
 
       return node.ReplaceNode (identifierName, nodeWithObjectExpression);
+    }
+
+    private static IEnumerable<ISymbol> GetRhinoMocksSymbolsFromRhinoMocksCompilationSymbols (
+        INamedTypeSymbol rhinoMocksExtensionsCompilationSymbol,
+        INamedTypeSymbol rhinoMocksMockRepositoryCompilationSymbol)
+    {
+      return rhinoMocksExtensionsCompilationSymbol.GetMembers ("Expect")
+          .Concat (rhinoMocksExtensionsCompilationSymbol.GetMembers ("Stub"))
+          .Concat (rhinoMocksMockRepositoryCompilationSymbol.GetMembers ("VerifyAll"))
+          .Concat (rhinoMocksExtensionsCompilationSymbol.GetMembers ("VerifyAllExpectations"))
+          .Concat (rhinoMocksExtensionsCompilationSymbol.GetMembers ("Replay"))
+          .Concat (rhinoMocksMockRepositoryCompilationSymbol.GetMembers ("ReplayAll"));
     }
 
     private IEnumerable<IFieldSymbol> GetFieldSymbols (SyntaxNode node)
@@ -237,6 +252,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                   generateMockMethodSymbols.Contains (
                       symbol.OriginalDefinition,
                       SymbolEqualityComparer.Default))
+          .Where (s => Model.GetSymbolInfo (s.Left).Symbol is IFieldSymbol)
           .Select (s => (IFieldSymbol) Model.GetSymbolInfo (s.Left).Symbol!);
     }
   }
