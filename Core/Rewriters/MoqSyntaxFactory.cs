@@ -341,5 +341,44 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           firstIdentifierName,
           SyntaxFactory.IdentifierName ("Object"));
     }
+
+    public static IdentifierNameSyntax SetupIdentifierName ()
+    {
+      return SyntaxFactory.IdentifierName ("Setup");
+    }
+
+    public static IdentifierNameSyntax ReturnsIdentifierName ()
+    {
+      return SyntaxFactory.IdentifierName ("Returns");
+    }
+
+    public static IdentifierNameSyntax CallbackIdentifierName ()
+    {
+      return SyntaxFactory.IdentifierName ("Callback");
+    }
+
+    public static ExpressionStatementSyntax VerifiableMock (ExpressionSyntax expression)
+    {
+      return SyntaxFactory.ExpressionStatement (
+          SyntaxFactory.InvocationExpression (
+              SyntaxFactory.MemberAccessExpression (
+                  SyntaxKind.SimpleMemberAccessExpression,
+                  expression,
+                  SyntaxFactory.IdentifierName ("Verifiable"))));
+    }
+
+    public static InvocationExpressionSyntax SetupExpression (IdentifierNameSyntax identifierName, LambdaExpressionSyntax lambdaExpression)
+    {
+      return SyntaxFactory.InvocationExpression (
+          SyntaxFactory.MemberAccessExpression (
+              SyntaxKind.SimpleMemberAccessExpression,
+              identifierName,
+              SyntaxFactory.IdentifierName ("Setup")
+                  .WithTrailingTrivia (SyntaxFactory.Space)),
+          SyntaxFactory.ArgumentList (
+              SyntaxFactory.SingletonSeparatedList (
+                  SyntaxFactory.Argument (
+                      lambdaExpression))));
+    }
   }
 }
