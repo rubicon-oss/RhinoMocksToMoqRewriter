@@ -72,7 +72,8 @@ namespace RhinoMocksToMoqRewriter.Core
       {
         await File.WriteAllTextAsync (
             syntaxTree.FilePath!,
-            (await syntaxTree.GetRootAsync()).ToFullString());
+            (await syntaxTree.GetRootAsync()).ToFullString(),
+            syntaxTree.Encoding!);
       }
     }
   }
