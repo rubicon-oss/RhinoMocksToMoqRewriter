@@ -380,5 +380,28 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                   SyntaxFactory.Argument (
                       lambdaExpression))));
     }
+
+    public static UsingDirectiveSyntax MoqUsingDirective ()
+    {
+      return SyntaxFactory.UsingDirective (
+          SyntaxFactory.IdentifierName ("Moq")
+              .WithLeadingTrivia (SyntaxFactory.Space));
+    }
+
+    public static UsingDirectiveSyntax RhinoMocksRepositoryAlias ()
+    {
+      return SyntaxFactory.UsingDirective (
+              SyntaxFactory.QualifiedName (
+                      SyntaxFactory.QualifiedName (
+                          SyntaxFactory.IdentifierName ("Rhino"),
+                          SyntaxFactory.IdentifierName ("Mocks")),
+                      SyntaxFactory.IdentifierName ("MockRepository"))
+                  .WithLeadingTrivia (SyntaxFactory.Space))
+          .WithAlias (
+              SyntaxFactory.NameEquals (
+                  SyntaxFactory.IdentifierName ("MockRepository")
+                      .WithLeadingTrivia (SyntaxFactory.Space)
+                      .WithTrailingTrivia (SyntaxFactory.Space)));
+    }
   }
 }

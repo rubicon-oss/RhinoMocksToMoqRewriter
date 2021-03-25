@@ -158,6 +158,15 @@ namespace RhinoMocksToMoqRewriter.Tests
       return CompileInClassWithContext ("TestClass", methodTemplate, context, ignoreErrors);
     }
 
+    public static (SemanticModel, SyntaxNode) CompileCompilationUnitWithContext (string source, Context context, bool ignoreErrors = false)
+    {
+      context.UsingContext = source;
+      source = string.Empty;
+
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
+      return (semanticModel, syntaxNode);
+    }
+
     private static (SemanticModel, SyntaxNode) CompileInClass (string className, string classContentSource, bool ignoreErrors = false)
     {
       var classTemplate =
@@ -196,13 +205,19 @@ namespace RhinoMocksToMoqRewriter.Tests
 
     private static (SemanticModel, SyntaxNode) CompileInNameSpaceWithContext (string nameSpaceName, string nameSpaceContent, Context context, bool ignoreErrors = false)
     {
+      if (context.UsingContext == string.Empty)
+      {
+        context.UsingContext =
+            "using Moq;\r\n" +
+            "using MockRepository = Rhino.Mocks.MockRepository;\r\n";
+      }
+
       var nameSpaceTemplate =
           "using System;\r\n" +
           "using System.Collections.Generic;\r\n" +
           "using System.Linq;\r\n" +
           "using Rhino.Mocks;\r\n" +
-          "using Moq;\r\n" +
-          "using MockRepository = Rhino.Mocks.MockRepository;\r\n" +
+          $"{context.UsingContext}" +
           $"namespace {nameSpaceName} {{\r\n" +
           $"public interface ITestInterface {{{context.InterfaceContext}}} \r\n" +
           $"{nameSpaceContent}\r\n" +
