@@ -42,7 +42,8 @@ ITestInterface DoSomething (ITestInterface b);",
             //language=C#
             ClassContext =
                 @"
-private ITestInterface _mock;",
+private ITestInterface _mock;
+private MockRepository _mockRepository = new MockRepository();",
             //language=C#
             MethodContext =
                 @"
@@ -91,6 +92,11 @@ _mockI = MockRepository.GenerateMock<ITestInterface>();"
         @"private ITestInterface _mockE = MockRepository.GenerateMock<ITestInterface>();",
         //language=C#
         @"private Mock<ITestInterface> _mockE = MockRepository.GenerateMock<ITestInterface>();")]
+    [TestCase (
+        //language=C#
+        @"private ITestInterface _mockX = _mockRepository.StrictMock<ITestInterface>();",
+        //language=C#
+        @"private Mock<ITestInterface> _mockX = _mockRepository.StrictMock<ITestInterface>();")]
     public void Rewrite_MockFieldDeclaration (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (source, _context, true);

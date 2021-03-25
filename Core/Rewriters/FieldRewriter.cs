@@ -202,22 +202,21 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
       }
 
-      var generateMockMethodSymbols =
-          new List<IMethodSymbol>
-          {
-              (IMethodSymbol) mockRepositorySymbol.GetMembers ("GenerateMock").First(),
-              (IMethodSymbol) mockRepositorySymbol.GetMembers ("GenerateStrictMock").First(),
-              (IMethodSymbol) mockRepositorySymbol.GetMembers ("GeneratePartialMock").First(),
-              (IMethodSymbol) mockRepositorySymbol.GetMembers ("GenerateStub").First()
-          };
+      var generateMockMethodSymbols = mockRepositorySymbol.GetMembers ("GenerateMock")
+          .Concat (mockRepositorySymbol.GetMembers ("GenerateStrictMock"))
+          .Concat (mockRepositorySymbol.GetMembers ("GeneratePartialMock"))
+          .Concat (mockRepositorySymbol.GetMembers ("GenerateStub"))
+          .Concat (mockRepositorySymbol.GetMembers ("StrictMock"))
+          .Concat (mockRepositorySymbol.GetMembers ("DynamicMock"))
+          .Concat (mockRepositorySymbol.GetMembers ("PartialMock"))
+          .Concat (mockRepositorySymbol.GetMembers ("PartialMultiMock"))
+          .ToList();
 
-      var fieldSymbols = GetFieldSymbolsFromMockAssignmentExpressions (node, generateMockMethodSymbols).ToList();
-      fieldSymbols.AddRange (GetFieldSymbolsFromMockFieldDeclarations (node, generateMockMethodSymbols));
-
-      return fieldSymbols;
+      return GetFieldSymbolsFromMockAssignmentExpressions (node, generateMockMethodSymbols)
+          .Concat (GetFieldSymbolsFromMockFieldDeclarations (node, generateMockMethodSymbols));
     }
 
-    private IEnumerable<IFieldSymbol> GetFieldSymbolsFromMockFieldDeclarations (SyntaxNode node, List<IMethodSymbol> generateMockMethodSymbols)
+    private IEnumerable<IFieldSymbol> GetFieldSymbolsFromMockFieldDeclarations (SyntaxNode node, IReadOnlyCollection<ISymbol> generateMockMethodSymbols)
     {
       return node
           .SyntaxTree.GetRoot()
@@ -237,7 +236,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Select (s => (IFieldSymbol) Model.GetDeclaredSymbol (s)!);
     }
 
-    private IEnumerable<IFieldSymbol> GetFieldSymbolsFromMockAssignmentExpressions (SyntaxNode node, List<IMethodSymbol> generateMockMethodSymbols)
+    private IEnumerable<IFieldSymbol> GetFieldSymbolsFromMockAssignmentExpressions (SyntaxNode node, IReadOnlyCollection<ISymbol> generateMockMethodSymbols)
     {
       return node
           .SyntaxTree.GetRoot()
