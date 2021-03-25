@@ -28,6 +28,7 @@ namespace RhinoMocksToMoqRewriter.Core
         new List<RewriterBase>
         {
             new UsingDirectiveRewriter(),
+            new OrderedMockRewriter(),
             new FieldRewriter (new Formatter()),
             new MockSetupRewriter(),
             new MethodRewriter(),

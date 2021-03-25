@@ -403,5 +403,39 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                       .WithLeadingTrivia (SyntaxFactory.Space)
                       .WithTrailingTrivia (SyntaxFactory.Space)));
     }
+
+    public static LocalDeclarationStatementSyntax MockSequenceLocalDeclarationStatement (string number = "")
+    {
+      return SyntaxFactory.LocalDeclarationStatement (
+          SyntaxFactory.VariableDeclaration (
+              SyntaxFactory.IdentifierName ("var"),
+              SyntaxFactory.SingletonSeparatedList (
+                  SyntaxFactory.VariableDeclarator (
+                          SyntaxFactory.Identifier ($"sequence{number}")
+                              .WithLeadingTrivia (SyntaxFactory.Space)
+                              .WithTrailingTrivia (SyntaxFactory.Space))
+                      .WithInitializer (
+                          SyntaxFactory.EqualsValueClause (
+                              SyntaxFactory.ObjectCreationExpression (
+                                      SyntaxFactory.IdentifierName ("MockSequence")
+                                          .WithLeadingTrivia (SyntaxFactory.Space))
+                                  .WithLeadingTrivia (SyntaxFactory.Space)
+                                  .WithArgumentList (
+                                      SyntaxFactory.ArgumentList()))))));
+    }
+
+    public static InvocationExpressionSyntax InSequenceExpression (IdentifierNameSyntax identifierName, string number = "")
+    {
+      return SyntaxFactory.InvocationExpression (
+          SyntaxFactory.MemberAccessExpression (
+              SyntaxKind.SimpleMemberAccessExpression,
+              identifierName,
+              SyntaxFactory.IdentifierName ("InSequence")),
+          SyntaxFactory.ArgumentList (
+                  SyntaxFactory.SingletonSeparatedList (
+                      SyntaxFactory.Argument (
+                          SyntaxFactory.IdentifierName ($"sequence{number}"))))
+              .WithLeadingTrivia (SyntaxFactory.Space));
+    }
   }
 }
