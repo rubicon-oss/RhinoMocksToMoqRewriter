@@ -380,5 +380,62 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                   SyntaxFactory.Argument (
                       lambdaExpression))));
     }
+
+    public static UsingDirectiveSyntax MoqUsingDirective ()
+    {
+      return SyntaxFactory.UsingDirective (
+          SyntaxFactory.IdentifierName ("Moq")
+              .WithLeadingTrivia (SyntaxFactory.Space));
+    }
+
+    public static UsingDirectiveSyntax RhinoMocksRepositoryAlias ()
+    {
+      return SyntaxFactory.UsingDirective (
+              SyntaxFactory.QualifiedName (
+                      SyntaxFactory.QualifiedName (
+                          SyntaxFactory.IdentifierName ("Rhino"),
+                          SyntaxFactory.IdentifierName ("Mocks")),
+                      SyntaxFactory.IdentifierName ("MockRepository"))
+                  .WithLeadingTrivia (SyntaxFactory.Space))
+          .WithAlias (
+              SyntaxFactory.NameEquals (
+                  SyntaxFactory.IdentifierName ("MockRepository")
+                      .WithLeadingTrivia (SyntaxFactory.Space)
+                      .WithTrailingTrivia (SyntaxFactory.Space)));
+    }
+
+    public static LocalDeclarationStatementSyntax MockSequenceLocalDeclarationStatement (string number = "")
+    {
+      return SyntaxFactory.LocalDeclarationStatement (
+          SyntaxFactory.VariableDeclaration (
+              SyntaxFactory.IdentifierName ("var"),
+              SyntaxFactory.SingletonSeparatedList (
+                  SyntaxFactory.VariableDeclarator (
+                          SyntaxFactory.Identifier ($"sequence{number}")
+                              .WithLeadingTrivia (SyntaxFactory.Space)
+                              .WithTrailingTrivia (SyntaxFactory.Space))
+                      .WithInitializer (
+                          SyntaxFactory.EqualsValueClause (
+                              SyntaxFactory.ObjectCreationExpression (
+                                      SyntaxFactory.IdentifierName ("MockSequence")
+                                          .WithLeadingTrivia (SyntaxFactory.Space))
+                                  .WithLeadingTrivia (SyntaxFactory.Space)
+                                  .WithArgumentList (
+                                      SyntaxFactory.ArgumentList()))))));
+    }
+
+    public static InvocationExpressionSyntax InSequenceExpression (IdentifierNameSyntax identifierName, string number = "")
+    {
+      return SyntaxFactory.InvocationExpression (
+          SyntaxFactory.MemberAccessExpression (
+              SyntaxKind.SimpleMemberAccessExpression,
+              identifierName,
+              SyntaxFactory.IdentifierName ("InSequence")),
+          SyntaxFactory.ArgumentList (
+                  SyntaxFactory.SingletonSeparatedList (
+                      SyntaxFactory.Argument (
+                          SyntaxFactory.IdentifierName ($"sequence{number}"))))
+              .WithLeadingTrivia (SyntaxFactory.Space));
+    }
   }
 }

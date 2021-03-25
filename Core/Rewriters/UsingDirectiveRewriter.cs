@@ -12,14 +12,32 @@
 //
 
 using System;
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace RhinoMocksToMoqRewriter.Tests
+namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
-  public class Context
+  public class UsingDirectiveRewriter : RewriterBase
   {
-    public string InterfaceContext { get; set; } = string.Empty;
-    public string ClassContext { get; set; } = string.Empty;
-    public string MethodContext { get; set; } = string.Empty;
-    public string UsingContext { get; set; } = string.Empty;
+    public override SyntaxNode? VisitCompilationUnit (CompilationUnitSyntax node)
+    {
+      var moqUsing = MoqSyntaxFactory.MoqUsingDirective().WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine));
+      var mockRepositoryAlias = MoqSyntaxFactory.RhinoMocksRepositoryAlias().WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine));
+      var currentUsings = node.Usings;
+
+      if (!currentUsings.Any (u => u.IsEquivalentTo (moqUsing, false)))
+      {
+        currentUsings = currentUsings.Add (moqUsing);
+      }
+
+      if (!currentUsings.Any (u => u.IsEquivalentTo (mockRepositoryAlias, false)))
+      {
+        currentUsings = currentUsings.Add (mockRepositoryAlias);
+      }
+
+      return node.WithUsings (currentUsings);
+    }
   }
 }
