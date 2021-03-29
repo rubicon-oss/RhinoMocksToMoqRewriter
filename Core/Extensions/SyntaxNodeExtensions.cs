@@ -45,6 +45,11 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
           s => s.IsKind (SyntaxKind.SimpleLambdaExpression)) as LambdaExpressionSyntax;
     }
 
+    public static ArgumentSyntax GetFirstArgument (this SyntaxNode node)
+    {
+      return node.GetFirstArgumentOrDefault() ?? throw new InvalidOperationException ("Node must have an Argument");
+    }
+
     public static ArgumentSyntax? GetFirstArgumentOrDefault (this SyntaxNode node)
     {
       return node.DescendantNodes()
@@ -62,8 +67,7 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
 
     public static IdentifierNameSyntax GetFirstIdentifierName (this SyntaxNode node)
     {
-      var identifierName = GetFirstIdentifierNameOrDefault (node);
-      return identifierName ?? throw new InvalidOperationException ("Node must have an IdentifierName");
+      return node.GetFirstIdentifierNameOrDefault() ?? throw new InvalidOperationException ("Node must have an IdentifierName");
     }
 
     public static IdentifierNameSyntax? GetFirstIdentifierNameOrDefault (this SyntaxNode node)
