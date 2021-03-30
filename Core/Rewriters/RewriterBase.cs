@@ -14,11 +14,14 @@
 using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Editing;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public class RewriterBase : CSharpSyntaxRewriter
   {
     public SemanticModel? Model { get; set; }
+
+    public SyntaxGenerator? Generator { get; set; }
   }
 }

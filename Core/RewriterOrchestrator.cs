@@ -17,6 +17,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Editing;
 using RhinoMocksToMoqRewriter.Core.Extensions;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
@@ -38,7 +39,7 @@ namespace RhinoMocksToMoqRewriter.Core
             new NoMoqRewriter(),
         };
 
-    public static async Task RewriteAsync (IEnumerable<CSharpCompilation> compilations)
+    public static async Task RewriteAsync (IEnumerable<CSharpCompilation> compilations, SyntaxGenerator generator)
     {
       var syntaxTrees = new List<SyntaxTree>();
       foreach (var compilation in compilations)
@@ -51,6 +52,7 @@ namespace RhinoMocksToMoqRewriter.Core
           {
             var model = currentCompilation.GetSemanticModel (currentTree);
             rewriter.Model = model;
+            rewriter.Generator = generator;
 
             var newRoot = rewriter.Visit (await currentTree.GetRootAsync());
             var newTree = currentTree.WithRootAndOptions (newRoot, currentTree.Options);

@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.MSBuild;
 
 namespace RhinoMocksToMoqRewriter.Application
@@ -26,11 +27,14 @@ namespace RhinoMocksToMoqRewriter.Application
   {
     private readonly MSBuildWorkspace _workspace;
 
+    public SyntaxGenerator Generator { get; }
+
     public CompilationLoader ()
     {
       var instance = MSBuildLocator.QueryVisualStudioInstances().First();
       MSBuildLocator.RegisterInstance (instance);
       _workspace = MSBuildWorkspace.Create();
+      Generator = SyntaxGenerator.GetGenerator (_workspace, "C#");
     }
 
     public async Task<Solution> LoadSolutionAsync (string pathToSolution)
