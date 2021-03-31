@@ -12,7 +12,6 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -42,7 +41,7 @@ namespace RhinoMocksToMoqRewriter.Tests
       var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
       var argument = syntaxNode.DescendantNodes()
                          .OfType<ArgumentSyntax>()
-                         .LastOrDefault (a => a.ToString().Contains ("Arg") || a.ToString().Contains ("It"))
+                         .LastOrDefault (a => a.ToString().Contains ("Arg") || a.ToString().Contains ("It") || a.ToString().Contains ("Constraints"))
                      ?? syntaxNode.DescendantNodes().OfType<ArgumentSyntax>().Last();
 
       return (semanticModel, argument);
@@ -95,6 +94,16 @@ namespace RhinoMocksToMoqRewriter.Tests
       return (semanticModel, fieldDeclarationSyntax);
     }
 
+    public static (SemanticModel, ExpressionStatementSyntax) CompileExpressionStatement (string source, bool ignoreErrors = false)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethod ("Test", source, ignoreErrors);
+      var expression = syntaxNode.DescendantNodes()
+          .OfType<ExpressionStatementSyntax>()
+          .FirstOrDefault();
+
+      return (semanticModel, expression);
+    }
+
     public static (SemanticModel, ExpressionStatementSyntax) CompileExpressionStatementWithContext (string source, Context context, bool ignoreErrors = false)
     {
       var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
@@ -103,18 +112,6 @@ namespace RhinoMocksToMoqRewriter.Tests
           .LastOrDefault();
 
       return (semanticModel, expression);
-    }
-
-    public static (SemanticModel, IEnumerable<ExpressionStatementSyntax>) CompileExpressionStatementsWithContext (
-        string source,
-        Context context,
-        bool ignoreErrors = false)
-    {
-      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
-      var expressions = syntaxNode.DescendantNodes()
-          .OfType<ExpressionStatementSyntax>();
-
-      return (semanticModel, expressions);
     }
 
     public static (SemanticModel, MethodDeclarationSyntax) CompileMethodDeclarationWithContext (string source, Context context, bool ignoreErrors = false)

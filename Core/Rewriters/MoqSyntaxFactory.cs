@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
@@ -437,5 +438,158 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                           SyntaxFactory.IdentifierName ($"sequence{number}"))))
               .WithLeadingTrivia (SyntaxFactory.Space));
     }
+
+    public static BinaryExpressionSyntax EqualOrSameBinaryExpression (ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.BinaryExpression (
+          SyntaxKind.EqualsExpression,
+          MoqSyntaxFactory.LambdaParameterIdentifierName.WithTrailingTrivia (SyntaxFactory.Space),
+          expression.WithLeadingTrivia (SyntaxFactory.Space));
+    }
+
+    public static ExpressionSyntax NotEqualOrSameBinaryExpression (ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.BinaryExpression (
+          SyntaxKind.NotEqualsExpression,
+          MoqSyntaxFactory.LambdaParameterIdentifierName.WithTrailingTrivia (SyntaxFactory.Space),
+          expression.WithLeadingTrivia (SyntaxFactory.Space));
+    }
+
+    public static ExpressionSyntax GreaterThanBinaryExpression (ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.BinaryExpression (
+          SyntaxKind.GreaterThanExpression,
+          MoqSyntaxFactory.LambdaParameterIdentifierName.WithTrailingTrivia (SyntaxFactory.Space),
+          expression.WithLeadingTrivia (SyntaxFactory.Space));
+    }
+
+    public static ExpressionSyntax GreaterThanOrEqualBinaryExpression (ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.BinaryExpression (
+          SyntaxKind.GreaterThanOrEqualExpression,
+          MoqSyntaxFactory.LambdaParameterIdentifierName.WithTrailingTrivia (SyntaxFactory.Space),
+          expression.WithLeadingTrivia (SyntaxFactory.Space));
+    }
+
+    public static ExpressionSyntax LessThanBinaryExpression (ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.BinaryExpression (
+          SyntaxKind.LessThanExpression,
+          MoqSyntaxFactory.LambdaParameterIdentifierName.WithTrailingTrivia (SyntaxFactory.Space),
+          expression.WithLeadingTrivia (SyntaxFactory.Space));
+    }
+
+    public static ExpressionSyntax LessThanOrEqualBinaryExpression (ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.BinaryExpression (
+          SyntaxKind.LessThanOrEqualExpression,
+          MoqSyntaxFactory.LambdaParameterIdentifierName.WithTrailingTrivia (SyntaxFactory.Space),
+          expression.WithLeadingTrivia (SyntaxFactory.Space));
+    }
+
+    public static ExpressionSyntax NullBinaryExpression ()
+    {
+      return MoqSyntaxFactory.BinaryExpression (
+          SyntaxKind.EqualsExpression,
+          MoqSyntaxFactory.LambdaParameterIdentifierName.WithTrailingTrivia (SyntaxFactory.Space),
+          MoqSyntaxFactory.NullLiteralExpression);
+    }
+
+    public static ExpressionSyntax NotNullBinaryExpression ()
+    {
+      return MoqSyntaxFactory.BinaryExpression (
+          SyntaxKind.NotEqualsExpression,
+          MoqSyntaxFactory.LambdaParameterIdentifierName.WithTrailingTrivia (SyntaxFactory.Space),
+          MoqSyntaxFactory.NullLiteralExpression.WithLeadingTrivia (SyntaxFactory.Space));
+    }
+
+    public static ExpressionSyntax IsInInvocationExpression (ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (
+              MoqSyntaxFactory.LambdaParameterIdentifierName,
+              MoqSyntaxFactory.ContainsIdentifierName),
+          MoqSyntaxFactory.ArgumentList (MoqSyntaxFactory.Argument (expression)));
+    }
+
+    public static ExpressionSyntax ContainsAllInvocationExpression (ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (expression, MoqSyntaxFactory.AllIdentifierName),
+          MoqSyntaxFactory.ArgumentList (
+              MoqSyntaxFactory.Argument (
+                  MoqSyntaxFactory.MemberAccessExpression (MoqSyntaxFactory.LambdaParameterIdentifierName, MoqSyntaxFactory.ContainsIdentifierName))));
+    }
+
+    public static ExpressionSyntax LogicalAndBinaryExpression (ExpressionSyntax left, ExpressionSyntax right)
+    {
+      return MoqSyntaxFactory.BinaryExpression (SyntaxKind.LogicalAndExpression, left, right);
+    }
+
+    public static ExpressionSyntax LogicalOrBinaryExpression (ExpressionSyntax left, ExpressionSyntax right)
+    {
+      return MoqSyntaxFactory.BinaryExpression (SyntaxKind.LogicalOrExpression, left, right);
+    }
+
+    public static ExpressionSyntax PropertyValueBinaryExpression (ExpressionSyntax propertyName, ExpressionSyntax propertyValue)
+    {
+      return MoqSyntaxFactory.BinaryExpression (
+          SyntaxKind.EqualsExpression,
+          MoqSyntaxFactory.MemberAccessExpression (
+              MoqSyntaxFactory.LambdaParameterIdentifierName,
+              SyntaxFactory.IdentifierName (propertyName.ToString().Replace ("\"", ""))),
+          propertyValue);
+    }
+
+    public static LambdaExpressionSyntax SimpleLambdaExpression (ExpressionSyntax expressionBody)
+    {
+      return LambdaExpression (expressionBody);
+    }
+
+    private static BinaryExpressionSyntax BinaryExpression (SyntaxKind kind, ExpressionSyntax left, ExpressionSyntax right)
+    {
+      return SyntaxFactory.BinaryExpression (kind, left, right);
+    }
+
+    private static LambdaExpressionSyntax LambdaExpression (ExpressionSyntax expressionBody)
+    {
+      return SyntaxFactory.SimpleLambdaExpression (
+          SyntaxFactory.Parameter (MoqSyntaxFactory.LambdaParameterIdentifier.WithTrailingTrivia (SyntaxFactory.Space)),
+          expressionBody);
+    }
+
+    private static InvocationExpressionSyntax InvocationExpression (ExpressionSyntax expression, ArgumentListSyntax argumentList)
+    {
+      return argumentList.IsEmpty()
+          ? SyntaxFactory.InvocationExpression (expression, argumentList)
+          : SyntaxFactory.InvocationExpression (expression, argumentList).WithLeadingTrivia (SyntaxFactory.Space);
+    }
+
+    private static ArgumentListSyntax ArgumentList (ArgumentSyntax argument)
+    {
+      return SyntaxFactory.ArgumentList (SyntaxFactory.SingletonSeparatedList<ArgumentSyntax> (argument));
+    }
+
+    private static ArgumentSyntax Argument (ExpressionSyntax expression)
+    {
+      return SyntaxFactory.Argument (expression);
+    }
+
+    private static MemberAccessExpressionSyntax MemberAccessExpression (ExpressionSyntax expression, SimpleNameSyntax name)
+    {
+      return SyntaxFactory.MemberAccessExpression (SyntaxKind.SimpleMemberAccessExpression, expression, MoqSyntaxFactory.DotToken, name);
+    }
+
+    private static IdentifierNameSyntax LambdaParameterIdentifierName => SyntaxFactory.IdentifierName ("_");
+
+    private static IdentifierNameSyntax ContainsIdentifierName => SyntaxFactory.IdentifierName ("Contains");
+
+    private static IdentifierNameSyntax AllIdentifierName => SyntaxFactory.IdentifierName ("All");
+
+    private static LiteralExpressionSyntax NullLiteralExpression => SyntaxFactory.LiteralExpression (SyntaxKind.NullLiteralExpression);
+
+    private static SyntaxToken DotToken => SyntaxFactory.Token (SyntaxKind.DotToken);
+
+    private static SyntaxToken LambdaParameterIdentifier => SyntaxFactory.Identifier ("_");
   }
 }
