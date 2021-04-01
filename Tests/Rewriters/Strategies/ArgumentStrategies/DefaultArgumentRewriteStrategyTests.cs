@@ -32,7 +32,11 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         };
 
     [Test]
-    [TestCase ("mock.DoSomething (1);", "mock.DoSomething (1);")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (1);",
+        //language=C#
+        @"mock.DoSomething (1);")]
     public void Rewrite_Default (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);

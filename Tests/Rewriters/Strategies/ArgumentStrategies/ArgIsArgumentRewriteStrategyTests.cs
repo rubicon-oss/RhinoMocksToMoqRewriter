@@ -31,7 +31,11 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         };
 
     [Test]
-    [TestCase ("mock.DoSomething (Arg.Is (1));", "mock.DoSomething (1);")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg.Is (1));",
+        //language=C#
+        @"mock.DoSomething (1);")]
     public void Rewrite_ArgIs (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
@@ -42,19 +46,17 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
     }
 
     [Test]
-    [TestCase ("mock.DoSomething (Arg<int>.Is.Equal (1));", "mock.DoSomething (1);")]
-    public void Rewrite_ArgIsSame (string source, string expected)
-    {
-      var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
-      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgumentWithContext (expected, _context);
-      var actualNode = _strategy.Rewrite (node);
-
-      Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));
-    }
-
-    [Test]
-    [TestCase ("mock.DoSomething (Arg<int>.Is.Same (1));", "mock.DoSomething (1);")]
-    public void Rewrite_ArgIsEqual (string source, string expected)
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg<int>.Is.Equal (1));",
+        //language=C#
+        @"mock.DoSomething (1);")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg<int>.Is.Same (1));",
+        //language=C#
+        @"mock.DoSomething (1);")]
+    public void Rewrite_ArgIsEqualOrSame (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
       var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgumentWithContext (expected, _context);

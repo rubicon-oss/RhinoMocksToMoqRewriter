@@ -18,9 +18,9 @@ using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
 {
-  public class ArgListEqualArgumentRewriteStrategy : IArgumentRewriteStrategy
+  public class ArgListEqualArgumentRewriteStrategy : BaseArgumentRewriteStrategy<ArgListEqualArgumentRewriteStrategy>
   {
-    public ArgumentSyntax Rewrite (ArgumentSyntax node)
+    public override ArgumentSyntax Rewrite (ArgumentSyntax node)
     {
       var argument = node.GetFirstArgumentOrDefault();
       if (argument == null)

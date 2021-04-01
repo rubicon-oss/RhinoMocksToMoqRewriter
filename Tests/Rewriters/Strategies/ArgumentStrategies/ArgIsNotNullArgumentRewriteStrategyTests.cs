@@ -32,7 +32,11 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         };
 
     [Test]
-    [TestCase ("mock.DoSomething (Arg<int>.Is.NotNull);", "mock.DoSomething (It.IsNotNull<int>());")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg<int>.Is.NotNull);",
+        //language=C#
+        @"mock.DoSomething (It.IsNotNull<int>());")]
     public void Rewrite_ArgIsNotNull (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);

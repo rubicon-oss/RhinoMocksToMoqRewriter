@@ -17,9 +17,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
 {
-  public class ArgIsNullArgumentRewriteStrategy : IArgumentRewriteStrategy
+  public class ArgIsNullArgumentRewriteStrategy : BaseArgumentRewriteStrategy<ArgIsNullArgumentRewriteStrategy>
   {
-    public ArgumentSyntax Rewrite (ArgumentSyntax node) =>
+    public override ArgumentSyntax Rewrite (ArgumentSyntax node) =>
         MoqSyntaxFactory.NullArgument()
             .WithLeadingTrivia (node.GetLeadingTrivia());
   }

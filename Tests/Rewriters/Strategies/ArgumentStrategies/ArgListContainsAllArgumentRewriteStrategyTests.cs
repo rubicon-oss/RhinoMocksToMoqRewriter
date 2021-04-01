@@ -32,7 +32,11 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         };
 
     [Test]
-    [TestCase ("mock.DoSomething (Arg<int[]>.List.ContainsAll (new[] {1, 2, 3}));", "mock.DoSomething (It.Is<int[]> (param => new[] {1, 2, 3}.All (param.Contains)));")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg<int[]>.List.ContainsAll (new[] {1, 2, 3}));",
+        //language=C#
+        @"mock.DoSomething (It.Is<int[]> (param => new[] {1, 2, 3}.All (param.Contains)));")]
     public void Rewrite_ArgListContainsAll (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);

@@ -32,8 +32,16 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         };
 
     [Test]
-    [TestCase ("mock.DoSomething (Arg<int[]>.List.Equal (new[] {1, 2, 3}));", "mock.DoSomething (new[] {1, 2, 3});")]
-    [TestCase ("mock.DoSomething (Arg<int[]>.List.Equal (new List<int>() {1, 2, 3}));", "mock.DoSomething (new List<int>() {1, 2, 3});")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg<int[]>.List.Equal (new[] {1, 2, 3}));",
+        //language=C#
+        @"mock.DoSomething (new[] {1, 2, 3});")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg<int[]>.List.Equal (new List<int>() {1, 2, 3}));",
+        //language=C#
+        @"mock.DoSomething (new List<int>() {1, 2, 3});")]
     public void Rewrite_ArgListIsEqual (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);

@@ -18,9 +18,9 @@ using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies;
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
 {
   [TestFixture]
-  public class ArgIsNotSameArgumentRewriteStrategyTests
+  public class ArgIsNotEqualOrSameArgumentRewriteStrategyTests
   {
-    private readonly IArgumentRewriteStrategy _strategy = new ArgIsNotSameArgumentRewriteStrategy();
+    private readonly IArgumentRewriteStrategy _strategy = new ArgIsNotEqualOrSameArgumentRewriteStrategy();
 
     private readonly Context _context =
         new Context
@@ -32,8 +32,17 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         };
 
     [Test]
-    [TestCase ("mock.DoSomething (Arg<int>.Is.NotSame (2));", "mock.DoSomething (It.Is<int> (param => param != 2));")]
-    public void Rewrite_ArgIsNotSame (string source, string expected)
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg<int>.Is.NotEqual (2));",
+        //language=C#
+        @"mock.DoSomething (It.Is<int> (param => param != 2));")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg<int>.Is.NotSame (2));",
+        //language=C#
+        @"mock.DoSomething (It.Is<int> (param => param != 2));")]
+    public void Rewrite_ArgIsNotEqualOrSame (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
       var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgumentWithContext (expected, _context);

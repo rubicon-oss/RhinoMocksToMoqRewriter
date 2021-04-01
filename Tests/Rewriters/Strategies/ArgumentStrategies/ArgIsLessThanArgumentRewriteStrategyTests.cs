@@ -32,7 +32,11 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         };
 
     [Test]
-    [TestCase ("mock.DoSomething (Arg<int>.Is.LessThan (1));", "mock.DoSomething (It.Is<int> (param => param < 1));")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg<int>.Is.LessThan (1));",
+        //language=C#
+        @"mock.DoSomething (It.Is<int> (param => param < 1));")]
     public void Rewrite_ArgIsLessThan (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);

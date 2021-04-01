@@ -32,7 +32,11 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         };
 
     [Test]
-    [TestCase ("mock.DoSomething (Arg<int[]>.List.IsIn (2));", "mock.DoSomething (It.Is<int[]> (param => param.Contains (2)));")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg<int[]>.List.IsIn (2));",
+        //language=C#
+        @"mock.DoSomething (It.Is<int[]> (param => param.Contains (2)));")]
     public void Rewrite_ArgListIsIn (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);

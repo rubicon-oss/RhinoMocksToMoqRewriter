@@ -16,8 +16,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
 {
-  public class DefaultArgumentRewriteStrategy : IArgumentRewriteStrategy
+  public class DefaultArgumentRewriteStrategy : BaseArgumentRewriteStrategy<DefaultArgumentRewriteStrategy>
   {
-    public ArgumentSyntax Rewrite (ArgumentSyntax node) => node;
+    public override ArgumentSyntax Rewrite (ArgumentSyntax node) => node;
   }
 }

@@ -32,7 +32,11 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         };
 
     [Test]
-    [TestCase ("mock.DoSomething (Arg<int[]>.Matches (s => s.Length == 2));", "mock.DoSomething (It.Is<int[]> (s => s.Length == 2));")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg<int[]>.Matches (s => s.Length == 2));",
+        //language=C#
+        @"mock.DoSomething (It.Is<int[]> (s => s.Length == 2));")]
     public void Rewrite_ArgMatches (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
