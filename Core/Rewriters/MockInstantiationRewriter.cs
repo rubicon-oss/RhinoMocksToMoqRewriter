@@ -12,17 +12,17 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public class MockInstantiationRewriter : RewriterBase
   {
-    private const string c_generateStrictMock = "GenerateStrictMock";
-    private const string c_generatePartialMock = "GeneratePartialMock";
     private readonly IFormatter _formatter;
 
     public MockInstantiationRewriter (IFormatter formatter)
@@ -37,26 +37,23 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         throw new InvalidOperationException ("SemanticModel must not be null!");
       }
 
-      var compilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
-      if (compilationSymbol == null)
+      var rhinoMocksMockRepositorySymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
+      if (rhinoMocksMockRepositorySymbol == null)
       {
-        throw new ArgumentException ("Rhino.Mocks cannot be found.");
+        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
       }
 
-      var methodSymbol = Model.GetSymbolInfo (node).Symbol as IMethodSymbol;
+      var mockOrStubSymbols = GetAllMockOrStubSymbols (rhinoMocksMockRepositorySymbol);
+      var strictMockSymbols = GetAllStrictMockSymbols (rhinoMocksMockRepositorySymbol);
+      var partialMockSymbols = GetAllPartialMockSymbols (rhinoMocksMockRepositorySymbol);
+      var methodSymbol = (Model.GetSymbolInfo (node).Symbol as IMethodSymbol)?.OriginalDefinition;
       if (methodSymbol == null)
       {
         return node;
       }
 
-      var isRhinoMocksMethod = SymbolEqualityComparer.Default.Equals (methodSymbol.ContainingType, compilationSymbol);
-      if (!isRhinoMocksMethod)
-      {
-        return node;
-      }
-
-      var rhinoMethodGenericName = node.DescendantNodes().FirstOrDefault (n => n.IsKind (SyntaxKind.GenericName)) as GenericNameSyntax;
-      if (rhinoMethodGenericName == null || rhinoMethodGenericName.Identifier.Text != methodSymbol.Name)
+      var rhinoMethodGenericName = node.GetFirstGenericNameOrDefault();
+      if (rhinoMethodGenericName == null)
       {
         return node;
       }
@@ -64,28 +61,40 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var nodeWithRewrittenDescendants = (InvocationExpressionSyntax) base.VisitInvocationExpression (node)!;
       var moqMockTypeArgumentList = SyntaxFactory.TypeArgumentList().AddArguments (rhinoMethodGenericName.TypeArgumentList.Arguments.First());
       var moqMockArgumentSyntaxList = nodeWithRewrittenDescendants.ArgumentList;
-      if (methodSymbol.Name == c_generateStrictMock)
+
+      return methodSymbol switch
       {
-        moqMockArgumentSyntaxList = moqMockArgumentSyntaxList.WithArguments (
-            moqMockArgumentSyntaxList.Arguments.Insert (
-                0,
-                MoqSyntaxFactory.MockBehaviorStrictArgument()));
-      }
+          var s when mockOrStubSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) => _formatter.Format (
+              MoqSyntaxFactory.MockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList)),
+          var s when partialMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) => _formatter.Format (
+              MoqSyntaxFactory.PartialMockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList)),
+          var s when strictMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) => _formatter.Format (
+              MoqSyntaxFactory.StrictMockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList)),
+          _ => node
+      };
+    }
 
-      InitializerExpressionSyntax? initializer = null;
-      if (methodSymbol.Name == c_generatePartialMock)
-      {
-        initializer = MoqSyntaxFactory.CallBaseInitializer();
-      }
+    private static IEnumerable<ISymbol> GetAllPartialMockSymbols (INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    {
+      return rhinoMocksMockRepositorySymbol.GetMembers ("PartialMock")
+          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("PartialMultiMock"))
+          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("GeneratePartialMock"));
+    }
 
-      var newNode =
-          MoqSyntaxFactory.MockCreationExpression (
-              moqMockTypeArgumentList,
-              moqMockArgumentSyntaxList,
-              initializer);
+    private static IEnumerable<ISymbol> GetAllStrictMockSymbols (INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    {
+      return rhinoMocksMockRepositorySymbol.GetMembers ("StrictMock")
+          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("StrictMultiMock"))
+          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("GenerateStrictMock"));
+    }
 
-      var formattedNode = _formatter.Format (newNode);
-      return formattedNode;
+    private static IEnumerable<ISymbol> GetAllMockOrStubSymbols (INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    {
+      return rhinoMocksMockRepositorySymbol.GetMembers ("GenerateMock")
+          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("DynamicMock"))
+          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("DynamicMultiMock"))
+          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("Stub"))
+          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("GenerateStub"));
     }
   }
 }
