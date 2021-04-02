@@ -21,5 +21,6 @@ namespace RhinoMocksToMoqRewriter.Tests
     public string ClassContext { get; set; } = string.Empty;
     public string MethodContext { get; set; } = string.Empty;
     public string UsingContext { get; set; } = string.Empty;
+    public string NamespaceContext { get; set; } = string.Empty;
   }
 }
