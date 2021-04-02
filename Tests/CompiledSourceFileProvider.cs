@@ -214,7 +214,7 @@ namespace RhinoMocksToMoqRewriter.Tests
           "using System.Collections.Generic;\r\n" +
           "using System.Linq;\r\n" +
           "using Rhino.Mocks;\r\n" +
-          $"{context.UsingContext}" +
+          $"{context.UsingContext}\r\n" +
           $"namespace {nameSpaceName} {{\r\n" +
           $"public interface ITestInterface {{{context.InterfaceContext}}} \r\n" +
           $"{nameSpaceContent}\r\n" +

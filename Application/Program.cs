@@ -24,11 +24,12 @@ namespace RhinoMocksToMoqRewriter.Application
   {
     public static async Task<int> Main (string[] args)
     {
+      var compilationLoader = new CompilationLoader();
       var compilations = new List<CSharpCompilation>();
       try
       {
         await Parser.Default.ParseArguments<Options> (args)
-            .WithParsedAsync (async opt => { compilations.AddRange (await ParseArgumentsAsync (opt)); });
+            .WithParsedAsync (async opt => { compilations.AddRange (await ParseArgumentsAsync (compilationLoader, opt)); });
       }
       catch (System.IO.FileNotFoundException e)
       {
@@ -36,14 +37,13 @@ namespace RhinoMocksToMoqRewriter.Application
         return 1;
       }
 
-      await RewriterOrchestrator.RewriteAsync (compilations);
+      await RewriterOrchestrator.RewriteAsync (compilations, compilationLoader.Generator);
 
       return 0;
     }
 
-    private static async Task<IReadOnlyList<CSharpCompilation>> ParseArgumentsAsync (Options opt)
+    private static async Task<IReadOnlyList<CSharpCompilation>> ParseArgumentsAsync (CompilationLoader compilationLoader, Options opt)
     {
-      var compilationLoader = new CompilationLoader();
       if (!string.IsNullOrEmpty (opt.SolutionPath))
       {
         var solution = await compilationLoader.LoadSolutionAsync (opt.SolutionPath);

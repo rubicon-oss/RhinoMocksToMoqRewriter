@@ -13,6 +13,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -546,6 +547,51 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return LambdaExpression (expressionBody);
     }
 
+    public static ArgumentListSyntax SimpleArgumentList (ArgumentSyntax argument)
+    {
+      return SyntaxFactory.ArgumentList (SyntaxFactory.SingletonSeparatedList (argument));
+    }
+
+    public static ArgumentListSyntax ArgumentList (IEnumerable<ArgumentSyntax> arguments)
+    {
+      return SyntaxFactory.ArgumentList (SyntaxFactory.SeparatedList (arguments));
+    }
+
+    public static ExpressionSyntax NestedMemberAccessExpression (
+        ExpressionSyntax expression,
+        IReadOnlyList<(SimpleNameSyntax name, ArgumentListSyntax argumentList)> accessors)
+    {
+      if (accessors.Count < 1)
+      {
+        throw new ArgumentException ("Accessor list must be at least of length 1.");
+      }
+
+      var access = MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (expression, accessors[0].name),
+          accessors[0].argumentList);
+
+      return accessors.Count == 1
+          ? access
+          : NestedMemberAccessExpression (access, accessors.Skip (1).ToList());
+    }
+
+    public static GenericNameSyntax GenericName (SyntaxToken identifier, TypeArgumentListSyntax typeArgumentList)
+    {
+      return SyntaxFactory.GenericName (identifier, typeArgumentList);
+    }
+
+    public static TypeArgumentListSyntax SimpleTypeArgumentList (IEnumerable<TypeSyntax> typeArguments)
+    {
+      return MoqSyntaxFactory.TypeArgumentList (typeArguments);
+    }
+
+    public static TypeArgumentListSyntax SimpleTypeArgumentList (TypeSyntax typeArguments)
+    {
+      return MoqSyntaxFactory.TypeArgumentList (new[] { typeArguments });
+    }
+
+    #region Private MoqSyntaxFactory
+
     private static BinaryExpressionSyntax BinaryExpression (SyntaxKind kind, ExpressionSyntax left, ExpressionSyntax right)
     {
       return SyntaxFactory.BinaryExpression (kind, left, right);
@@ -580,6 +626,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.MemberAccessExpression (SyntaxKind.SimpleMemberAccessExpression, expression, MoqSyntaxFactory.DotToken, name);
     }
 
+    private static TypeArgumentListSyntax TypeArgumentList (IEnumerable<TypeSyntax> typeArguments)
+    {
+      return SyntaxFactory.TypeArgumentList (SyntaxFactory.SeparatedList<TypeSyntax> (typeArguments));
+    }
+
     private static IdentifierNameSyntax LambdaParameterIdentifierName => SyntaxFactory.IdentifierName ("_");
 
     private static IdentifierNameSyntax ContainsIdentifierName => SyntaxFactory.IdentifierName ("Contains");
@@ -591,5 +642,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static SyntaxToken DotToken => SyntaxFactory.Token (SyntaxKind.DotToken);
 
     private static SyntaxToken LambdaParameterIdentifier => SyntaxFactory.Identifier ("_");
+
+    #endregion
   }
 }
