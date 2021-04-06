@@ -150,7 +150,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       return MoqSyntaxFactory.SimpleArgumentList (
           MoqSyntaxFactory.SimpleArgument (
-              lambdaExpression.WithBody (invocationExpression.WithArgumentList (MoqSyntaxFactory.ArgumentList (isInArguments)))));
+              lambdaExpression.WithBody (invocationExpression.WithArgumentList (MoqSyntaxFactory.SimpleArgumentList (isInArguments)))));
     }
 
     private TypeSyntax ConvertTypeSyntaxNodes (ITypeSymbol typeSymbol)

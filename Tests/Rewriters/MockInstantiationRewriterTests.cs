@@ -29,7 +29,10 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
         new Context
         {
             //language=C#
-            ClassContext = @"private ITestInterface _mock;",
+            ClassContext =
+                @"
+private ITestInterface _mock;
+private MockRepository _mockRepository = new MockRepository();",
             //language=C#
             MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
         };
@@ -86,6 +89,41 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
         @"_mock = new Mock<ITestInterface> (new Mock<ITestInterface> (MockBehavior.Strict));")]
     [TestCase ("_mock = MockRepository.GeneratePartialMock<ITestInterface>();", "_mock = new Mock<ITestInterface>(){ CallBase = true };")]
     [TestCase ("_mock = MockRepository.GeneratePartialMock<ITestInterface> (1, 2);", "_mock = new Mock<ITestInterface>(1, 2){ CallBase = true };")]
+    [TestCase (
+        //language=C#
+        @"_mock = _mockRepository.DynamicMock<ITestInterface>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface>();")]
+    [TestCase (
+        //language=C#
+        @"_mock = _mockRepository.DynamicMultiMock<ITestInterface>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface>();")]
+    [TestCase (
+        //language=C#
+        @"_mock = _mockRepository.PartialMock<ITestInterface>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface>() { CallBase = true };")]
+    [TestCase (
+        //language=C#
+        @"_mock = _mockRepository.PartialMultiMock<ITestInterface>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface>() { CallBase = true };")]
+    [TestCase (
+        //language=C#
+        @"_mock = _mockRepository.StrictMock<ITestInterface>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface> (MockBehavior.Strict);")]
+    [TestCase (
+        //language=C#
+        @"_mock = _mockRepository.StrictMultiMock<ITestInterface>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface> (MockBehavior.Strict);")]
+    [TestCase (
+        //language=C#
+        @"_mockRepository.VerifyAll();",
+        //language=C#
+        @"_mockRepository.VerifyAll();")]
     public void Rewrite_ExpressionStatement (string source, string expected)
     {
       var (model, actualNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);

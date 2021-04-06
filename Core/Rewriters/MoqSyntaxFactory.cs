@@ -23,38 +23,25 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public static class MoqSyntaxFactory
   {
-    public static ArgumentSyntax MockBehaviorStrictArgument () =>
-        SyntaxFactory.Argument (
-            SyntaxFactory.MemberAccessExpression (
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    SyntaxFactory.IdentifierName ("MockBehavior"),
-                    SyntaxFactory.IdentifierName ("Strict"))
-                .WithOperatorToken (
-                    SyntaxFactory.Token (SyntaxKind.DotToken)));
+    public static ObjectCreationExpressionSyntax MockCreationExpression (TypeArgumentListSyntax typeArgumentList, ArgumentListSyntax? argumentList = null)
+    {
+      return MoqSyntaxFactory.ObjectCreationExpression (
+          MoqSyntaxFactory.GenericName (MoqSyntaxFactory.MockIdentifier, typeArgumentList.WithLeadingTrivia (SyntaxFactory.Space)),
+          argumentList);
+    }
 
-    public static ObjectCreationExpressionSyntax MockCreationExpression (
-        TypeArgumentListSyntax typeArgumentList,
-        ArgumentListSyntax? argumentList = null,
-        InitializerExpressionSyntax? initializer = null) =>
-        SyntaxFactory.ObjectCreationExpression (
-                SyntaxFactory.GenericName ("Mock")
-                    .WithTypeArgumentList (typeArgumentList)
-                    .WithLeadingTrivia (SyntaxFactory.Space))
-            .WithArgumentList (argumentList)
-            .WithInitializer (initializer);
+    public static ObjectCreationExpressionSyntax PartialMockCreationExpression (TypeArgumentListSyntax typeArgumentList, ArgumentListSyntax? argumentList = null)
+    {
+      return MockCreationExpression (typeArgumentList, argumentList).WithInitializer (MoqSyntaxFactory.CallBaseInitializer());
+    }
 
-    public static InitializerExpressionSyntax CallBaseInitializer () =>
-        SyntaxFactory.InitializerExpression (
-            SyntaxKind.ObjectInitializerExpression,
-            SyntaxFactory.SingletonSeparatedList<ExpressionSyntax> (
-                SyntaxFactory.AssignmentExpression (
-                    SyntaxKind.SimpleAssignmentExpression,
-                    SyntaxFactory.IdentifierName ("CallBase")
-                        .WithTrailingTrivia (SyntaxFactory.Space)
-                        .WithLeadingTrivia (SyntaxFactory.Space),
-                    SyntaxFactory.LiteralExpression (SyntaxKind.TrueLiteralExpression)
-                        .WithTrailingTrivia (SyntaxFactory.Space)
-                        .WithLeadingTrivia (SyntaxFactory.Space))));
+    public static ObjectCreationExpressionSyntax StrictMockCreationExpression (TypeArgumentListSyntax typeArgumentList, ArgumentListSyntax? argumentList = null)
+    {
+      argumentList ??= MoqSyntaxFactory.ArgumentList();
+      argumentList.Arguments.Insert (0, MoqSyntaxFactory.MockBehaviorStrictArgument());
+      var argumentListWithStrictMockArgument = MoqSyntaxFactory.ArgumentList (argumentList.Arguments.Insert (0, MoqSyntaxFactory.MockBehaviorStrictArgument()));
+      return MockCreationExpression (typeArgumentList, argumentListWithStrictMockArgument);
+    }
 
     public static ArgumentSyntax ItIsGenericArgument (TypeArgumentListSyntax typeArgumentList, LambdaExpressionSyntax lambdaExpression) =>
         SyntaxFactory.Argument (
@@ -552,7 +539,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.ArgumentList (SyntaxFactory.SingletonSeparatedList (argument));
     }
 
-    public static ArgumentListSyntax ArgumentList (IEnumerable<ArgumentSyntax> arguments)
+    public static ArgumentListSyntax SimpleArgumentList (IEnumerable<ArgumentSyntax> arguments)
     {
       return SyntaxFactory.ArgumentList (SyntaxFactory.SeparatedList (arguments));
     }
@@ -575,11 +562,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           : NestedMemberAccessExpression (access, accessors.Skip (1).ToList());
     }
 
-    public static GenericNameSyntax GenericName (SyntaxToken identifier, TypeArgumentListSyntax typeArgumentList)
-    {
-      return SyntaxFactory.GenericName (identifier, typeArgumentList);
-    }
-
     public static TypeArgumentListSyntax SimpleTypeArgumentList (IEnumerable<TypeSyntax> typeArguments)
     {
       return MoqSyntaxFactory.TypeArgumentList (typeArguments);
@@ -588,6 +570,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     public static TypeArgumentListSyntax SimpleTypeArgumentList (TypeSyntax typeArguments)
     {
       return MoqSyntaxFactory.TypeArgumentList (new[] { typeArguments });
+    }
+
+    public static GenericNameSyntax GenericName (SyntaxToken identifier, TypeArgumentListSyntax? typeArgumentList = null)
+    {
+      return typeArgumentList == null
+          ? SyntaxFactory.GenericName (identifier)
+          : SyntaxFactory.GenericName (identifier, typeArgumentList);
     }
 
     #region Private MoqSyntaxFactory
@@ -611,9 +600,16 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           : SyntaxFactory.InvocationExpression (expression, argumentList).WithLeadingTrivia (SyntaxFactory.Space);
     }
 
-    private static ArgumentListSyntax ArgumentList (ArgumentSyntax argument)
+    private static ArgumentListSyntax ArgumentList (ArgumentSyntax? argument = null)
     {
-      return SyntaxFactory.ArgumentList (SyntaxFactory.SingletonSeparatedList<ArgumentSyntax> (argument));
+      return argument == null
+          ? SyntaxFactory.ArgumentList()
+          : SyntaxFactory.ArgumentList (SyntaxFactory.SingletonSeparatedList<ArgumentSyntax> (argument));
+    }
+
+    private static ArgumentListSyntax ArgumentList (IEnumerable<ArgumentSyntax> arguments)
+    {
+      return SyntaxFactory.ArgumentList (SyntaxFactory.SeparatedList (arguments));
     }
 
     private static ArgumentSyntax Argument (ExpressionSyntax expression)
@@ -631,17 +627,57 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.TypeArgumentList (SyntaxFactory.SeparatedList<TypeSyntax> (typeArguments));
     }
 
+    private static InitializerExpressionSyntax ObjectInitializerExpression (ExpressionSyntax expression)
+    {
+      return SyntaxFactory.InitializerExpression (SyntaxKind.ObjectInitializerExpression, SyntaxFactory.SingletonSeparatedList (expression));
+    }
+
+    private static AssignmentExpressionSyntax AssignmentExpression (ExpressionSyntax left, ExpressionSyntax right)
+    {
+      return SyntaxFactory.AssignmentExpression (SyntaxKind.SimpleAssignmentExpression, left, right);
+    }
+
+    private static ObjectCreationExpressionSyntax ObjectCreationExpression (TypeSyntax type, ArgumentListSyntax? argumentList = null)
+    {
+      return argumentList == null
+          ? SyntaxFactory.ObjectCreationExpression (type).WithArgumentList (argumentList)
+          : SyntaxFactory.ObjectCreationExpression (type).WithArgumentList (argumentList).WithLeadingTrivia (SyntaxFactory.Space);
+    }
+
+    private static InitializerExpressionSyntax CallBaseInitializer ()
+    {
+      return MoqSyntaxFactory.ObjectInitializerExpression (
+          MoqSyntaxFactory.AssignmentExpression (
+              MoqSyntaxFactory.CallBaseIdentifierName.WithTrailingTrivia (SyntaxFactory.Space).WithLeadingTrivia (SyntaxFactory.Space),
+              MoqSyntaxFactory.TrueLiteralExpression.WithTrailingTrivia (SyntaxFactory.Space).WithLeadingTrivia (SyntaxFactory.Space)));
+    }
+
+    private static ArgumentSyntax MockBehaviorStrictArgument ()
+    {
+      return MoqSyntaxFactory.Argument (MoqSyntaxFactory.MemberAccessExpression (MoqSyntaxFactory.MockBehaviorIdentifierName, MoqSyntaxFactory.StrictIdentifierName));
+    }
+
     private static IdentifierNameSyntax LambdaParameterIdentifierName => SyntaxFactory.IdentifierName ("_");
 
     private static IdentifierNameSyntax ContainsIdentifierName => SyntaxFactory.IdentifierName ("Contains");
 
     private static IdentifierNameSyntax AllIdentifierName => SyntaxFactory.IdentifierName ("All");
 
+    private static IdentifierNameSyntax MockBehaviorIdentifierName => SyntaxFactory.IdentifierName ("MockBehavior");
+
+    private static IdentifierNameSyntax StrictIdentifierName => SyntaxFactory.IdentifierName ("Strict");
+
+    private static IdentifierNameSyntax CallBaseIdentifierName => SyntaxFactory.IdentifierName ("CallBase");
+
     private static LiteralExpressionSyntax NullLiteralExpression => SyntaxFactory.LiteralExpression (SyntaxKind.NullLiteralExpression);
+
+    private static LiteralExpressionSyntax TrueLiteralExpression => SyntaxFactory.LiteralExpression (SyntaxKind.TrueLiteralExpression);
 
     private static SyntaxToken DotToken => SyntaxFactory.Token (SyntaxKind.DotToken);
 
     private static SyntaxToken LambdaParameterIdentifier => SyntaxFactory.Identifier ("_");
+
+    private static SyntaxToken MockIdentifier => SyntaxFactory.Identifier ("Mock");
 
     #endregion
   }

@@ -77,5 +77,10 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
 
       return identifierName;
     }
+
+    public static GenericNameSyntax? GetFirstGenericNameOrDefault (this SyntaxNode node)
+    {
+      return node.DescendantNodes().FirstOrDefault (s => s.IsKind (SyntaxKind.GenericName)) as GenericNameSyntax;
+    }
   }
 }
