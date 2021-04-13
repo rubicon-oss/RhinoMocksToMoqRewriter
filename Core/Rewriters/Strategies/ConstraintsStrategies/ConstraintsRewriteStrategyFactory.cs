@@ -27,9 +27,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategie
         return DefaultConstraintsRewriteStrategy.Instance;
       }
 
-      var rhinoMocksConstraintsIsSymbol = model!.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.Is");
-      var rhinoMocksConstraintsListSymbol = model!.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.List");
-      var rhinoMocksConstraintsPropertySymbol = model!.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.Property");
+      var rhinoMocksConstraintsIsSymbol = model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.Is");
+      var rhinoMocksConstraintsListSymbol = model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.List");
+      var rhinoMocksConstraintsPropertySymbol = model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.Property");
       if (rhinoMocksConstraintsIsSymbol == null || rhinoMocksConstraintsListSymbol == null || rhinoMocksConstraintsPropertySymbol == null)
       {
         throw new InvalidOperationException ("Rhino.Mocks cannot be found!");

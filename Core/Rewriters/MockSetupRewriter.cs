@@ -24,11 +24,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitMethodDeclaration (MethodDeclarationSyntax node)
     {
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
       var rhinoMocksExtensionsCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.RhinoMocksExtensions");
       var rhinoMocksIMethodOptionsSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Interfaces.IMethodOptions`1");
       if (rhinoMocksExtensionsCompilationSymbol == null || rhinoMocksIMethodOptionsSymbol == null)
@@ -102,7 +97,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Where (s => s.IsKind (SyntaxKind.ExpressionStatement))
           .Select (s => (ExpressionStatementSyntax) s)
           .Where (
-              s => Model!.GetSymbolInfo (s.Expression).Symbol is IMethodSymbol methodSymbol
+              s => Model.GetSymbolInfo (s.Expression).Symbol is IMethodSymbol methodSymbol
                    && (expectSymbols.Contains (methodSymbol.ReducedFrom ?? methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)
                        || stubSymbols.Contains (methodSymbol.ReducedFrom ?? methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)
                        || returnSymbols.Contains (methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)
@@ -113,7 +108,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private bool ContainsExceptMethodSymbol (IEnumerable<SyntaxNode> nodes, IEnumerable<ISymbol> expectSymbols)
     {
       return nodes
-          .Select (s => Model!.GetSymbolInfo (s).Symbol)
+          .Select (s => Model.GetSymbolInfo (s).Symbol)
           .Any (s => expectSymbols.Contains ((s as IMethodSymbol)?.ReducedFrom ?? s?.OriginalDefinition, SymbolEqualityComparer.Default));
     }
 
@@ -124,7 +119,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         IReadOnlyCollection<ISymbol> returnSymbols,
         IReadOnlyCollection<ISymbol> whenCalledSymbols)
     {
-      var symbol = Model!.GetSymbolInfo (originalNode).Symbol as IMethodSymbol;
+      var symbol = Model.GetSymbolInfo (originalNode).Symbol as IMethodSymbol;
       if (stubSymbols.Contains (symbol?.ReducedFrom, SymbolEqualityComparer.Default)
           || expectSymbols.Contains (symbol?.ReducedFrom, SymbolEqualityComparer.Default))
       {
@@ -177,7 +172,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               node.DescendantNodesAndSelf()
                   .Where (s => s.IsKind (SyntaxKind.InvocationExpression))
                   .Where (
-                      s => Model!.GetSymbolInfo (s).Symbol?.OriginalDefinition is IMethodSymbol methodSymbol
+                      s => Model.GetSymbolInfo (s).Symbol?.OriginalDefinition is IMethodSymbol methodSymbol
                            && (stubSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default)
                                || expectSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default))));
     }
@@ -192,7 +187,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return node.DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.IdentifierName))
           .Where (
-              s => Model!.GetSymbolInfo (s).Symbol is IMethodSymbol methodSymbol
+              s => Model.GetSymbolInfo (s).Symbol is IMethodSymbol methodSymbol
                    && (expectSymbols.Contains (methodSymbol.ReducedFrom, SymbolEqualityComparer.Default)
                        || stubSymbols.Contains (methodSymbol.ReducedFrom, SymbolEqualityComparer.Default)
                        || returnSymbols.Contains (methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)

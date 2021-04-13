@@ -25,11 +25,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitExpressionStatement (ExpressionStatementSyntax node)
     {
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
       var rhinoMocksExtensionsCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.RhinoMocksExtensions");
       var rhinoMocksIMethodOptionsSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Interfaces.IMethodOptions`1");
       if (rhinoMocksExtensionsCompilationSymbol == null || rhinoMocksIMethodOptionsSymbol == null)
@@ -81,7 +76,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       return node.DescendantNodesAndSelf()
           .Any (
-              s => Model!.GetSymbolInfo (s).Symbol is IMethodSymbol symbol
+              s => Model.GetSymbolInfo (s).Symbol is IMethodSymbol symbol
                    && ignoreArgumentsSymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default));
     }
 
@@ -112,7 +107,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         IReadOnlyCollection<ISymbol> whenCalledSymbols,
         IReadOnlyCollection<ISymbol> callbackSymbols)
     {
-      return Model!.GetSymbolInfo (node).Symbol is IMethodSymbol symbol
+      return Model.GetSymbolInfo (node).Symbol is IMethodSymbol symbol
              && (expectSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)
                  || stubSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)
                  || returnSymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default)
@@ -157,7 +152,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       if (typeSymbol.NullableAnnotation == NullableAnnotation.Annotated)
       {
-        return (TypeSyntax) Generator!.NullableTypeExpression (ConvertTypeSyntaxNodes (((INamedTypeSymbol) typeSymbol).TypeArguments.First()));
+        return (TypeSyntax) Generator.NullableTypeExpression (ConvertTypeSyntaxNodes (((INamedTypeSymbol) typeSymbol).TypeArguments.First()));
       }
 
       if (typeSymbol.SpecialType == SpecialType.None)
@@ -167,7 +162,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
             MoqSyntaxFactory.SimpleTypeArgumentList (((INamedTypeSymbol) typeSymbol).TypeArguments.Select (ConvertTypeSyntaxNodes)));
       }
 
-      return (PredefinedTypeSyntax) Generator!.TypeExpression (typeSymbol.SpecialType);
+      return (PredefinedTypeSyntax) Generator.TypeExpression (typeSymbol.SpecialType);
     }
   }
 }

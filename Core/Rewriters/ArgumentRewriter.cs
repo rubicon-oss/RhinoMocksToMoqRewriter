@@ -29,11 +29,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     public override SyntaxNode? VisitArgument (ArgumentSyntax node)
     {
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
       var strategy = ArgumentRewriteStrategyFactory.GetRewriteStrategy (node, Model);
       return strategy.Rewrite (node);
     }

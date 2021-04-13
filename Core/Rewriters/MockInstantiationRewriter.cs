@@ -32,11 +32,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     public override SyntaxNode? VisitInvocationExpression (InvocationExpressionSyntax node)
     {
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
       var rhinoMocksMockRepositorySymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
       if (rhinoMocksMockRepositorySymbol == null)
       {

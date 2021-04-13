@@ -25,11 +25,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitArgument (ArgumentSyntax node)
     {
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
       var baseCallNode = (ArgumentSyntax) base.VisitArgument (node)!;
 
       var rhinoMocksConstraintsIsSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.Is");
@@ -80,7 +75,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return expression;
       }
 
-      var strategy = ConstraintsRewriteStrategyFactory.GetRewriteStrategy (invocationExpression, Model!);
+      var strategy = ConstraintsRewriteStrategyFactory.GetRewriteStrategy (invocationExpression, Model);
       return strategy.Rewrite (invocationExpression);
     }
   }

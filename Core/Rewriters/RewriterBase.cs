@@ -20,8 +20,19 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public class RewriterBase : CSharpSyntaxRewriter
   {
-    public SemanticModel? Model { get; set; }
+    private SemanticModel? _model;
+    private SyntaxGenerator? _generator;
 
-    public SyntaxGenerator? Generator { get; set; }
+    public SemanticModel Model
+    {
+      get => _model ?? throw new InvalidOperationException ("SemanticModel must not be null!");
+      set => _model = value;
+    }
+
+    public SyntaxGenerator Generator
+    {
+      get => _generator ?? throw new InvalidOperationException ("SyntaxGenerator must not be null!");
+      set => _generator = value;
+    }
   }
 }

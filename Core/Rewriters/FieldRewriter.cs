@@ -100,11 +100,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return node;
       }
 
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
       var fieldSymbol = Model.GetSymbolInfo (node.Expression).Symbol;
       if (_generateMockFieldSymbols == null)
       {
@@ -124,11 +119,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     public override SyntaxNode? VisitInvocationExpression (InvocationExpressionSyntax node)
     {
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
       var rhinoMocksExtensionsCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.RhinoMocksExtensions");
       var rhinoMocksMockRepositoryCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
       if (rhinoMocksExtensionsCompilationSymbol == null || rhinoMocksMockRepositoryCompilationSymbol == null)
@@ -191,11 +181,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private IEnumerable<IFieldSymbol> GetFieldSymbols (SyntaxNode node)
     {
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
       var mockRepositorySymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
       if (mockRepositorySymbol == null)
       {

@@ -25,11 +25,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitMethodDeclaration (MethodDeclarationSyntax node)
     {
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
       var mockRepositoryCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
       var mockExtensionsCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.RhinoMocksExtensions");
       if (mockRepositoryCompilationSymbol == null || mockExtensionsCompilationSymbol == null)
@@ -70,7 +65,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         IMethodSymbol verifyAllExpectationsMethodSymbol,
         INamedTypeSymbol mockRepositoryCompilationSymbol)
     {
-      var symbol = Model!.GetSymbolInfo (originalNode.Expression).Symbol as IMethodSymbol;
+      var symbol = Model.GetSymbolInfo (originalNode.Expression).Symbol as IMethodSymbol;
       if (verifyAllMethodSymbol.Equals (symbol, SymbolEqualityComparer.Default))
       {
         return RewriteVerifyAllExpression (originalNode, mockRepositoryCompilationSymbol).ToList();
@@ -134,7 +129,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       return expressionStatements
           .Where (
-              s => Model!.GetSymbolInfo (s.Expression).Symbol is IMethodSymbol methodSymbol
+              s => Model.GetSymbolInfo (s.Expression).Symbol is IMethodSymbol methodSymbol
                    && (verifyAllMethodSymbol.Equals (methodSymbol, SymbolEqualityComparer.Default)
                        || verifyAllExpectationsMethodSymbol.Equals (methodSymbol.ReducedFrom ?? methodSymbol, SymbolEqualityComparer.Default)));
     }

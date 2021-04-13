@@ -24,11 +24,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitMethodDeclaration (MethodDeclarationSyntax node)
     {
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
       var rhinoMocksExtensionsCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.RhinoMocksExtensions");
       var rhinoMocksMockRepositoryCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
       if (rhinoMocksExtensionsCompilationSymbol == null || rhinoMocksMockRepositoryCompilationSymbol == null)
@@ -42,11 +37,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     public override SyntaxNode? VisitFieldDeclaration (FieldDeclarationSyntax node)
     {
-      if (Model == null)
-      {
-        throw new InvalidOperationException ("SemanticModel must not be null!");
-      }
-
       var rhinoMocksMockRepositoryCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
       if (rhinoMocksMockRepositoryCompilationSymbol == null)
       {
