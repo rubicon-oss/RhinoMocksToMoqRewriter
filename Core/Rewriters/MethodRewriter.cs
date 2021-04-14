@@ -48,7 +48,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         var trackedExpressionStatement = treeWithTrackedNodes.GetCurrentNode (expressionStatement);
         treeWithTrackedNodes = treeWithTrackedNodes
             .ReplaceNode (
-                trackedExpressionStatement,
+                trackedExpressionStatement!,
                 ComputeReplacementNode (
                     expressionStatement,
                     verifyAllMethodSymbol,

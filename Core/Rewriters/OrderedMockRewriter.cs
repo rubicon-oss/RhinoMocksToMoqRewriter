@@ -51,7 +51,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         var trackedUsingStatement = treeWithTrackedNodes.GetCurrentNode (usingStatement);
         var statements = ReplaceExpressionStatements (((BlockSyntax) usingStatement.Statement).Statements, moqSymbols, i + 1);
 
-        treeWithTrackedNodes = treeWithTrackedNodes.ReplaceNode (trackedUsingStatement, statements);
+        treeWithTrackedNodes = treeWithTrackedNodes.ReplaceNode (trackedUsingStatement!, statements);
       }
 
       return treeWithTrackedNodes;

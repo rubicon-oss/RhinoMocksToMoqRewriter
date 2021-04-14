@@ -47,7 +47,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
             RewriteMockSetupExpression (expressionStatement, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols);
 
         trackedNodes = trackedNodes.ReplaceNode (
-            trackedNodes.GetCurrentNode (expressionStatement),
+            trackedNodes.GetCurrentNode (expressionStatement)!,
             newExpressionStatement);
       }
 
@@ -67,7 +67,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       {
         var trackedNode = trackedNodesToBeReplacedInOriginalNode.GetCurrentNode (currentNode);
         trackedNodesToBeReplacedInOriginalNode = trackedNodesToBeReplacedInOriginalNode.ReplaceNode (
-            trackedNode,
+            trackedNode!,
             ComputeReplacementNode (
                 currentNode,
                 expectSymbols,
