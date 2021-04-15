@@ -56,7 +56,8 @@ ITestInterface DoSomething (int a);
 bool DoSomething (IA a);
 bool DoSomething (List<IA> a);
 bool DoSomething (List<IA> a, IA b, List<IA> c);
-int DoSomething<T>(Func<T> func);",
+int DoSomething<T> (Func<T> func);
+void DoSomething (int a, bool b);",
             //language=C#
             ClassContext =
                 @"
@@ -267,6 +268,54 @@ _mock.Expect (
         return 1;
       }));")]
     public void Rewrite_NestedExpectCall (string source, string expected)
+    {
+      var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context);
+      _rewriter.Model = model;
+      var actualNode = _rewriter.Visit (node);
+
+      var expectedExpressionStatements = expectedNode.DescendantNodes().Where (s => s.IsKind (SyntaxKind.ExpressionStatement)).ToList();
+      var actualExpressionStatements = actualNode.DescendantNodes().Where (s => s.IsKind (SyntaxKind.ExpressionStatement)).ToList();
+
+      Assert.AreEqual (expectedExpressionStatements.Count, actualExpressionStatements.Count);
+      for (var i = 0; i < expectedExpressionStatements.Count; i++)
+      {
+        Assert.That (expectedExpressionStatements[i].IsEquivalentTo (actualExpressionStatements[i], false));
+      }
+    }
+
+    [Test]
+    [TestCase (
+        //language=C#
+        @"Expect.Call ( () => _mock.DoSomething (1, true));",
+        //language=C#
+        @"_mock.Expect (_ => _.DoSomething (1, true));")]
+    [TestCase (
+        //language=C#
+        @"Expect.Call (() => _mock.DoSomething (1, true)).IgnoreArguments();",
+        //language=C#
+        @"_mock.Expect (_ => _.DoSomething (1, true)).IgnoreArguments();")]
+    [TestCase (
+        //language=C#
+        @"Expect.Call(()=>_mock.DoSomething(0, false)).Constraints (Rhino.Mocks.Constraints.Is.Same (1),Rhino.Mocks.Constraints.Is.Same (false));",
+        //language=C#
+        @"_mock.Expect (_ => _.DoSomething (
+Arg<int>.Matches (Rhino.Mocks.Constraints.Is.Same (1)), 
+Arg<bool>.Matches(Rhino.Mocks.Constraints.Is.Same (false))));")]
+    [TestCase (
+        //language=C#
+        @"
+using(null)
+{
+    Expect.Call (() => _mock.DoSomething (1, true)).IgnoreArguments();
+}",
+        //language=C#
+        @"
+using(null)
+{
+    _mock.Expect (_ => _.DoSomething (1, true)).IgnoreArguments();
+}")]
+    public void Rewrite_RewrittenLastCall (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context);
