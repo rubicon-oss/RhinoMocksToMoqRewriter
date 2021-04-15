@@ -611,6 +611,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.MemberAccessExpression (SyntaxKind.SimpleMemberAccessExpression, expression, MoqSyntaxFactory.DotToken, name);
     }
 
+    public static UsingDirectiveSyntax RhinoMocksUsing ()
+    {
+      return SyntaxFactory.UsingDirective (
+          SyntaxFactory.QualifiedName (MoqSyntaxFactory.RhinoIdentifierName, MoqSyntaxFactory.MocksIdentifierName)
+              .WithLeadingTrivia (SyntaxFactory.Space));
+    }
+
     #region Private MoqSyntaxFactory
 
     private static BinaryExpressionSyntax BinaryExpression (SyntaxKind kind, ExpressionSyntax left, ExpressionSyntax right)
@@ -693,6 +700,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static IdentifierNameSyntax ArgIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ArgIdentifier);
 
+    private static IdentifierNameSyntax RhinoIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.RhinoIdentifier);
+
+    private static IdentifierNameSyntax MocksIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.MocksIdentifier);
+
     private static LiteralExpressionSyntax NullLiteralExpression => SyntaxFactory.LiteralExpression (SyntaxKind.NullLiteralExpression);
 
     private static LiteralExpressionSyntax TrueLiteralExpression => SyntaxFactory.LiteralExpression (SyntaxKind.TrueLiteralExpression);
@@ -710,6 +721,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static SyntaxToken MatchesIdentifier => SyntaxFactory.Identifier ("Matches");
 
     private static SyntaxToken ExpectIdentifier => SyntaxFactory.Identifier ("Expect");
+
+    private static SyntaxToken RhinoIdentifier => SyntaxFactory.Identifier ("Rhino");
+
+    private static SyntaxToken MocksIdentifier => SyntaxFactory.Identifier ("Mocks");
 
     #endregion
   }

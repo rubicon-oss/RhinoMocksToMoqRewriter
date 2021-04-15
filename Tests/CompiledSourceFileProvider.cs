@@ -164,6 +164,15 @@ namespace RhinoMocksToMoqRewriter.Tests
       return (semanticModel, syntaxNode);
     }
 
+    public static (SemanticModel, SyntaxNode) CompileCompilationUnitWithNewUsingDirectives (string source, bool ignoreErrors = false)
+    {
+      var nameSpaceTemplate =
+          $"{source} \r\n" +
+          "namespace TestNameSpace{}";
+
+      return Compile (nameSpaceTemplate, ignoreErrors);
+    }
+
     private static (SemanticModel, SyntaxNode) CompileInClass (string className, string classContentSource, bool ignoreErrors = false)
     {
       var classTemplate =
