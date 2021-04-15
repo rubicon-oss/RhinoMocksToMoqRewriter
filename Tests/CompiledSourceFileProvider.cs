@@ -216,6 +216,7 @@ namespace RhinoMocksToMoqRewriter.Tests
           "using Rhino.Mocks;\r\n" +
           $"{context.UsingContext}\r\n" +
           $"namespace {nameSpaceName} {{\r\n" +
+          $"{context.NamespaceContext} \r\n" +
           $"public interface ITestInterface {{{context.InterfaceContext}}} \r\n" +
           $"{nameSpaceContent}\r\n" +
           "}";

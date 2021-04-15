@@ -28,9 +28,11 @@ namespace RhinoMocksToMoqRewriter.Core
     private static readonly List<RewriterBase> s_rewriters =
         new List<RewriterBase>
         {
+            new ExpectCallRewriter(),
             new UsingDirectiveRewriter(),
             new OrderedMockRewriter(),
             new FieldRewriter (new Formatter()),
+            new IgnoreArgumentsRewriter(),
             new MockSetupRewriter(),
             new MethodRewriter(),
             new ArgumentRewriter (new Formatter()),
