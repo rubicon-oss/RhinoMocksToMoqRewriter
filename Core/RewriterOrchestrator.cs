@@ -14,6 +14,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -47,7 +48,7 @@ namespace RhinoMocksToMoqRewriter.Core
       foreach (var compilation in compilations)
       {
         var currentCompilation = compilation;
-        foreach (var syntaxTree in compilation.SyntaxTrees)
+        foreach (var syntaxTree in compilation.SyntaxTrees.Where (s => s.ContainsRhinoMocksUsingDirective()))
         {
           var currentTree = syntaxTree;
           foreach (var rewriter in s_rewriters)
