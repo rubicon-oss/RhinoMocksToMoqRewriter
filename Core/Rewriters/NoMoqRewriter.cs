@@ -54,7 +54,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         INamedTypeSymbol rhinoMocksMockRepositoryCompilationSymbol,
         INamedTypeSymbol rhinoMocksExtensionsCompilationSymbol)
     {
-      return GetReplayAndReplayAllExpressionStatements (node, rhinoMocksExtensionsCompilationSymbol, rhinoMocksMockRepositoryCompilationSymbol)
+      return GetReplayAndReplayAllExpressionStatements (node, GetSimpleMockSymbols (rhinoMocksExtensionsCompilationSymbol, rhinoMocksMockRepositoryCompilationSymbol))
           .Concat (GetAllRhinoMocksMockRepositoryLocalDeclarationStatements (node, rhinoMocksMockRepositoryCompilationSymbol))
           .Concat (GetAllRhinoMocksAssignmentExpressions (node, rhinoMocksMockRepositoryCompilationSymbol));
     }
@@ -84,20 +84,25 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private IEnumerable<SyntaxNode> GetReplayAndReplayAllExpressionStatements (
         MethodDeclarationSyntax node,
-        INamedTypeSymbol rhinoMocksExtensionsCompilationSymbol,
-        INamedTypeSymbol rhinoMocksMockRepositoryCompilationSymbol)
+        IEnumerable<ISymbol> simpleMockSymbols)
     {
-      var replayMethodSymbol = rhinoMocksExtensionsCompilationSymbol.GetMembers ("Replay").Single();
-      var replayAllMethodSymbol = rhinoMocksMockRepositoryCompilationSymbol.GetMembers ("ReplayAll").Single();
-
       return node.DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.ExpressionStatement))
           .Select (s => (ExpressionStatementSyntax) s)
           .Where (
               s => s.Expression is InvocationExpressionSyntax invocationExpression
                    && Model.GetSymbolInfo (invocationExpression).Symbol is IMethodSymbol methodSymbol
-                   && (replayMethodSymbol.Equals (methodSymbol.ReducedFrom ?? methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                       || replayAllMethodSymbol.Equals (methodSymbol, SymbolEqualityComparer.Default)));
+                   && simpleMockSymbols.Contains (methodSymbol.ReducedFrom ?? methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default));
+    }
+
+    private static IEnumerable<ISymbol> GetSimpleMockSymbols (
+        INamedTypeSymbol rhinoMocksExtensionsCompilationSymbol,
+        INamedTypeSymbol rhinoMocksMockRepositoryCompilationSymbol)
+    {
+      return rhinoMocksExtensionsCompilationSymbol.GetMembers ("Replay")
+          .Concat (rhinoMocksMockRepositoryCompilationSymbol.GetMembers ("ReplayAll"))
+          .Concat (rhinoMocksExtensionsCompilationSymbol.GetMembers ("BackToRecord"))
+          .Concat (rhinoMocksMockRepositoryCompilationSymbol.GetMembers ("BackToRecordAll"));
     }
   }
 }

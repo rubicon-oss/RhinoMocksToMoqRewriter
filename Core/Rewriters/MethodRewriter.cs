@@ -34,9 +34,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       var verifyAllMethodSymbol = (IMethodSymbol) mockRepositoryCompilationSymbol.GetMembers ("VerifyAll").Single();
       var verifyAllExpectationsMethodSymbol = (IMethodSymbol) mockExtensionsCompilationSymbol.GetMembers ("VerifyAllExpectations").Single();
+      var assertWasNotCalledMethodSymbols = mockExtensionsCompilationSymbol.GetMembers ("AssertWasNotCalled");
 
       var expressionStatements = GetAllExpressionStatements (node);
-      var rhinoMocksExpressionStatements = GetAllRhinoMocksMethods (expressionStatements, verifyAllMethodSymbol, verifyAllExpectationsMethodSymbol).ToList();
+      var rhinoMocksExpressionStatements = GetAllRhinoMocksMethods (
+          expressionStatements,
+          verifyAllMethodSymbol,
+          verifyAllExpectationsMethodSymbol,
+          assertWasNotCalledMethodSymbols).ToList();
       if (rhinoMocksExpressionStatements.Count == 0)
       {
         return node;
@@ -53,7 +58,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                     expressionStatement,
                     verifyAllMethodSymbol,
                     verifyAllExpectationsMethodSymbol,
-                    mockRepositoryCompilationSymbol));
+                    mockRepositoryCompilationSymbol,
+                    assertWasNotCalledMethodSymbols));
       }
 
       return treeWithTrackedNodes;
@@ -63,20 +69,56 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         ExpressionStatementSyntax originalNode,
         IMethodSymbol verifyAllMethodSymbol,
         IMethodSymbol verifyAllExpectationsMethodSymbol,
-        INamedTypeSymbol mockRepositoryCompilationSymbol)
+        INamedTypeSymbol mockRepositoryCompilationSymbol,
+        IReadOnlyList<ISymbol> assertWasNotCalledMethodSymbol)
     {
       var symbol = Model.GetSymbolInfo (originalNode.Expression).Symbol as IMethodSymbol;
-      if (verifyAllMethodSymbol.Equals (symbol, SymbolEqualityComparer.Default))
+      return symbol switch
       {
-        return RewriteVerifyAllExpression (originalNode, mockRepositoryCompilationSymbol).ToList();
+          _ when verifyAllMethodSymbol.Equals (symbol, SymbolEqualityComparer.Default)
+              => RewriteVerifyAllExpression (originalNode, mockRepositoryCompilationSymbol),
+          _ when verifyAllExpectationsMethodSymbol.Equals (symbol?.ReducedFrom ?? symbol, SymbolEqualityComparer.Default)
+              => new[] { RewriteVerifyAllExpectationsExpression (originalNode) },
+          _ when assertWasNotCalledMethodSymbol.Contains (symbol?.ReducedFrom, SymbolEqualityComparer.Default)
+              => new[] { RewriteAssertWasNotCalled (originalNode) },
+          _ when assertWasNotCalledMethodSymbol.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+              => new[] { RewriteStaticAssertWasNotCalled (originalNode) },
+          _ => throw new InvalidOperationException ("Cannot resolve MethodSymbol from RhinoMocks Method")
+      };
+    }
+
+    private static ExpressionStatementSyntax RewriteStaticAssertWasNotCalled (ExpressionStatementSyntax node)
+    {
+      if (node.Expression is not InvocationExpressionSyntax invocationExpression)
+      {
+        throw new InvalidOperationException ("Expression must be of type InvocationExpressionSyntax");
       }
 
-      if (verifyAllExpectationsMethodSymbol.Equals (symbol?.ReducedFrom ?? symbol, SymbolEqualityComparer.Default))
+      var identifierName = invocationExpression.ArgumentList.GetFirstArgument().Expression as IdentifierNameSyntax;
+      if (identifierName == null)
       {
-        return new[] { RewriteVerifyAllExpectationsExpression (originalNode) };
+        throw new InvalidOperationException ("Node must have an IdentifierName");
       }
 
-      throw new InvalidOperationException ("Cannot resolve MethodSymbol from RhinoMocks Method");
+      var mockedMethodExpression = invocationExpression.ArgumentList.Arguments.Last().Expression;
+      return MoqSyntaxFactory.VerifyStatement (identifierName, mockedMethodExpression, 0)
+          .WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine))
+          .WithLeadingTrivia (node.GetLeadingTrivia());
+    }
+
+    private static ExpressionStatementSyntax RewriteAssertWasNotCalled (ExpressionStatementSyntax node)
+    {
+      if (node.Expression is not InvocationExpressionSyntax invocationExpression)
+      {
+        throw new InvalidOperationException ("Expression must be of type InvocationExpressionSyntax");
+      }
+
+      var identifierName = invocationExpression.GetFirstIdentifierName();
+      var mockedMethodExpression = invocationExpression.ArgumentList.GetFirstArgument().Expression;
+
+      return MoqSyntaxFactory.VerifyStatement (identifierName, mockedMethodExpression, 0)
+          .WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine))
+          .WithLeadingTrivia (node.GetLeadingTrivia());
     }
 
     private IEnumerable<ExpressionStatementSyntax> RewriteVerifyAllExpression (
@@ -88,10 +130,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var mockIdentifierNames = GetMockIdentifierNames (assignmentExpressions, node, mockRepositoryCompilationSymbol);
 
       return mockIdentifierNames.Select (
-              identifierName => MoqSyntaxFactory.VerifyStatement (identifierName.WithoutTrivia())
-                  .WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine))
-                  .WithLeadingTrivia (node.GetLeadingTrivia()))
-          .ToList();
+          identifierName => MoqSyntaxFactory.VerifyStatement (identifierName.WithoutTrivia())
+              .WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine))
+              .WithLeadingTrivia (node.GetLeadingTrivia()));
     }
 
     private static ExpressionStatementSyntax RewriteVerifyAllExpectationsExpression (ExpressionStatementSyntax node)
@@ -125,13 +166,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private IEnumerable<ExpressionStatementSyntax> GetAllRhinoMocksMethods (
         IEnumerable<ExpressionStatementSyntax> expressionStatements,
         IMethodSymbol verifyAllMethodSymbol,
-        IMethodSymbol verifyAllExpectationsMethodSymbol)
+        IMethodSymbol verifyAllExpectationsMethodSymbol,
+        IReadOnlyList<ISymbol> assertWasNotCalledMethodSymbols)
     {
       return expressionStatements
           .Where (
               s => Model.GetSymbolInfo (s.Expression).Symbol is IMethodSymbol methodSymbol
                    && (verifyAllMethodSymbol.Equals (methodSymbol, SymbolEqualityComparer.Default)
-                       || verifyAllExpectationsMethodSymbol.Equals (methodSymbol.ReducedFrom ?? methodSymbol, SymbolEqualityComparer.Default)));
+                       || verifyAllExpectationsMethodSymbol.Equals (methodSymbol.ReducedFrom ?? methodSymbol, SymbolEqualityComparer.Default)
+                       || assertWasNotCalledMethodSymbols.Contains (methodSymbol.ReducedFrom ?? methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)));
     }
 
     private IEnumerable<SyntaxToken> GetMockIdentifierNames (
