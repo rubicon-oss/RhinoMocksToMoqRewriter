@@ -25,7 +25,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitExpressionStatement (ExpressionStatementSyntax node)
     {
-      var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf());
+      var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf(), CompilationId);
       var baseCallNode = (ExpressionStatementSyntax) base.VisitExpressionStatement (trackedNodes)!;
 
       var rhinoMocksIMethodOptionsSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Interfaces.IMethodOptions`1");
@@ -49,7 +49,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         IReadOnlyList<ISymbol> simpleRhinoMocksSymbols,
         IReadOnlyList<ISymbol> constraintsSymbols)
     {
-      var symbol = Model.GetSymbolInfo (node.GetOriginalNode (node)!).Symbol?.OriginalDefinition;
+      var symbol = Model.GetSymbolInfo (node.GetOriginalNode (node, CompilationId)!).Symbol?.OriginalDefinition;
 
       if (node is ExpressionStatementSyntax expressionStatement)
       {
@@ -60,7 +60,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       if (node is MemberAccessExpressionSyntax rhinoMocksRepeatMemberAccessExpression && simpleRhinoMocksSymbols.Contains (symbol, SymbolEqualityComparer.Default))
       {
         return rhinoMocksRepeatMemberAccessExpression.ReplaceNode (
-            node.GetCurrentNode (rhinoMocksRepeatMemberAccessExpression.Expression)!,
+            node.GetCurrentNode (rhinoMocksRepeatMemberAccessExpression.Expression, CompilationId)!,
             (ExpressionSyntax) RewriteExpectCall (rhinoMocksRepeatMemberAccessExpression.Expression, callSymbols, simpleRhinoMocksSymbols, constraintsSymbols));
       }
 
@@ -83,7 +83,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       if (simpleRhinoMocksSymbols.Contains (symbol, SymbolEqualityComparer.Default))
       {
         return rhinoMocksInvocationExpression.ReplaceNode (
-            node.GetCurrentNode (rhinoMocksMemberAccessExpression.Expression)!,
+            node.GetCurrentNode (rhinoMocksMemberAccessExpression.Expression, CompilationId)!,
             (ExpressionSyntax) RewriteExpectCall (rhinoMocksMemberAccessExpression.Expression, callSymbols, simpleRhinoMocksSymbols, constraintsSymbols));
       }
 
@@ -131,7 +131,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private IEnumerable<ITypeSymbol> GetMethodParameterTypes (InvocationExpressionSyntax invocationExpression)
     {
-      return ((IMethodSymbol) Model.GetSymbolInfo (invocationExpression.GetOriginalNode (invocationExpression)!).Symbol!).Parameters.Select (s => s.Type);
+      return ((IMethodSymbol) Model.GetSymbolInfo (invocationExpression.GetOriginalNode (invocationExpression, CompilationId)!).Symbol!).Parameters.Select (s => s.Type);
     }
 
     private ArgumentListSyntax ConvertConstraints (ArgumentListSyntax originalArgumentList, IReadOnlyList<ITypeSymbol> parameterTypes)

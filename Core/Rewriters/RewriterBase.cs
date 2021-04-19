@@ -34,5 +34,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       get => _generator ?? throw new InvalidOperationException ("SyntaxGenerator must not be null!");
       set => _generator = value;
     }
+
+    public Guid CompilationId { get; set; }
   }
 }

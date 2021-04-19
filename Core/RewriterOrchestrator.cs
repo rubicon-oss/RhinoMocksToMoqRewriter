@@ -54,6 +54,7 @@ namespace RhinoMocksToMoqRewriter.Core
           {
             var model = currentCompilation.GetSemanticModel (currentTree);
             rewriter.Model = model;
+            rewriter.CompilationId = Guid.NewGuid();
             rewriter.Generator = generator;
 
             var newRoot = rewriter.Visit (await currentTree.GetRootAsync());

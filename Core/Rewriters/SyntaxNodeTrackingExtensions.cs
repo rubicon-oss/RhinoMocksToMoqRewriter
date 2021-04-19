@@ -20,39 +20,47 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public static class SyntaxNodeTrackingExtensions
   {
-    private static readonly Dictionary<SyntaxAnnotation, WeakReference<SyntaxNode>> s_syntaxNodeDictionary = new();
+    private static readonly Dictionary<(SyntaxAnnotation Annotation, Guid CompilationId), WeakReference<SyntaxNode>> s_originalNodes = new();
     private const string c_annotationId = "Id";
 
-    public static TRoot TrackNode<TRoot> (this TRoot root, SyntaxNode node)
+    public static TRoot TrackNode<TRoot> (this TRoot root, SyntaxNode node, Guid compilationId)
         where TRoot : SyntaxNode
     {
-      return root.TrackNodes (new[] { node });
+      return root.TrackNodes (new[] { node }, compilationId);
     }
 
-    public static TRoot TrackNodes<TRoot> (this TRoot root, IEnumerable<SyntaxNode> nodes)
+    public static TRoot TrackNodes<TRoot> (this TRoot root, IEnumerable<SyntaxNode> nodes, Guid compilationId)
         where TRoot : SyntaxNode
     {
       var trackedNodes = Microsoft.CodeAnalysis.SyntaxNodeExtensions.TrackNodes (root, nodes);
       foreach (var node in nodes)
       {
-        var currentNode = trackedNodes.GetCurrentNode (node)!;
+        var currentNode = trackedNodes.GetCurrentNode (node, compilationId)!;
         var annotations = currentNode.GetAnnotations (c_annotationId).ToList();
-        var syntaxNodeWeakReference = annotations.Select (a => s_syntaxNodeDictionary.GetValueOrDefault (a)).FirstOrDefault (r => r is not null);
+        var syntaxNodeWeakReference = annotations.Select (a => s_originalNodes.GetValueOrDefault ((a, compilationId)))
+            .FirstOrDefault (r => r is not null);
 
-        foreach (var annotation in annotations.Where (a => !s_syntaxNodeDictionary.ContainsKey (a)))
+        foreach (var annotation in annotations.Where (a => !s_originalNodes.ContainsKey ((a, compilationId))))
         {
-          s_syntaxNodeDictionary.Add (annotation, syntaxNodeWeakReference ?? new WeakReference<SyntaxNode> (node));
+          s_originalNodes.Add ((annotation, compilationId), syntaxNodeWeakReference ?? new WeakReference<SyntaxNode> (node));
         }
       }
 
       return trackedNodes;
     }
 
-    public static T? GetOriginalNode<T> (this SyntaxNode root, T trackedNode)
+    [Obsolete ("Use overload with compilationId", true)]
+    public static TRoot TrackNodes<TRoot> (this TRoot root, IEnumerable<SyntaxNode> nodes)
+        where TRoot : SyntaxNode
+    {
+      throw new NotSupportedException();
+    }
+
+    public static T? GetOriginalNode<T> (this SyntaxNode root, T trackedNode, Guid compilationId)
         where T : SyntaxNode
     {
       var annotation = trackedNode.GetAnnotations (c_annotationId).FirstOrDefault();
-      if (annotation is not null && s_syntaxNodeDictionary[annotation].TryGetTarget (out var target))
+      if (annotation is not null && s_originalNodes[(annotation, compilationId)].TryGetTarget (out var target))
       {
         return (T) target;
       }
@@ -60,7 +68,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return null;
     }
 
-    public static T? GetCurrentNode<T> (this SyntaxNode root, T trackedNode)
+    public static T? GetCurrentNode<T> (this SyntaxNode root, T trackedNode, Guid compilationId)
         where T : SyntaxNode
     {
       var currentNode = Microsoft.CodeAnalysis.SyntaxNodeExtensions.GetCurrentNode (root, trackedNode);
@@ -69,13 +77,20 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return currentNode;
       }
 
-      var originalNode = root.GetOriginalNode (trackedNode);
+      var originalNode = root.GetOriginalNode (trackedNode, compilationId);
       if (originalNode == null)
       {
         return null;
       }
 
       return Microsoft.CodeAnalysis.SyntaxNodeExtensions.GetCurrentNode (root, originalNode);
+    }
+
+    [Obsolete ("Use overload with compilationId", true)]
+    public static T? GetCurrentNode<T> (this SyntaxNode root, T trackedNode)
+        where T : SyntaxNode
+    {
+      throw new NotSupportedException();
     }
   }
 }

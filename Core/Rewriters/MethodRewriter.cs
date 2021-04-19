@@ -42,10 +42,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return node;
       }
 
-      var treeWithTrackedNodes = node.TrackNodes (rhinoMocksExpressionStatements);
+      var treeWithTrackedNodes = node.TrackNodes (rhinoMocksExpressionStatements, CompilationId);
       foreach (var expressionStatement in rhinoMocksExpressionStatements)
       {
-        var trackedExpressionStatement = treeWithTrackedNodes.GetCurrentNode (expressionStatement);
+        var trackedExpressionStatement = treeWithTrackedNodes.GetCurrentNode (expressionStatement, CompilationId);
         treeWithTrackedNodes = treeWithTrackedNodes
             .ReplaceNode (
                 trackedExpressionStatement!,

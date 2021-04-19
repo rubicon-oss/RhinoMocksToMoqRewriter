@@ -41,7 +41,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
       //language=C#
       const string source = @"_mock.VerifyAllExpectations();";
       var (_, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
-      var trackedNode = node.TrackNode (node);
+      var trackedNode = node.TrackNode (node, Guid.Empty);
 
       Assert.IsNotNull (trackedNode.GetAnnotations (c_annotationId).SingleOrDefault());
     }
@@ -53,7 +53,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
       const string source = @"_mock.VerifyAllExpectations();";
       var (_, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
 
-      var trackedNodes = node.TrackNodes (node.Body!.Statements!);
+      var trackedNodes = node.TrackNodes (node.Body!.Statements!, Guid.Empty);
 
       Assert.IsNotEmpty (trackedNodes.GetAnnotatedNodes (c_annotationId));
     }
@@ -64,9 +64,9 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
       //language=C#
       const string source = @"_mock.VerifyAllExpectations();";
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
-      var trackedNode = node.TrackNode (node);
+      var trackedNode = node.TrackNode (node, Guid.Empty);
 
-      var originalNode = trackedNode.GetOriginalNode (trackedNode);
+      var originalNode = trackedNode.GetOriginalNode (trackedNode, Guid.Empty);
       Microsoft.CodeAnalysis.ISymbol symbol = null;
 
       Assert.IsEmpty (originalNode.GetAnnotations (c_annotationId));
@@ -81,7 +81,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
       const string source = @"_mock.VerifyAllExpectations();";
       var (_, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
 
-      Assert.IsNull (node.GetOriginalNode (node));
+      Assert.IsNull (node.GetOriginalNode (node, Guid.Empty));
     }
 
     [Test]
@@ -91,11 +91,12 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
       const string source = @"_mock.VerifyAllExpectations();";
       var (_, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
 
-      var trackedNode = node.TrackNode (node);
+      var trackedNode = node.TrackNode (node, Guid.Empty);
       var expectedNode = SyntaxNode.ReplaceNode (trackedNode, trackedNode.GetFirstIdentifierName(), SyntaxFactory.IdentifierName ("_"));
 
-      var actualNode = expectedNode.GetCurrentNode (trackedNode);
+      var actualNode = expectedNode.GetCurrentNode (trackedNode, Guid.Empty);
 
+      Assert.IsNotNull (actualNode);
       Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
     }
 
@@ -106,7 +107,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
       const string source = @"_mock.VerifyAllExpectations();";
       var (_, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
 
-      Assert.IsNull (node.GetCurrentNode (node));
+      Assert.IsNull (node.GetCurrentNode (node, Guid.Empty));
     }
   }
 }

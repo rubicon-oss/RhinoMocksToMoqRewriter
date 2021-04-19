@@ -40,14 +40,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var rhinoMocksExpressionStatements = GetAllRhinoMocksExpressionStatements (node, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols, callbackSymbols)
           .ToList();
 
-      var trackedNodes = node.TrackNodes (rhinoMocksExpressionStatements);
+      var trackedNodes = node.TrackNodes (rhinoMocksExpressionStatements, CompilationId);
       foreach (var expressionStatement in rhinoMocksExpressionStatements)
       {
         var newExpressionStatement =
             RewriteMockSetupExpression (expressionStatement, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols);
 
         trackedNodes = trackedNodes.ReplaceNode (
-            trackedNodes.GetCurrentNode (expressionStatement)!,
+            trackedNodes.GetCurrentNode (expressionStatement, CompilationId)!,
             newExpressionStatement);
       }
 
@@ -62,10 +62,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         IReadOnlyCollection<ISymbol> whenCalledSymbols)
     {
       var nodesToBeReplacedInOriginalNode = GetAllNodesToBeReplaced (originalNode, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols).ToList();
-      var trackedNodesToBeReplacedInOriginalNode = originalNode.TrackNodes (nodesToBeReplacedInOriginalNode);
+      var trackedNodesToBeReplacedInOriginalNode = originalNode.TrackNodes (nodesToBeReplacedInOriginalNode, CompilationId);
       foreach (var currentNode in nodesToBeReplacedInOriginalNode)
       {
-        var trackedNode = trackedNodesToBeReplacedInOriginalNode.GetCurrentNode (currentNode);
+        var trackedNode = trackedNodesToBeReplacedInOriginalNode.GetCurrentNode (currentNode, CompilationId);
         trackedNodesToBeReplacedInOriginalNode = trackedNodesToBeReplacedInOriginalNode.ReplaceNode (
             trackedNode!,
             ComputeReplacementNode (

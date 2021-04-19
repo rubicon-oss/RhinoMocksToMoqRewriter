@@ -44,11 +44,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       var usingStatements = GetRhinoMocksOrderedUsingStatements (node, rhinoMocksMockRepositoryCompilationSymbol).ToList();
 
-      var treeWithTrackedNodes = node.TrackNodes (usingStatements);
+      var treeWithTrackedNodes = node.TrackNodes (usingStatements, CompilationId);
       for (var i = 0; i < usingStatements.Count; i++)
       {
         var usingStatement = usingStatements[i];
-        var trackedUsingStatement = treeWithTrackedNodes.GetCurrentNode (usingStatement);
+        var trackedUsingStatement = treeWithTrackedNodes.GetCurrentNode (usingStatement, CompilationId);
         var statements = ReplaceExpressionStatements (((BlockSyntax) usingStatement.Statement).Statements, moqSymbols, i + 1);
 
         treeWithTrackedNodes = treeWithTrackedNodes.ReplaceNode (trackedUsingStatement!, statements);
