@@ -599,10 +599,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return MoqSyntaxFactory.MemberAccessExpression (expression, name);
     }
 
-    public static InvocationExpressionSyntax InvocationExpression (ExpressionSyntax expression, ArgumentListSyntax argumentList)
+    public static InvocationExpressionSyntax InvocationExpression (ExpressionSyntax expression, ArgumentListSyntax? argumentList = null)
     {
-      return argumentList.IsEmpty()
-          ? SyntaxFactory.InvocationExpression (expression, argumentList)
+      return argumentList == null || argumentList.IsEmpty()
+          ? SyntaxFactory.InvocationExpression (expression)
           : SyntaxFactory.InvocationExpression (expression, argumentList).WithLeadingTrivia (SyntaxFactory.Space);
     }
 
@@ -623,6 +623,22 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return MoqSyntaxFactory.InvocationExpression (
           MoqSyntaxFactory.MemberAccessExpression (MoqSyntaxFactory.ExpectIdentifierName, MoqSyntaxFactory.CallIdentifierName),
           MoqSyntaxFactory.ArgumentList (MoqSyntaxFactory.Argument (MoqSyntaxFactory.ParenthesizedLambdaExpression (expression))));
+    }
+
+    public static MemberAccessExpressionSyntax ExpectCallMemberAccessExpression ()
+    {
+      return MoqSyntaxFactory.MemberAccessExpression (ExpectIdentifierName, CallIdentifierName)
+          .WithTrailingTrivia (SyntaxFactory.Space);
+    }
+
+    public static InvocationExpressionSyntax RepeatAnyExpressionStatement (ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (
+              MoqSyntaxFactory.MemberAccessExpression (
+                  expression,
+                  SyntaxFactory.IdentifierName ("Repeat")),
+              SyntaxFactory.IdentifierName ("Any")));
     }
 
     #region Private MoqSyntaxFactory
@@ -710,8 +726,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static IdentifierNameSyntax CallBaseIdentifierName => SyntaxFactory.IdentifierName ("CallBase");
 
-    private static IdentifierNameSyntax CallIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.CallIdentifier);
-
     private static IdentifierNameSyntax ArgIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ArgIdentifier);
 
     private static IdentifierNameSyntax RhinoIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.RhinoIdentifier);
@@ -723,6 +737,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static LiteralExpressionSyntax TrueLiteralExpression => SyntaxFactory.LiteralExpression (SyntaxKind.TrueLiteralExpression);
 
     private static IdentifierNameSyntax MatchesIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.MatchesIdentifier);
+
+    private static IdentifierNameSyntax CallIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.CallIdentifier);
 
     private static SyntaxToken DotToken => SyntaxFactory.Token (SyntaxKind.DotToken);
 

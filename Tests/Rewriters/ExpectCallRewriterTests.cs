@@ -30,6 +30,9 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
         new Context()
         {
             //language=C#
+            UsingContext =
+                @"using Rhino.Mocks.Interfaces;",
+            //language=C#
             NamespaceContext =
                 @"
 public interface IA
@@ -223,6 +226,11 @@ _mock.Expect (
         @"Expect.Call (_mock.DoSomething()).Return (1).Throw (new InvalidOperationException (""mimimi""));",
         //language=C#
         @"_mock.Expect (_ => _.DoSomething()).Return (1).Throw (new InvalidOperationException (""mimimi""));")]
+    [TestCase (
+        //language=C#
+        @"Expect.Call (_mock.A).Return (_a).CallOriginalMethod(OriginalCallOptions.NoExpectation).Repeat.Any();",
+        //language=C#
+        @"_mock.Expect (_ => _.A).Return (_a).CallOriginalMethod(OriginalCallOptions.NoExpectation).Repeat.Any();")]
     public void Rewrite_ExpectCall (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
