@@ -110,7 +110,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var rewrittenInvocationExpression =
           (InvocationExpressionSyntax) ((SimpleLambdaExpressionSyntax) rewrittenContainedExpression.GetFirstArgument().Expression).ExpressionBody!;
 
-      var originalContainedInvocationExpression = (InvocationExpressionSyntax) originalRhinoMocksMemberAccessExpression.Expression.GetFirstArgument().Expression;
+      var containedArgument = originalRhinoMocksMemberAccessExpression.Expression.GetFirstArgument();
+      var originalContainedInvocationExpression = containedArgument.Expression switch
+      {
+          LambdaExpressionSyntax { Body: InvocationExpressionSyntax lambdaBodyInvocationExpression } => lambdaBodyInvocationExpression,
+          InvocationExpressionSyntax invocationExpression => invocationExpression,
+          _ => throw new InvalidOperationException ("Unable to resolve inner argument.")
+      };
+
       var containedInvocationExpressionParameterSymbols = GetMethodParameterTypes (originalContainedInvocationExpression).ToList();
       var rewrittenArgumentList = ConvertConstraints (originalRhinoMocksInvocationExpression.ArgumentList, containedInvocationExpressionParameterSymbols);
 
@@ -123,6 +130,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var firstIdentifierName = mockMethodCallExpression.GetFirstIdentifierName();
 
       var newExpression = mockMethodCallExpression.ReplaceNode (firstIdentifierName, MoqSyntaxFactory.LambdaParameterIdentifierName);
+      if (newExpression is LambdaExpressionSyntax lambdaExpression)
+      {
+        newExpression = (InvocationExpressionSyntax) lambdaExpression.Body;
+      }
 
       return MoqSyntaxFactory.InvocationExpression (
           MoqSyntaxFactory.MemberAccessExpression (firstIdentifierName, MoqSyntaxFactory.ExpectIdentifierName),

@@ -531,7 +531,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     public static LambdaExpressionSyntax SimpleLambdaExpression (ExpressionSyntax expressionBody)
     {
-      return LambdaExpression (expressionBody);
+      return LambdaExpression (MoqSyntaxFactory.LambdaParameterIdentifier, expressionBody);
     }
 
     public static ArgumentListSyntax SimpleArgumentList (ArgumentSyntax argument)
@@ -618,6 +618,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               .WithLeadingTrivia (SyntaxFactory.Space));
     }
 
+    public static InvocationExpressionSyntax ExpectCallExpression (ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (MoqSyntaxFactory.ExpectIdentifierName, MoqSyntaxFactory.CallIdentifierName),
+          MoqSyntaxFactory.ArgumentList (MoqSyntaxFactory.Argument (MoqSyntaxFactory.ParenthesizedLambdaExpression (expression))));
+    }
+
     #region Private MoqSyntaxFactory
 
     private static BinaryExpressionSyntax BinaryExpression (SyntaxKind kind, ExpressionSyntax left, ExpressionSyntax right)
@@ -625,10 +632,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.BinaryExpression (kind, left, right);
     }
 
-    private static LambdaExpressionSyntax LambdaExpression (ExpressionSyntax expressionBody)
+    private static LambdaExpressionSyntax LambdaExpression (SyntaxToken parameter, ExpressionSyntax expressionBody)
     {
       return SyntaxFactory.SimpleLambdaExpression (
-          SyntaxFactory.Parameter (MoqSyntaxFactory.LambdaParameterIdentifier.WithTrailingTrivia (SyntaxFactory.Space)),
+          SyntaxFactory.Parameter (parameter.WithTrailingTrivia (SyntaxFactory.Space)),
           expressionBody);
     }
 
@@ -684,6 +691,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return MoqSyntaxFactory.Argument (MoqSyntaxFactory.MemberAccessExpression (MoqSyntaxFactory.MockBehaviorIdentifierName, MoqSyntaxFactory.StrictIdentifierName));
     }
 
+    private static ParenthesizedLambdaExpressionSyntax ParenthesizedLambdaExpression (ExpressionSyntax expression)
+    {
+      return SyntaxFactory.ParenthesizedLambdaExpression (expression);
+    }
+
     public static SimpleNameSyntax ExpectIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ExpectIdentifier);
 
     public static IdentifierNameSyntax LambdaParameterIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.LambdaParameterIdentifier);
@@ -697,6 +709,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static IdentifierNameSyntax StrictIdentifierName => SyntaxFactory.IdentifierName ("Strict");
 
     private static IdentifierNameSyntax CallBaseIdentifierName => SyntaxFactory.IdentifierName ("CallBase");
+
+    private static IdentifierNameSyntax CallIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.CallIdentifier);
 
     private static IdentifierNameSyntax ArgIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ArgIdentifier);
 
@@ -716,11 +730,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static SyntaxToken MockIdentifier => SyntaxFactory.Identifier ("Mock");
 
+    private static SyntaxToken ExpectIdentifier => SyntaxFactory.Identifier ("Expect");
+
+    private static SyntaxToken CallIdentifier => SyntaxFactory.Identifier ("Call");
+
     private static SyntaxToken ArgIdentifier => SyntaxFactory.Identifier ("Arg");
 
     private static SyntaxToken MatchesIdentifier => SyntaxFactory.Identifier ("Matches");
-
-    private static SyntaxToken ExpectIdentifier => SyntaxFactory.Identifier ("Expect");
 
     private static SyntaxToken RhinoIdentifier => SyntaxFactory.Identifier ("Rhino");
 
