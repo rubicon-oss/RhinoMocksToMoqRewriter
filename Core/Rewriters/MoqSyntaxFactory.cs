@@ -26,7 +26,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     public static ObjectCreationExpressionSyntax MockCreationExpression (TypeArgumentListSyntax typeArgumentList, ArgumentListSyntax? argumentList = null)
     {
       return MoqSyntaxFactory.ObjectCreationExpression (
-          MoqSyntaxFactory.GenericName (MoqSyntaxFactory.MockIdentifier, typeArgumentList.WithLeadingTrivia (SyntaxFactory.Space)),
+          MoqSyntaxFactory.GenericName (MoqSyntaxFactory.MockIdentifier, typeArgumentList).WithLeadingTrivia (SyntaxFactory.Space),
           argumentList);
     }
 
@@ -636,6 +636,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           MoqSyntaxFactory.ArgumentList (MoqSyntaxFactory.Argument (MoqSyntaxFactory.ParenthesizedLambdaExpression (expression))));
     }
 
+    public static TypeArgumentListSyntax TypeArgumentList (TypeSyntax type)
+    {
+      return SyntaxFactory.TypeArgumentList (SyntaxFactory.SingletonSeparatedList (type));
+    }
+
     public static MemberAccessExpressionSyntax ExpectCallMemberAccessExpression ()
     {
       return MoqSyntaxFactory.MemberAccessExpression (ExpectIdentifierName, CallIdentifierName)
@@ -700,7 +705,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static ObjectCreationExpressionSyntax ObjectCreationExpression (TypeSyntax type, ArgumentListSyntax? argumentList = null)
     {
-      return argumentList == null
+      return argumentList == null || argumentList.IsEmpty()
           ? SyntaxFactory.ObjectCreationExpression (type).WithArgumentList (argumentList)
           : SyntaxFactory.ObjectCreationExpression (type).WithArgumentList (argumentList).WithLeadingTrivia (SyntaxFactory.Space);
     }
