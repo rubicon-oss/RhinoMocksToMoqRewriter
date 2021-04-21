@@ -99,6 +99,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Concat (rhinoMocksIMethodOptionsSymbol.GetMembers ("Do"))
           .Concat (rhinoMocksIMethodOptionsSymbol.GetMembers ("Repeat"))
           .Concat (rhinoMocksIMethodOptionsSymbol.GetMembers ("Throw"))
+          .Concat (rhinoMocksIMethodOptionsSymbol.GetMembers ("CallOriginalMethod"))
           .Concat (rhinoMocksIRepeatSymbol.GetMembers());
     }
 

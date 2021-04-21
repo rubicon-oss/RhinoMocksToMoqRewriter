@@ -30,6 +30,7 @@ namespace RhinoMocksToMoqRewriter.Core
         new List<RewriterBase>
         {
             new LastCallRewriter(),
+            new SetupResultForRewriter(),
             new ExpectCallRewriter(),
             new UsingDirectiveRewriter(),
             new OrderedMockRewriter(),
