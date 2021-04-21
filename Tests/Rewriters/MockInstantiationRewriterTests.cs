@@ -32,9 +32,10 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
             ClassContext =
                 @"
 private ITestInterface _mock;
-private MockRepository _mockRepository = new MockRepository();",
-            //language=C#
-            MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
+private MockRepository _mockRepository = new MockRepository();
+public delegate void AnyDelegate();
+private static void DoSomething (Func<int> func) => throw new NotImplementedException();
+private static void DoSomething (AnyDelegate d) => throw new NotImplementedException();",
         };
 
     [SetUp]
@@ -124,6 +125,16 @@ private MockRepository _mockRepository = new MockRepository();",
         @"_mockRepository.VerifyAll();",
         //language=C#
         @"_mockRepository.VerifyAll();")]
+    [TestCase (
+        //language=C#
+        @"_mock = (ITestInterface) _mockRepository.StrictMock (typeof (ITestInterface));",
+        //language=C#
+        @"_mock = (ITestInterface) new Mock<ITestInterface> (MockBehavior.Strict);")]
+    [TestCase (
+        //language=C#
+        @"_mock = (ITestInterface) _mockRepository.StrictMock (typeof (ITestInterface), 1, 2);",
+        //language=C#
+        @"_mock = (ITestInterface) new Mock<ITestInterface> (MockBehavior.Strict, 1, 2);")]
     public void Rewrite_ExpressionStatement (string source, string expected)
     {
       var (model, actualNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
@@ -191,6 +202,46 @@ private MockRepository _mockRepository = new MockRepository();",
 
       Assert.NotNull (newNode);
       Assert.That (expectedNode.IsEquivalentTo (newNode, false));
+    }
+
+    [Test]
+    [TestCase (
+        //language=C#
+        @"
+DoSomething (delegate
+  {
+    var mock = MockRepository.GenerateMock<ITestInterface>();
+    return 1;
+  });",
+        //language=C#
+        @"
+DoSomething (delegate
+  {
+    var mock = new Mock<ITestInterface>();
+    return 1;
+  });")]
+    [TestCase (
+        //language=C#
+        @"
+DoSomething (delegate
+  {
+    var mock = MockRepository.GenerateStub<ITestInterface>();
+  });",
+        //language=C#
+        @"
+DoSomething (delegate
+  {
+    var mock = new Mock<ITestInterface>();
+  });")]
+    public void Rewrite_NestedStatements (string source, string expected)
+    {
+      var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context, true);
+      _rewriter.Model = model;
+      var actualNode = node.Accept (_rewriter);
+
+      Assert.NotNull (actualNode);
+      Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
     }
   }
 }

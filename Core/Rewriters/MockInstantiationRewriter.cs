@@ -38,35 +38,69 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
       }
 
+      var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.InvocationExpression)), CompilationId);
+      var baseCallNode = (InvocationExpressionSyntax) base.VisitInvocationExpression (trackedNodes)!;
+
       var mockOrStubSymbols = GetAllMockOrStubSymbols (rhinoMocksMockRepositorySymbol);
       var strictMockSymbols = GetAllStrictMockSymbols (rhinoMocksMockRepositorySymbol);
       var partialMockSymbols = GetAllPartialMockSymbols (rhinoMocksMockRepositorySymbol);
-      var methodSymbol = (Model.GetSymbolInfo (node).Symbol as IMethodSymbol)?.OriginalDefinition;
+
+      var originalNode = baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!;
+      var methodSymbol = (Model.GetSymbolInfo (originalNode).Symbol as IMethodSymbol)?.OriginalDefinition;
       if (methodSymbol == null)
       {
-        return node;
+        return baseCallNode;
       }
 
-      var rhinoMethodGenericName = node.GetFirstGenericNameOrDefault();
-      if (rhinoMethodGenericName == null)
+      var rhinoMocksMethodGenericName = baseCallNode.GetFirstGenericNameOrDefault();
+      (TypeArgumentListSyntax? moqMockTypeArgumentList, ArgumentListSyntax? moqMockArgumentSyntaxList) = rhinoMocksMethodGenericName == null
+          ? GetDataFromMockWithoutGenericName (baseCallNode)
+          : GetDataFromMockWithGenericName (baseCallNode, rhinoMocksMethodGenericName);
+
+      if (moqMockTypeArgumentList == null || moqMockArgumentSyntaxList == null)
       {
-        return node;
+        return baseCallNode;
       }
-
-      var nodeWithRewrittenDescendants = (InvocationExpressionSyntax) base.VisitInvocationExpression (node)!;
-      var moqMockTypeArgumentList = SyntaxFactory.TypeArgumentList().AddArguments (rhinoMethodGenericName.TypeArgumentList.Arguments.First());
-      var moqMockArgumentSyntaxList = nodeWithRewrittenDescendants.ArgumentList;
 
       return methodSymbol switch
       {
-          var s when mockOrStubSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) => _formatter.Format (
+          _ when mockOrStubSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) => _formatter.Format (
               MoqSyntaxFactory.MockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList)),
-          var s when partialMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) => _formatter.Format (
+          _ when partialMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) => _formatter.Format (
               MoqSyntaxFactory.PartialMockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList)),
-          var s when strictMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) => _formatter.Format (
+          _ when strictMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) => _formatter.Format (
               MoqSyntaxFactory.StrictMockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList)),
-          _ => node
+          _ => baseCallNode
       };
+    }
+
+    private static (TypeArgumentListSyntax, ArgumentListSyntax) GetDataFromMockWithGenericName (
+        InvocationExpressionSyntax baseCallNode,
+        GenericNameSyntax rhinoMocksMethodGenericName)
+    {
+      var moqMockTypeArgumentList = SyntaxFactory.TypeArgumentList().AddArguments (rhinoMocksMethodGenericName.TypeArgumentList.Arguments.First());
+      var moqMockArgumentSyntaxList = baseCallNode.ArgumentList;
+
+      return (moqMockTypeArgumentList, moqMockArgumentSyntaxList);
+    }
+
+    private static (TypeArgumentListSyntax?, ArgumentListSyntax?) GetDataFromMockWithoutGenericName (InvocationExpressionSyntax baseCallNode)
+    {
+      if (baseCallNode.ArgumentList.GetFirstArgumentOrDefault() is not { } typeArgument)
+      {
+        return (null, null);
+      }
+
+      var typeArgumentList = typeArgument.Expression switch
+      {
+          TypeOfExpressionSyntax { Type: { } type } => MoqSyntaxFactory.TypeArgumentList (type),
+          TypeSyntax type => MoqSyntaxFactory.TypeArgumentList (type),
+          _ => null
+      };
+
+      var argumentList = baseCallNode.ArgumentList.WithArguments (SyntaxFactory.SeparatedList (baseCallNode.ArgumentList.Arguments.Skip (1)));
+
+      return (typeArgumentList, argumentList);
     }
 
     private static IEnumerable<ISymbol> GetAllPartialMockSymbols (INamedTypeSymbol rhinoMocksMockRepositorySymbol)
