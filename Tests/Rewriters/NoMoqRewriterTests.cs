@@ -167,6 +167,18 @@ Console.WriteLine(10);")]
 Rhino.Mocks.RhinoMocksExtensions.Replay (_fieldMock);
 _fieldMock.Replay();",
         null)]
+    [TestCase (
+        //language=C#
+        @"_fieldMockRepository.BackToRecordAll();",
+        null)]
+    [TestCase (
+        //language=C#
+        @"_fieldMock.BackToRecord();",
+        null)]
+    [TestCase (
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.BackToRecord(_fieldMock);",
+        null)]
     [Test]
     public void Rewrite_MethodDeclaration (string source, string expected)
     {

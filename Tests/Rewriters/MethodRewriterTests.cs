@@ -117,6 +117,16 @@ _mock3.Verify();
 _mock4.Verify();
 _mock5.Verify();
 _mock6.Verify();")]
+    [TestCase (
+        //language=C#
+        @"_mock1.AssertWasNotCalled (_ => _.DoSomething());",
+        //language=C#
+        @"_mock1.Verify (_ => _.DoSomething(), Times.Never);")]
+    [TestCase (
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.AssertWasNotCalled (_mock1, _ => _.DoSomething());",
+        //language=C#
+        @"_mock1.Verify (_ => _.DoSomething(), Times.Never);")]
     public void Rewrite_MethodDeclaration (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);

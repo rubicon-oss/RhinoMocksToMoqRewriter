@@ -292,6 +292,17 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                     SyntaxFactory.IdentifierName (identifierName),
                     SyntaxFactory.IdentifierName ("Verify"))));
 
+    public static ExpressionStatementSyntax VerifyStatement (IdentifierNameSyntax identifierName, ExpressionSyntax expression, int times)
+    {
+      return MoqSyntaxFactory.ExpressionStatement (
+          MoqSyntaxFactory.InvocationExpression (
+              MoqSyntaxFactory.MemberAccessExpression (
+                  identifierName,
+                  MoqSyntaxFactory.VerifyIdentifierName),
+              MoqSyntaxFactory.ArgumentList (
+                  new[] { Argument (expression), Argument (TimesExpression (times)) })));
+    }
+
     public static FieldDeclarationSyntax MockFieldDeclaration (
         SyntaxList<AttributeListSyntax> attributeList,
         SyntaxTokenList modifiers,
@@ -707,6 +718,22 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return MoqSyntaxFactory.Argument (MoqSyntaxFactory.MemberAccessExpression (MoqSyntaxFactory.MockBehaviorIdentifierName, MoqSyntaxFactory.StrictIdentifierName));
     }
 
+    private static ExpressionStatementSyntax ExpressionStatement (ExpressionSyntax expression)
+    {
+      return SyntaxFactory.ExpressionStatement (expression);
+    }
+
+    private static ExpressionSyntax TimesExpression (int times)
+    {
+      var timesIdentifierName = times switch
+      {
+          0 => NeverIdentifierName,
+          _ => throw new InvalidOperationException ($"Unable to resolve the matching Times identifier for the value '{times}'.")
+      };
+
+      return MoqSyntaxFactory.MemberAccessExpression (TimesIdentifierName, timesIdentifierName);
+    }
+
     private static ParenthesizedLambdaExpressionSyntax ParenthesizedLambdaExpression (ExpressionSyntax expression)
     {
       return SyntaxFactory.ParenthesizedLambdaExpression (expression);
@@ -726,8 +753,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static IdentifierNameSyntax CallBaseIdentifierName => SyntaxFactory.IdentifierName ("CallBase");
 
-    private static IdentifierNameSyntax ArgIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ArgIdentifier);
-
     private static IdentifierNameSyntax RhinoIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.RhinoIdentifier);
 
     private static IdentifierNameSyntax MocksIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.MocksIdentifier);
@@ -740,13 +765,17 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static IdentifierNameSyntax CallIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.CallIdentifier);
 
+    private static IdentifierNameSyntax TimesIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.TimesIdentifier);
+
+    private static IdentifierNameSyntax NeverIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.NeverIdentifier);
+
+    private static IdentifierNameSyntax VerifyIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.VerifyIdentifier);
+
     private static SyntaxToken DotToken => SyntaxFactory.Token (SyntaxKind.DotToken);
 
     private static SyntaxToken LambdaParameterIdentifier => SyntaxFactory.Identifier ("_");
 
     private static SyntaxToken MockIdentifier => SyntaxFactory.Identifier ("Mock");
-
-    private static SyntaxToken ExpectIdentifier => SyntaxFactory.Identifier ("Expect");
 
     private static SyntaxToken CallIdentifier => SyntaxFactory.Identifier ("Call");
 
@@ -757,6 +786,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static SyntaxToken RhinoIdentifier => SyntaxFactory.Identifier ("Rhino");
 
     private static SyntaxToken MocksIdentifier => SyntaxFactory.Identifier ("Mocks");
+
+    private static SyntaxToken TimesIdentifier => SyntaxFactory.Identifier ("Times");
+
+    private static SyntaxToken NeverIdentifier => SyntaxFactory.Identifier ("Never");
+
+    private static SyntaxToken VerifyIdentifier => SyntaxFactory.Identifier ("Verify");
+
+    private static SyntaxToken ExpectIdentifier => SyntaxFactory.Identifier ("Expect");
 
     #endregion
   }
