@@ -28,7 +28,8 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
             InterfaceContext =
                 @"
   void DoSomething (int b);
-  void DoSomething (IEnumerable<int> b);",
+  void DoSomething (IEnumerable<int> b);
+  void DoSomething (string s);",
             //language=C#
             MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
         };
@@ -102,6 +103,10 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         //language=C#
         @"mock.DoSomething (Arg<int>.Matches (param => param == 3));",
         typeof (ArgMatchesArgumentRewriteStrategy))]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg.Text.Like (""abc""));",
+        typeof (ArgIsArgumentRewriteStrategy))]
     public void GetRewriteStrategy (string source, Type expectedType)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);

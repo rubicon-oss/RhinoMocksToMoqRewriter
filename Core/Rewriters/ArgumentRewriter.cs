@@ -12,7 +12,9 @@
 //
 
 using System;
+using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies;
 
@@ -20,24 +22,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public class ArgumentRewriter : RewriterBase
   {
-    private readonly IFormatter _formatter;
-
-    public ArgumentRewriter (IFormatter formatter)
-    {
-      _formatter = formatter;
-    }
-
     public override SyntaxNode? VisitArgument (ArgumentSyntax node)
     {
-      var strategy = ArgumentRewriteStrategyFactory.GetRewriteStrategy (node, Model);
-      return strategy.Rewrite (node);
-    }
-
-    public override SyntaxNode? VisitArgumentList (ArgumentListSyntax node)
-    {
-      node = (ArgumentListSyntax) base.VisitArgumentList (node)!;
-      var formattedNode = _formatter.Format (node);
-      return formattedNode;
+      var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.Argument)), CompilationId);
+      var baseCallNode = (ArgumentSyntax) base.VisitArgument (trackedNodes)!;
+      var strategy = ArgumentRewriteStrategyFactory.GetRewriteStrategy (baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!, Model);
+      return baseCallNode.WithExpression (strategy.Rewrite (baseCallNode).Expression);
     }
   }
 }

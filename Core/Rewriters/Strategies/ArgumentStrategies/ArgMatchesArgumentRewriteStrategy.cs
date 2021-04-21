@@ -34,7 +34,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
         throw new InvalidOperationException ("Node must contain a LambdaExpression");
       }
 
-      return MoqSyntaxFactory.ItIsGenericArgument (typeArgumentList, lambdaExpression)
+      return MoqSyntaxFactory.ItIsGenericArgument (
+              typeArgumentList,
+              lambdaExpression
+                  .WithLeadingTrivia (lambdaExpression.GetLeadingTrivia())
+                  .WithTrailingTrivia (lambdaExpression.GetTrailingTrivia()))
           .WithLeadingTrivia (node.GetLeadingTrivia());
     }
   }
