@@ -38,7 +38,7 @@ namespace RhinoMocksToMoqRewriter.Core
             new IgnoreArgumentsRewriter(),
             new MockSetupRewriter(),
             new MethodRewriter(),
-            new ArgumentRewriter (new Formatter()),
+            new ArgumentRewriter(),
             new ConstraintsRewriter(),
             new MockInstantiationRewriter (new Formatter()),
             new NoMoqRewriter(),

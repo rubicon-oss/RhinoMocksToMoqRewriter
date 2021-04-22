@@ -31,7 +31,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
       var rhinoMocksConstraintsListArgSymbol = model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.ListArg`1");
       var rhinoMocksGenericArg = model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Arg`1");
       var rhinoMocksConstraintsIsArgSymbol = model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.IsArg`1");
-      if (rhinoMocksArgSymbol == null || rhinoMocksConstraintsListArgSymbol == null || rhinoMocksGenericArg == null || rhinoMocksConstraintsIsArgSymbol == null)
+      var rhinoMocksArgTextSymbol = model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.TextArg");
+      if (rhinoMocksArgSymbol == null || rhinoMocksConstraintsListArgSymbol == null || rhinoMocksGenericArg == null || rhinoMocksConstraintsIsArgSymbol == null
+          || rhinoMocksArgTextSymbol == null)
       {
         throw new InvalidOperationException ("Rhino.Mocks cannot be found!");
       }
@@ -54,6 +56,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
           var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("GreaterThanOrEqual").Contains (s) => ArgIsGreaterThanOrEqualArgumentRewriteStrategy.Instance,
           var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("LessThan").Contains (s) => ArgIsLessThanArgumentRewriteStrategy.Instance,
           var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("LessThanOrEqual").Contains (s) => ArgIsLessThanOrEqualArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksArgTextSymbol.GetMembers ("Like").Contains (s) => ArgIsArgumentRewriteStrategy.Instance,
           _ => DefaultArgumentRewriteStrategy.Instance
       };
     }

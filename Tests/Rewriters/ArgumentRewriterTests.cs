@@ -12,8 +12,6 @@
 //
 
 using System;
-using Microsoft.CodeAnalysis;
-using Moq;
 using NUnit.Framework;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
@@ -23,7 +21,6 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
   public class ArgumentRewriterTests
   {
     private ArgumentRewriter _rewriter;
-    private Mock<IFormatter> _formatter;
 
     private readonly Context _context =
         new Context
@@ -57,10 +54,7 @@ int b = 2;"
     [SetUp]
     public void SetUp ()
     {
-      _formatter = new Mock<IFormatter>();
-      _formatter.Setup (f => f.Format (It.IsAny<SyntaxNode>()))
-          .Returns<SyntaxNode> (s => s);
-      _rewriter = new ArgumentRewriter (_formatter.Object);
+      _rewriter = new ArgumentRewriter();
     }
 
     #region Rhino.Mocks.Arg
@@ -80,6 +74,11 @@ int b = 2;"
     _aString,
     _bInt,
     _cBool);")]
+    [TestCase (
+        //language=C#
+        "mock.Expect (_ => _.DoSomething (Arg.Is (_bInt)));",
+        //language=C#
+        "mock.Expect (_ => _.DoSomething (_bInt));")]
     public void Rewrite_ArgIs (string source, string expected)
     {
       var (model, actualNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);

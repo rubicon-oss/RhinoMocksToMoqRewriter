@@ -25,7 +25,9 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         new Context
         {
             //language=C#
-            InterfaceContext = @"void DoSomething (int b);",
+            InterfaceContext = @"
+void DoSomething (int b);
+void DoSomething (string s);",
             //language=C#
             MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
         };
@@ -57,6 +59,21 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         //language=C#
         @"mock.DoSomething (1);")]
     public void Rewrite_ArgIsEqualOrSame (string source, string expected)
+    {
+      var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
+      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgumentWithContext (expected, _context);
+      var actualNode = _strategy.Rewrite (node);
+
+      Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));
+    }
+
+    [Test]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (Arg.Text.Like (""abc""));",
+        //language=C#
+        @"mock.DoSomething (""abc"");")]
+    public void Rewrite_ArgText (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
       var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgumentWithContext (expected, _context);
