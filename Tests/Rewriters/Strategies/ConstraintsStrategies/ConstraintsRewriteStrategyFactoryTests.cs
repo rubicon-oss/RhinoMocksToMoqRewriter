@@ -49,19 +49,19 @@ private ITestInterface _mock = MockRepository.GenerateMock<ITestInterface>();"
     [TestCase (
         //language=C#
         @"_mock.DoSomething (Arg<int>.Matches (Rhino.Mocks.Constraints.Is.Equal (2)));",
-        typeof (IsEqualOrSameConstraintsRewriteStrategy))]
+        typeof (IsEqualConstraintsRewriteStrategy))]
     [TestCase (
         //language=C#
         @"_mock.DoSomething (Arg<int>.Matches (Rhino.Mocks.Constraints.Is.NotEqual (2)));",
-        typeof (IsNotEqualOrSameConstraintsRewriteStrategy))]
+        typeof (IsNotEqualConstraintsRewriteStrategy))]
     [TestCase (
         //language=C#
         @"_mock.DoSomething (Arg<int>.Matches (Rhino.Mocks.Constraints.Is.Same (2)));",
-        typeof (IsEqualOrSameConstraintsRewriteStrategy))]
+        typeof (IsSameConstraintsRewriteStrategy))]
     [TestCase (
         //language=C#
         @"_mock.DoSomething (Arg<int>.Matches (Rhino.Mocks.Constraints.Is.NotSame (2)));",
-        typeof (IsNotEqualOrSameConstraintsRewriteStrategy))]
+        typeof (IsNotSameConstraintsRewriteStrategy))]
     [TestCase (
         //language=C#
         @"_mock.DoSomething (Arg<int>.Matches (Rhino.Mocks.Constraints.Is.GreaterThan (2)));",

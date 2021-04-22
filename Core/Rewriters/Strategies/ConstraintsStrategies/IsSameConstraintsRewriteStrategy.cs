@@ -17,8 +17,8 @@ using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategies
 {
-  public class IsNotEqualOrSameConstraintsRewriteStrategy : BaseConstraintsRewriteStrategy<IsNotEqualOrSameConstraintsRewriteStrategy>
+  public class IsSameConstraintsRewriteStrategy : BaseConstraintsRewriteStrategy<IsSameConstraintsRewriteStrategy>
   {
-    public override ExpressionSyntax Rewrite (ExpressionSyntax node) => MoqSyntaxFactory.NotEqualOrSameBinaryExpression (node.GetFirstArgument().Expression);
+    public override ExpressionSyntax Rewrite (ExpressionSyntax node) => MoqSyntaxFactory.ReferenceEquals (node.GetFirstArgument().Expression);
   }
 }

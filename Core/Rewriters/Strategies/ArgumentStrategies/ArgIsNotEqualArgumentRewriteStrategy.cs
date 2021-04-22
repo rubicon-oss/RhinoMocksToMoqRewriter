@@ -12,13 +12,30 @@
 //
 
 using System;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using RhinoMocksToMoqRewriter.Core.Extensions;
 
-namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategies
+namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
 {
-  public class IsEqualOrSameConstraintsRewriteStrategy : BaseConstraintsRewriteStrategy<IsEqualOrSameConstraintsRewriteStrategy>
+  public class ArgIsNotEqualArgumentRewriteStrategy : BaseArgumentRewriteStrategy<ArgIsNotEqualArgumentRewriteStrategy>
   {
-    public override ExpressionSyntax Rewrite (ExpressionSyntax node) => MoqSyntaxFactory.EqualOrSameBinaryExpression (node.GetFirstArgument().Expression);
+    public override ArgumentSyntax Rewrite (ArgumentSyntax node)
+    {
+      var typeArgumentList = node.GetTypeArgumentListOrDefault();
+      var argument = node.GetFirstArgumentOrDefault();
+      if (typeArgumentList == null)
+      {
+        throw new InvalidOperationException ("Node must contain a TypeArgumentList");
+      }
+
+      if (argument == null)
+      {
+        throw new InvalidOperationException ("Node must contain an Argument");
+      }
+
+      return MoqSyntaxFactory.IsNotEqualArgument (typeArgumentList, argument.Expression)
+          .WithLeadingTrivia (node.GetLeadingTrivia());
+    }
   }
 }

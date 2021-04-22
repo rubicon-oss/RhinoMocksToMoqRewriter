@@ -54,7 +54,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
     [TestCase (
         //language=C#
         @"mock.DoSomething (Arg<int>.Is.NotEqual (1));",
-        typeof (ArgIsNotEqualOrSameArgumentRewriteStrategy))]
+        typeof (ArgIsNotEqualArgumentRewriteStrategy))]
     [TestCase (
         //language=C#
         @"mock.DoSomething (Arg<int>.Is.Same (1));",
@@ -62,7 +62,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
     [TestCase (
         //language=C#
         @"mock.DoSomething (Arg<int>.Is.NotSame (1));",
-        typeof (ArgIsNotEqualOrSameArgumentRewriteStrategy))]
+        typeof (ArgIsNotSameArgumentRewriteStrategy))]
     [TestCase (
         //language=C#
         @"mock.DoSomething (Arg<int>.Is.GreaterThan (1));",
@@ -101,7 +101,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
         typeof (ArgListIsInArgumentRewriteStrategy))]
     [TestCase (
         //language=C#
-        @"mock.DoSomething (Arg<int>.Matches (param => param == 3));",
+        @"mock.DoSomething (Arg<int>.Matches (_ => _ == 3));",
         typeof (ArgMatchesArgumentRewriteStrategy))]
     [TestCase (
         //language=C#

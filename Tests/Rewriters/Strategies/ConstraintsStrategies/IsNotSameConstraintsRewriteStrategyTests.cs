@@ -13,37 +13,28 @@
 
 using System;
 using NUnit.Framework;
-using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies;
+using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategies;
 
-namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
+namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ConstraintsStrategies
 {
   [TestFixture]
-  public class ArgListContainsAllArgumentRewriteStrategyTests
+  public class IsNotSameConstraintsRewriteStrategyTests
   {
-    private readonly IArgumentRewriteStrategy _strategy = new ArgListContainsAllArgumentRewriteStrategy();
-
-    private readonly Context _context =
-        new Context
-        {
-            //language=C#
-            InterfaceContext = @"void DoSomething (IEnumerable<int> b);",
-            //language=C#
-            MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
-        };
+    private readonly IConstraintsRewriteStrategy _strategy = new IsNotSameConstraintsRewriteStrategy();
 
     [Test]
     [TestCase (
         //language=C#
-        @"mock.DoSomething (Arg<int[]>.List.ContainsAll (new[] {1, 2, 3}));",
+        @"Rhino.Mocks.Constraints.Is.NotSame (2)",
         //language=C#
-        @"mock.DoSomething (It.Is<int[]> (_ => new[] {1, 2, 3}.All (_.Contains)));")]
-    public void Rewrite_ArgListContainsAll (string source, string expected)
+        @"!object.ReferenceEquals (_, 2)")]
+    public void Rewrite_IsNotSame (string source, string expected)
     {
-      var (_, node) = CompiledSourceFileProvider.CompileArgumentWithContext (source, _context);
-      var (_, expectedArgumentNode) = CompiledSourceFileProvider.CompileArgumentWithContext (expected, _context);
-      var actualNode = _strategy.Rewrite (node);
+      var (_, node) = CompiledSourceFileProvider.CompileExpressionStatement (source, true);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatement (expected, true);
+      var actualNode = _strategy.Rewrite (node.Expression);
 
-      Assert.That (expectedArgumentNode.IsEquivalentTo (actualNode, false));
+      Assert.That (expectedNode.Expression.IsEquivalentTo (actualNode, false));
     }
   }
 }

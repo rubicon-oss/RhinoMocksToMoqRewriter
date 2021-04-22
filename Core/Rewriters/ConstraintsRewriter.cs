@@ -47,9 +47,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return baseCallNode;
       }
 
-      var lambda = MoqSyntaxFactory.SimpleLambdaExpression (ConvertExpression (invocationExpression.ArgumentList.GetFirstArgument().Expression));
-
-      return MoqSyntaxFactory.SimpleArgument (invocationExpression.WithArgumentList (MoqSyntaxFactory.SimpleArgumentList (lambda)));
+      return MoqSyntaxFactory.SimpleArgument (
+          invocationExpression.WithArgumentList (
+              MoqSyntaxFactory.SimpleArgumentList (
+                  MoqSyntaxFactory.SimpleLambdaExpression (
+                      ConvertExpression (invocationExpression.ArgumentList.GetFirstArgument().Expression)))));
     }
 
     private ExpressionSyntax ConvertExpression (ExpressionSyntax expression)

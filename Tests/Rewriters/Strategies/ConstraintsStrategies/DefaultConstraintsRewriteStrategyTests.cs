@@ -12,7 +12,6 @@
 //
 
 using System;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NUnit.Framework;
 using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategies;
 

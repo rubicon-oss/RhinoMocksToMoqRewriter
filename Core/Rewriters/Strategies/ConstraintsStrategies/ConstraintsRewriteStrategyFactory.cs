@@ -12,7 +12,9 @@
 //
 
 using System;
+using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategies
@@ -35,23 +37,56 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategie
         throw new InvalidOperationException ("Rhino.Mocks cannot be found!");
       }
 
+      if (IsNotAutomaticallyRewritable (node, symbol, model, rhinoMocksConstraintsIsSymbol, rhinoMocksConstraintsPropertySymbol))
+      {
+        Console.Error.WriteLine (
+            $"  WARNING: Unable to convert Rhino.Mocks.Constraints.Property.Value or Rhino.Mocks.Constraints.Is.NotNull\r\n"
+            + $"  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
+
+        return DefaultConstraintsRewriteStrategy.Instance;
+      }
+
       return symbol switch
       {
-          var s when rhinoMocksConstraintsIsSymbol.GetMembers ("Equal").Contains (s) => IsEqualOrSameConstraintsRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsSymbol.GetMembers ("NotEqual").Contains (s) => IsNotEqualOrSameConstraintsRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsSymbol.GetMembers ("Same").Contains (s) => IsEqualOrSameConstraintsRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsSymbol.GetMembers ("NotSame").Contains (s) => IsNotEqualOrSameConstraintsRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsSymbol.GetMembers ("Null").Contains (s) => IsNullConstraintsRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsSymbol.GetMembers ("NotNull").Contains (s) => IsNotNullConstraintsRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsSymbol.GetMembers ("GreaterThan").Contains (s) => IsGreaterThanConstraintsRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsSymbol.GetMembers ("GreaterThanOrEqual").Contains (s) => IsGreaterThanOrEqualConstraintsRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsSymbol.GetMembers ("LessThan").Contains (s) => IsLessThanConstraintsRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsSymbol.GetMembers ("LessThanOrEqual").Contains (s) => IsLessThanOrEqualConstraintsRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsListSymbol.GetMembers ("IsIn").Contains (s) => ListIsInConstraintsRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsListSymbol.GetMembers ("ContainsAll").Contains (s) => ListContainsAllConstraintsRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsPropertySymbol.GetMembers ("Value").Contains (s) => PropertyValueConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsIsSymbol.GetMembers ("Equal").Contains (symbol) => IsEqualConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsIsSymbol.GetMembers ("NotEqual").Contains (symbol) => IsNotEqualConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsIsSymbol.GetMembers ("Same").Contains (symbol) => IsSameConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsIsSymbol.GetMembers ("NotSame").Contains (symbol) => IsNotSameConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsIsSymbol.GetMembers ("Null").Contains (symbol) => IsNullConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsIsSymbol.GetMembers ("NotNull").Contains (symbol) => IsNotNullConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsIsSymbol.GetMembers ("GreaterThan").Contains (symbol) => IsGreaterThanConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsIsSymbol.GetMembers ("GreaterThanOrEqual").Contains (symbol) => IsGreaterThanOrEqualConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsIsSymbol.GetMembers ("LessThan").Contains (symbol) => IsLessThanConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsIsSymbol.GetMembers ("LessThanOrEqual").Contains (symbol) => IsLessThanOrEqualConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsListSymbol.GetMembers ("IsIn").Contains (symbol) => ListIsInConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsListSymbol.GetMembers ("ContainsAll").Contains (symbol) => ListContainsAllConstraintsRewriteStrategy.Instance,
+          _ when rhinoMocksConstraintsPropertySymbol.GetMembers ("Value").Contains (symbol) => PropertyValueConstraintsRewriteStrategy.Instance,
           _ => DefaultConstraintsRewriteStrategy.Instance
       };
+    }
+
+    private static bool IsNotAutomaticallyRewritable (
+        ExpressionSyntax node,
+        ISymbol symbol,
+        SemanticModel model,
+        INamedTypeSymbol rhinoMocksConstraintsIsSymbol,
+        INamedTypeSymbol rhinoMocksConstraintsPropertySymbol)
+    {
+      if (node.Parent is not BinaryExpressionSyntax parentBinaryExpression)
+      {
+        return false;
+      }
+
+      var nextExpressionSymbol = model.GetSymbolInfo (parentBinaryExpression.Right).Symbol;
+      if (node.IsEquivalentTo (parentBinaryExpression.Right, false))
+      {
+        nextExpressionSymbol = model.GetSymbolInfo (parentBinaryExpression.Left).Symbol;
+      }
+
+      return (rhinoMocksConstraintsPropertySymbol.GetMembers ("Value").Contains (symbol, SymbolEqualityComparer.Default)
+              || rhinoMocksConstraintsIsSymbol.GetMembers ("NotNull").Contains (symbol, SymbolEqualityComparer.Default))
+             && (rhinoMocksConstraintsPropertySymbol.GetMembers ("Value").Contains (nextExpressionSymbol, SymbolEqualityComparer.Default)
+                 || rhinoMocksConstraintsIsSymbol.GetMembers ("NotNull").Contains (nextExpressionSymbol, SymbolEqualityComparer.Default));
     }
   }
 }
