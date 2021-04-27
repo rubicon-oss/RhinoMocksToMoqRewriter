@@ -323,23 +323,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                       variableDeclarators)));
     }
 
-    public static ArgumentSyntax MockObjectArgument (IdentifierNameSyntax identifierName)
+    public static MemberAccessExpressionSyntax MockObjectExpression (IdentifierNameSyntax identifierName)
     {
-      return SyntaxFactory.Argument (
-          SyntaxFactory.MemberAccessExpression (
-                  SyntaxKind.SimpleMemberAccessExpression,
-                  identifierName,
-                  SyntaxFactory.IdentifierName ("Object"))
-              .WithOperatorToken (
-                  SyntaxFactory.Token (SyntaxKind.DotToken)));
-    }
-
-    public static MemberAccessExpressionSyntax MockObjectExpression (IdentifierNameSyntax firstIdentifierName)
-    {
-      return SyntaxFactory.MemberAccessExpression (
-          SyntaxKind.SimpleMemberAccessExpression,
-          firstIdentifierName,
-          SyntaxFactory.IdentifierName ("Object"));
+      return MoqSyntaxFactory.MemberAccessExpression (
+          identifierName,
+          MoqSyntaxFactory.ObjectIdentifierName);
     }
 
     public static IdentifierNameSyntax SetupIdentifierName ()
@@ -776,6 +764,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static IdentifierNameSyntax VerifyIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.VerifyIdentifier);
 
+    private static IdentifierNameSyntax ObjectIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ObjectIdentifier);
+
     private static SyntaxToken DotToken => SyntaxFactory.Token (SyntaxKind.DotToken);
 
     private static SyntaxToken LambdaParameterIdentifier => SyntaxFactory.Identifier ("_");
@@ -799,6 +789,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static SyntaxToken VerifyIdentifier => SyntaxFactory.Identifier ("Verify");
 
     private static SyntaxToken ExpectIdentifier => SyntaxFactory.Identifier ("Expect");
+
+    private static SyntaxToken ObjectIdentifier => SyntaxFactory.Identifier ("Object");
 
     #endregion
   }

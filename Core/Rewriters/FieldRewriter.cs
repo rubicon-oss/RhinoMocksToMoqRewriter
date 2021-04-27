@@ -17,7 +17,6 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
@@ -90,93 +89,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                   node.Declaration.Variables)));
 
       return formattedNode;
-    }
-
-    public override SyntaxNode? VisitArgument (ArgumentSyntax node)
-    {
-      var argumentIdentifierName = node.Expression as IdentifierNameSyntax;
-      if (argumentIdentifierName == null)
-      {
-        return node;
-      }
-
-      var fieldSymbol = Model.GetSymbolInfo (node.Expression).Symbol;
-      if (_generateMockFieldSymbols == null)
-      {
-        throw new InvalidOperationException ("FieldSymbolList must not be null!");
-      }
-
-      if (!_generateMockFieldSymbols.Any (s => SymbolEqualityComparer.Default.Equals (s, fieldSymbol)))
-      {
-        return node;
-      }
-
-      node = (ArgumentSyntax) base.VisitArgument (node)!;
-
-      return MoqSyntaxFactory.MockObjectArgument (argumentIdentifierName)
-          .WithLeadingTrivia (node.GetLeadingTrivia());
-    }
-
-    public override SyntaxNode? VisitInvocationExpression (InvocationExpressionSyntax node)
-    {
-      var rhinoMocksExtensionsCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.RhinoMocksExtensions");
-      var rhinoMocksMockRepositoryCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
-      if (rhinoMocksExtensionsCompilationSymbol == null || rhinoMocksMockRepositoryCompilationSymbol == null)
-      {
-        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
-      }
-
-      var rhinoMocksSymbols = GetRhinoMocksSymbolsFromRhinoMocksCompilationSymbols (rhinoMocksExtensionsCompilationSymbol, rhinoMocksMockRepositoryCompilationSymbol)
-          .ToList();
-      var methodSymbol = Model.GetSymbolInfo (node).Symbol as IMethodSymbol;
-      if (methodSymbol == null)
-      {
-        return (InvocationExpressionSyntax) base.VisitInvocationExpression (node)!;
-      }
-
-      if (rhinoMocksSymbols.Contains (methodSymbol.ReducedFrom ?? methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)
-          || rhinoMocksSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default))
-      {
-        return node;
-      }
-
-      var identifierName = node.GetFirstIdentifierNameOrDefault();
-      if (identifierName == null)
-      {
-        return node;
-      }
-
-      var fieldSymbol = Model.GetSymbolInfo (identifierName).Symbol;
-      if (fieldSymbol == null)
-      {
-        throw new InvalidOperationException ("Unable to get FieldSymbol from FieldDeclaration");
-      }
-
-      if (_generateMockFieldSymbols == null)
-      {
-        throw new InvalidOperationException ("FieldSymbolList must not be null!");
-      }
-
-      if (!_generateMockFieldSymbols.Any (s => SymbolEqualityComparer.Default.Equals (s, fieldSymbol)))
-      {
-        return node;
-      }
-
-      var nodeWithObjectExpression = MoqSyntaxFactory.MockObjectExpression (identifierName);
-
-      return node.ReplaceNode (identifierName, nodeWithObjectExpression);
-    }
-
-    private static IEnumerable<ISymbol> GetRhinoMocksSymbolsFromRhinoMocksCompilationSymbols (
-        INamedTypeSymbol rhinoMocksExtensionsCompilationSymbol,
-        INamedTypeSymbol rhinoMocksMockRepositoryCompilationSymbol)
-    {
-      return rhinoMocksExtensionsCompilationSymbol.GetMembers ("Expect")
-          .Concat (rhinoMocksExtensionsCompilationSymbol.GetMembers ("Stub"))
-          .Concat (rhinoMocksMockRepositoryCompilationSymbol.GetMembers ("VerifyAll"))
-          .Concat (rhinoMocksExtensionsCompilationSymbol.GetMembers ("VerifyAllExpectations"))
-          .Concat (rhinoMocksExtensionsCompilationSymbol.GetMembers ("Replay"))
-          .Concat (rhinoMocksMockRepositoryCompilationSymbol.GetMembers ("ReplayAll"));
     }
 
     private IEnumerable<IFieldSymbol> GetFieldSymbols (SyntaxNode node)

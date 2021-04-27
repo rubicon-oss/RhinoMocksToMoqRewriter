@@ -164,6 +164,16 @@ namespace RhinoMocksToMoqRewriter.Tests
       return (semanticModel, syntaxNode);
     }
 
+    public static (SemanticModel, SyntaxNode) CompileReturnStatementWithContext (string source, Context context, bool ignoreErrors = false)
+    {
+      var (semanticModel, node) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
+      var returnStatement = node.DescendantNodes()
+          .OfType<ReturnStatementSyntax>()
+          .LastOrDefault();
+
+      return (semanticModel, returnStatement);
+    }
+
     public static (SemanticModel, SyntaxNode) CompileCompilationUnitWithNewUsingDirectives (string source, bool ignoreErrors = false)
     {
       var nameSpaceTemplate =

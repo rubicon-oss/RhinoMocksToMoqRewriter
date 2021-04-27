@@ -29,17 +29,6 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
         new Context
         {
             //language=C#
-            InterfaceContext =
-                @"
-void DoSomething();
-int DoSomething(string a);
-void DoSomething (int b);
-List<ITestInterface> DoSomething (int b, int c);
-void DoSomething (int b, ITestInterface c);
-ITestInterface DoSomething (string b);
-ITestInterface DoSomething (bool b);
-ITestInterface DoSomething (ITestInterface b);",
-            //language=C#
             ClassContext =
                 @"
 private ITestInterface _mock;
@@ -47,14 +36,11 @@ private MockRepository _mockRepository = new MockRepository();",
             //language=C#
             MethodContext =
                 @"
-var rhinoMock = MockRepository.GenerateMock<ITestInterface>();
 _mock = MockRepository.GenerateMock<ITestInterface>();
 _mockA = MockRepository.GenerateMock<ITestInterface>();
 _mockB = MockRepository.GenerateMock<ITestInterface>();
 _mockC = MockRepository.GenerateMock<ITestInterface>();
-_mockD = MockRepository.GenerateMock<ITestInterface>();
-_mockE = MockRepository.GenerateMock<ITestInterface>();
-_mockI = MockRepository.GenerateMock<ITestInterface>();"
+_mockD = MockRepository.GenerateMock<ITestInterface>();"
         };
 
     [SetUp]
@@ -74,9 +60,9 @@ _mockI = MockRepository.GenerateMock<ITestInterface>();"
         @"private Mock<ITestInterface> _mockA;")]
     [TestCase (
         //language=C#
-        @"private ITestInterface _mockI = null;",
+        @"private ITestInterface _mockA = null;",
         //language=C#
-        @"private Mock<ITestInterface> _mockI = null;")]
+        @"private Mock<ITestInterface> _mockA = null;")]
     [TestCase (
         //language=C#
         @"private ITestInterface _noMock;",
@@ -84,14 +70,14 @@ _mockI = MockRepository.GenerateMock<ITestInterface>();"
         @"private ITestInterface _noMock;")]
     [TestCase (
         //language=C#
-        @"private ITestInterface _mockB, _mockC, _mockD;",
+        @"private ITestInterface _mockA, _mockB, _mockC;",
         //language=C#
-        @"private Mock<ITestInterface> _mockB, _mockC, _mockD;")]
+        @"private Mock<ITestInterface> _mockA, _mockB, _mockC;")]
     [TestCase (
         //language=C#
-        @"private ITestInterface _mockE = MockRepository.GenerateMock<ITestInterface>();",
+        @"private ITestInterface _mockD = MockRepository.GenerateMock<ITestInterface>();",
         //language=C#
-        @"private Mock<ITestInterface> _mockE = MockRepository.GenerateMock<ITestInterface>();")]
+        @"private Mock<ITestInterface> _mockD = MockRepository.GenerateMock<ITestInterface>();")]
     [TestCase (
         //language=C#
         @"private ITestInterface _mockX = _mockRepository.StrictMock<ITestInterface>();",
@@ -101,135 +87,6 @@ _mockI = MockRepository.GenerateMock<ITestInterface>();"
     {
       var (model, node) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (source, _context, true);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (expected, _context, true);
-      _rewriter.Model = model;
-      var actualNode = _rewriter.Visit (node);
-
-      Assert.NotNull (actualNode);
-      Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
-    }
-
-    [Test]
-    [TestCase (
-        //language=C#
-        @"rhinoMock.DoSomething (_mock);",
-        //language=C#
-        @"rhinoMock.DoSomething (_mock.Object);")]
-    [TestCase (
-        //language=C#
-        @"rhinoMock.DoSomething (1);",
-        //language=C#
-        @"rhinoMock.DoSomething (1);")]
-    [TestCase (
-        //language=C#
-        @"rhinoMock.DoSomething (1, _mock);",
-        //language=C#
-        @"rhinoMock.DoSomething (1, _mock.Object);")]
-    [TestCase (
-        //language=C#
-        @"rhinoMock.DoSomething (1, _mock.DoSomething(""anyString""));",
-        //language=C#
-        @"rhinoMock.DoSomething (1, _mock.Object.DoSomething(""anyString"");")]
-    [TestCase (
-        //language=C#
-        @"rhinoMock.DoSomething (1, _mock.DoSomething(_mock));",
-        //language=C#
-        @"rhinoMock.DoSomething (1, _mock.Object.DoSomething(_mock.Object));")]
-    public void Rewrite_MockArgument (string source, string expected)
-    {
-      var (model, node) = CompiledSourceFileProvider.CompileArgumentListWithContext (source, _context, true);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileArgumentListWithContext (expected, _context, true);
-      _rewriter.Model = model;
-      var actualNode = _rewriter.Visit (node);
-
-      Assert.NotNull (actualNode);
-      Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
-    }
-
-    [Test]
-    [TestCase (
-        //language=C#
-        @"_mock.DoSomething();",
-        //language=C#
-        @"_mock.Object.DoSomething();")]
-    [TestCase (
-        //language=C#
-        @"_mock.DoSomething (1);",
-        //language=C#
-        @"_mock.Object.DoSomething (1);")]
-    [TestCase (
-        //language=C#
-        @"_mock.DoSomething (1, 4).First();",
-        //language=C#
-        @"_mock.Object.DoSomething (1, 4).First();")]
-    [TestCase (
-        //language=C#
-        @"_mock.DoSomething (false).DoSomething();",
-        //language=C#
-        @"_mock.Object.DoSomething (false).DoSomething();")]
-    [TestCase (
-        //language=C#
-        @"_mock.DoSomething (1, 4).First().DoSomething();",
-        //language=C#
-        @"_mock.Object.DoSomething (1, 4).First().DoSomething();")]
-    [TestCase (
-        //language=C#
-        @"_mock.Verify();",
-        //language=C#
-        @"_mock.Verify();")]
-    [TestCase (
-        //language=C#
-        @"Console.WriteLine (1);",
-        //language=C#
-        @"Console.WriteLine (1);")]
-    [TestCase (
-        //language=C#
-        @"_mock.Expect (m => m.DoSomething());",
-        //language=C#
-        @"_mock.Expect (m => m.DoSomething());")]
-    [TestCase (
-        //language=C#
-        @"Rhino.Mocks.RhinoMocksExtensions.Expect (rhinoMock, m => m.DoSomething());",
-        //language=C#
-        @"Rhino.Mocks.RhinoMocksExtensions.Expect (rhinoMock, m => m.DoSomething());")]
-    [TestCase (
-        //language=C#
-        @"_mock.Stub (m => m.DoSomething());",
-        //language=C#
-        @"_mock.Stub (m => m.DoSomething());")]
-    [TestCase (
-        //language=C#
-        @"Rhino.Mocks.RhinoMocksExtensions.Stub (rhinoMock, m => m.DoSomething (""anyString"")).Return (1);",
-        //language=C#
-        @"Rhino.Mocks.RhinoMocksExtensions.Stub (rhinoMock, m => m.DoSomething (""anyString"")).Return (1);")]
-    [TestCase (
-        //language=C#
-        @"_mock.VerifyAllExpectations();",
-        //language=C#
-        @"_mock.VerifyAllExpectations();")]
-    [TestCase (
-        //language=C#
-        @"Rhino.Mocks.RhinoMocksExtensions.VerifyAllExpectations (rhinoMock);",
-        //language=C#
-        @"Rhino.Mocks.RhinoMocksExtensions.VerifyAllExpectations (rhinoMock);")]
-    [TestCase (
-        //language=C#
-        @"rhinoMock.Replay();",
-        //language=C#
-        @"rhinoMock.Replay();")]
-    [TestCase (
-        //language=C#
-        @"Rhino.Mocks.RhinoMocksExtensions.Replay (rhinoMock);",
-        //language=C#
-        @"Rhino.Mocks.RhinoMocksExtensions.Replay (rhinoMock);")]
-    [TestCase (
-        //language=C#
-        @"_mock.Verify();",
-        //language=C#
-        @"_mock.Verify();")]
-    public void Rewrite_MockInvocationExpression (string source, string expected)
-    {
-      var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context, true);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context, true);
       _rewriter.Model = model;
       var actualNode = _rewriter.Visit (node);
 
