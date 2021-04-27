@@ -20,7 +20,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public static class SyntaxNodeTrackingExtensions
   {
-    private static readonly Dictionary<(SyntaxAnnotation Annotation, Guid CompilationId), WeakReference<SyntaxNode>> s_originalNodes = new();
+    private static readonly Dictionary<(SyntaxAnnotation Annotation, Guid CompilationId), SyntaxNode> s_originalNodes = new();
     private const string c_annotationId = "Id";
 
     public static TRoot TrackNode<TRoot> (this TRoot root, SyntaxNode node, Guid compilationId)
@@ -37,12 +37,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       {
         var currentNode = trackedNodes.GetCurrentNode (node, compilationId)!;
         var annotations = currentNode.GetAnnotations (c_annotationId).ToList();
-        var syntaxNodeWeakReference = annotations.Select (a => s_originalNodes.GetValueOrDefault ((a, compilationId)))
-            .FirstOrDefault (r => r is not null);
+        var trackedNode = annotations.Select (a => s_originalNodes.GetValueOrDefault ((a, compilationId))).FirstOrDefault();
 
         foreach (var annotation in annotations.Where (a => !s_originalNodes.ContainsKey ((a, compilationId))))
         {
-          s_originalNodes.Add ((annotation, compilationId), syntaxNodeWeakReference ?? new WeakReference<SyntaxNode> (node));
+          s_originalNodes.Add ((annotation, compilationId), trackedNode ?? node);
         }
       }
 
@@ -60,9 +59,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         where T : SyntaxNode
     {
       var annotation = trackedNode.GetAnnotations (c_annotationId).FirstOrDefault();
-      if (annotation is not null && s_originalNodes[(annotation, compilationId)].TryGetTarget (out var target))
+      if (annotation is not null)
       {
-        return (T) target;
+        return (T) s_originalNodes[(annotation, compilationId)];
       }
 
       return null;
@@ -92,5 +91,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       throw new NotSupportedException();
     }
+
+    public static void ClearLookup () => s_originalNodes.Clear();
   }
 }

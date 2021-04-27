@@ -30,26 +30,32 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
             //language=C#
             ClassContext =
                 @"
-private ITestInterface _mock1;
+private ITestInterface _mock1; 
 private ITestInterface _mock2;
 private ITestInterface _mock3;
 private ITestInterface _mock4;
 private ITestInterface _mock5;
 private ITestInterface _mock6;
+private ITestInterface _mock7;
+private ITestInterface _mock8;
 private MockRepository _mockRepository1;
-private MockRepository _mockRepository2;",
+private MockRepository _mockRepository2;
+private MockRepository _mockRepository3;",
             //language=C#
             MethodContext =
                 @"
 _mockRepository1 = new MockRepository();
 _mockRepository2 = new MockRepository();
+_mockRepository3 = new MockRepository();
 var mock = MockRepository.GenerateMock<ITestInterface>();
 _mock1 = _mockRepository1.StrictMock<ITestInterface>();
 _mock2 = _mockRepository1.PartialMock<ITestInterface>();
 _mock3 = _mockRepository1.PartialMultiMock<ITestInterface>();
 _mock4 = _mockRepository1.DynamicMock<ITestInterface>();
-_mock5 = _mockRepository2.StrictMock<ITestInterface>();
-_mock6 = _mockRepository2.StrictMock<ITestInterface>();"
+_mock5 = _mockRepository2.DynamicMultiMock<ITestInterface>();
+_mock6 = _mockRepository2.StrictMock<ITestInterface>();
+_mock7 = _mockRepository3.StrictMock<ITestInterface>();
+_mock8 = _mockRepository3.StrictMock<ITestInterface>();"
         };
 
     [SetUp]
@@ -121,12 +127,22 @@ _mock6.Verify();")]
         //language=C#
         @"_mock1.AssertWasNotCalled (_ => _.DoSomething());",
         //language=C#
-        @"_mock1.Verify (_ => _.DoSomething(), Times.Never);")]
+        @"_mock1.Verify (_ => _.DoSomething(), Times.Never());")]
     [TestCase (
         //language=C#
         @"Rhino.Mocks.RhinoMocksExtensions.AssertWasNotCalled (_mock1, _ => _.DoSomething());",
         //language=C#
-        @"_mock1.Verify (_ => _.DoSomething(), Times.Never);")]
+        @"_mock1.Verify (_ => _.DoSomething(), Times.Never());")]
+    [TestCase (
+        //language=C#
+        @"mock.AssertWasCalled (m => m.DoSomething());",
+        //language=C#
+        @"mock.Verify (m => m.DoSomething(), Times.AtLeastOnce());")]
+    [TestCase (
+        //language=C#
+        @"Rhino.Mocks.RhinoMocksExtensions.AssertWasCalled (mock, m => m.DoSomething());",
+        //language=C#
+        @"mock.Verify (m => m.DoSomething(), Times.AtLeastOnce());")]
     [TestCase (
         //language=C#
         @"
@@ -165,6 +181,108 @@ mock.Verify();")]
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
+      Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
+    }
+
+    [TestCase (
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.VerifyAllExpectations();",
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.Verify (_ => _.DoSomething(), Times.Never());",
+        //language=C#
+        @"
+0")]
+    [TestCase (
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.VerifyAllExpectations();",
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.Verify (_ => _.DoSomething(), Times.Once());",
+        //language=C#
+        @"
+1")]
+    [TestCase (
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.VerifyAllExpectations();",
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.Verify (_ => _.DoSomething(), Times.Exactly (2));",
+        //language=C#
+        @"
+2")]
+    [TestCase (
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.VerifyAllExpectations();",
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.Verify (_ => _.DoSomething(), Times.Exactly (3));",
+        //language=C#
+        @"
+3")]
+    [TestCase (
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.VerifyAllExpectations();",
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.Verify (_ => _.DoSomething(), Times.AtLeastOnce());",
+        //language=C#
+        @"
+-1")]
+    [TestCase (
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.VerifyAllExpectations();",
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.Verify (_ => _.DoSomething(), Times.Between (2, 8));",
+        //language=C#
+        @"
+2:8")]
+    [TestCase (
+        //language=C#
+        @"
+_mock7.Setup (_ => _.DoSomething());
+_mock8.Setup (_ => _.DoSomething());
+_mockRepository3.VerifyAll();
+Console.WriteLine (1);",
+        //language=C#
+        @"
+_mock7.Setup (_ => _.DoSomething());
+_mock8.Setup (_ => _.DoSomething());
+_mock7.Verify (_ => _.DoSomething(), Times.Exactly (2));
+_mock8.Verify (_ => _.DoSomething(), Times.Once());
+Console.WriteLine (1);",
+        //language=C#
+        @"
+2
+1")]
+    public void Rewrite_VerifyWithAnnotation (string source, string expected, string annotationData)
+    {
+      var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContextAndAdditionalAnnotations (source, _context, annotationData, true);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context, true);
+      _rewriter.Model = model;
+      var actualNode = node.Accept (_rewriter);
+
+      Assert.NotNull (actualNode);
+      Assert.IsNotEmpty (actualNode.GetAnnotatedNodes (MoqSyntaxFactory.VerifyAnnotationKind));
       Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
     }
   }

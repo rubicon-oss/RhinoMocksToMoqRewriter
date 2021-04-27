@@ -82,5 +82,11 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
     {
       return node.DescendantNodes().FirstOrDefault (s => s.IsKind (SyntaxKind.GenericName)) as GenericNameSyntax;
     }
+
+    public static SyntaxNode? WithLeadingAndTrailingTriviaOfNode (this SyntaxNode node, SyntaxNode triviaNode)
+    {
+      return node.WithLeadingTrivia (triviaNode.GetLeadingTrivia())
+          .WithTrailingTrivia (triviaNode.GetTrailingTrivia());
+    }
   }
 }

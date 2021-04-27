@@ -231,24 +231,39 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.Argument (expression);
     }
 
-    public static ExpressionStatementSyntax VerifyStatement (SyntaxToken identifierName) =>
-        SyntaxFactory.ExpressionStatement (
-            SyntaxFactory.InvocationExpression (
-                SyntaxFactory.MemberAccessExpression (
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    SyntaxFactory.IdentifierName (identifierName),
-                    SyntaxFactory.IdentifierName ("Verify"))));
-
-    public static ExpressionStatementSyntax VerifyStatement (IdentifierNameSyntax identifierName, ExpressionSyntax expression, int times)
+    public static ExpressionStatementSyntax VerifyExpressionStatement (IdentifierNameSyntax identifierName)
     {
       return MoqSyntaxFactory.ExpressionStatement (
-          MoqSyntaxFactory.InvocationExpression (
-              MoqSyntaxFactory.MemberAccessExpression (
-                  identifierName,
-                  MoqSyntaxFactory.VerifyIdentifierName),
-              MoqSyntaxFactory.ArgumentList (
-                  new[] { Argument (expression), Argument (TimesExpression (times)) })));
+          MoqSyntaxFactory.VerifyExpression (identifierName));
     }
+
+    public static ExpressionSyntax VerifyExpression (IdentifierNameSyntax identifierName, ExpressionSyntax? expression = null, int? times = null)
+    {
+      var argumentList = expression is null || times == null
+          ? null
+          : MoqSyntaxFactory.ArgumentList (new[] { Argument (expression), Argument (TimesExpression ((int) times)) });
+
+      return MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (
+              identifierName,
+              MoqSyntaxFactory.VerifyIdentifierName),
+          argumentList);
+    }
+
+    public static ExpressionSyntax VerifyExpression (IdentifierNameSyntax identifierName, ExpressionSyntax expression, (int Min, int Max) times)
+    {
+      return MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (
+              identifierName,
+              MoqSyntaxFactory.VerifyIdentifierName),
+          MoqSyntaxFactory.ArgumentList (
+              new[]
+              {
+                  Argument (expression),
+                  Argument (TimesExpression (-2, times.Min, times!.Max))
+              }));
+    }
+
 
     public static FieldDeclarationSyntax MockFieldDeclaration (
         SyntaxList<AttributeListSyntax> attributeList,
@@ -277,43 +292,23 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           MoqSyntaxFactory.ObjectIdentifierName);
     }
 
-    public static IdentifierNameSyntax SetupIdentifierName ()
+    public static InvocationExpressionSyntax VerifiableMock (ExpressionSyntax expression)
     {
-      return SyntaxFactory.IdentifierName ("Setup");
+      return MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (
+              expression,
+              MoqSyntaxFactory.VerifiableIdentifierName));
     }
 
-    public static IdentifierNameSyntax ReturnsIdentifierName ()
+    public static InvocationExpressionSyntax SetupExpression (IdentifierNameSyntax mockIdentifierName, LambdaExpressionSyntax lambdaExpression)
     {
-      return SyntaxFactory.IdentifierName ("Returns");
-    }
-
-    public static IdentifierNameSyntax CallbackIdentifierName ()
-    {
-      return SyntaxFactory.IdentifierName ("Callback");
-    }
-
-    public static ExpressionStatementSyntax VerifiableMock (ExpressionSyntax expression)
-    {
-      return SyntaxFactory.ExpressionStatement (
-          SyntaxFactory.InvocationExpression (
-              SyntaxFactory.MemberAccessExpression (
-                  SyntaxKind.SimpleMemberAccessExpression,
-                  expression,
-                  SyntaxFactory.IdentifierName ("Verifiable"))));
-    }
-
-    public static InvocationExpressionSyntax SetupExpression (IdentifierNameSyntax identifierName, LambdaExpressionSyntax lambdaExpression)
-    {
-      return SyntaxFactory.InvocationExpression (
-          SyntaxFactory.MemberAccessExpression (
-              SyntaxKind.SimpleMemberAccessExpression,
-              identifierName,
-              SyntaxFactory.IdentifierName ("Setup")
+      return MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (
+              mockIdentifierName,
+              MoqSyntaxFactory.SetupIdentifierName
                   .WithTrailingTrivia (SyntaxFactory.Space)),
-          SyntaxFactory.ArgumentList (
-              SyntaxFactory.SingletonSeparatedList (
-                  SyntaxFactory.Argument (
-                      lambdaExpression))));
+          MoqSyntaxFactory.SimpleArgumentList (
+              lambdaExpression));
     }
 
     public static UsingDirectiveSyntax MoqUsingDirective ()
@@ -635,6 +630,17 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           SyntaxFactory.IdentifierName (propertyName.ToString().Replace ("\"", "")));
     }
 
+    #region Annotations
+
+    public static SyntaxAnnotation VerifyAnnotation (SyntaxNode? currentNode = null, object? times = null)
+    {
+      return new SyntaxAnnotation (MoqSyntaxFactory.VerifyAnnotationKind, $"{times?.ToString()}");
+    }
+
+    public static string VerifyAnnotationKind => "Verify";
+
+    #endregion
+
     #region Private MoqSyntaxFactory
 
     private static BinaryExpressionSyntax BinaryExpression (SyntaxKind kind, ExpressionSyntax left, ExpressionSyntax right)
@@ -706,15 +712,27 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.ExpressionStatement (expression);
     }
 
-    private static ExpressionSyntax TimesExpression (int times)
+    private static ExpressionSyntax TimesExpression (int times, int min = 0, int max = 0)
     {
       var timesIdentifierName = times switch
       {
+          -2 => BetweenIdentifierName,
+          -1 => AtLeastOnceIdentifierName,
           0 => NeverIdentifierName,
-          _ => throw new InvalidOperationException ($"Unable to resolve the matching Times identifier for the value '{times}'.")
+          1 => OnceIdentifierName,
+          _ => ExactlyIdentifierName
       };
 
-      return MoqSyntaxFactory.MemberAccessExpression (TimesIdentifierName, timesIdentifierName);
+      return MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (
+              TimesIdentifierName,
+              timesIdentifierName),
+          times switch
+          {
+              -1 or 0 or 1 => null,
+              -2 => MoqSyntaxFactory.ArgumentList (new[] { Argument (NumericLiteralExpression (min)), Argument (NumericLiteralExpression (max)).WithLeadingTrivia (SyntaxFactory.Space) }),
+              _ => MoqSyntaxFactory.ArgumentList (Argument (NumericLiteralExpression (times)))
+          });
     }
 
     private static ParenthesizedLambdaExpressionSyntax ParenthesizedLambdaExpression (ExpressionSyntax expression)
@@ -730,9 +748,26 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static PredefinedTypeSyntax ObjectKeyword => SyntaxFactory.PredefinedType (SyntaxFactory.Token (SyntaxKind.ObjectKeyword));
 
+    private static LiteralExpressionSyntax NumericLiteralExpression (int times)
+    {
+      return SyntaxFactory.LiteralExpression (
+          SyntaxKind.NumericLiteralExpression,
+          SyntaxFactory.Literal (times));
+    }
+
     public static IdentifierNameSyntax LambdaParameterIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.LambdaParameterIdentifier);
 
+    public static IdentifierNameSyntax SetupIdentifierName => SyntaxFactory.IdentifierName ("Setup");
+
+    public static IdentifierNameSyntax ReturnsIdentifierName => SyntaxFactory.IdentifierName ("Returns");
+
+    public static IdentifierNameSyntax CallbackIdentifierName => SyntaxFactory.IdentifierName ("Callback");
+
+    public static IdentifierNameSyntax ThrowsIdentifierName => SyntaxFactory.IdentifierName ("Throws");
+
     private static IdentifierNameSyntax ContainsIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ContainsIdentifier);
+
+    private static IdentifierNameSyntax VerifiableIdentifierName => SyntaxFactory.IdentifierName ("Verifiable");
 
     private static IdentifierNameSyntax AllIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.AllIdentifier);
 
@@ -753,6 +788,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static IdentifierNameSyntax TimesIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.TimesIdentifier);
 
     private static IdentifierNameSyntax NeverIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.NeverIdentifier);
+
+    private static IdentifierNameSyntax OnceIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.OnceIdentifier);
+
+    private static IdentifierNameSyntax ExactlyIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ExactlyIdentifier);
+
+    private static IdentifierNameSyntax AtLeastOnceIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.AtLeastOnceIdentifier);
+
+    private static SimpleNameSyntax BetweenIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.BetweenIdentifier);
 
     private static IdentifierNameSyntax VerifyIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.VerifyIdentifier);
 
@@ -785,6 +828,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static SyntaxToken TimesIdentifier => SyntaxFactory.Identifier ("Times");
 
     private static SyntaxToken NeverIdentifier => SyntaxFactory.Identifier ("Never");
+
+    private static SyntaxToken OnceIdentifier => SyntaxFactory.Identifier ("Once");
+
+    private static SyntaxToken ExactlyIdentifier => SyntaxFactory.Identifier ("Exactly");
+
+    private static SyntaxToken BetweenIdentifier => SyntaxFactory.Identifier ("Between");
+
+    private static SyntaxToken AtLeastOnceIdentifier => SyntaxFactory.Identifier ("AtLeastOnce");
 
     private static SyntaxToken VerifyIdentifier => SyntaxFactory.Identifier ("Verify");
 

@@ -21,6 +21,8 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Moq;
 using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core.Extensions;
+using RhinoMocksToMoqRewriter.Core.Rewriters;
 
 namespace RhinoMocksToMoqRewriter.Tests
 {
@@ -114,6 +116,50 @@ namespace RhinoMocksToMoqRewriter.Tests
       return (semanticModel, expression);
     }
 
+    public static (SemanticModel, MethodDeclarationSyntax) CompileMethodDeclarationWithContextAndAdditionalAnnotations (
+        string source,
+        Context context,
+        string annotationData,
+        bool ignoreErrors = false)
+    {
+      var (originalModel, originalNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
+      var methodDeclaration = originalNode.DescendantNodes()
+          .OfType<MethodDeclarationSyntax>()
+          .Last();
+
+      var annotations = annotationData
+          .Split (Environment.NewLine)
+          .Skip (1)
+          .Select (s => new SyntaxAnnotation (MoqSyntaxFactory.VerifyAnnotationKind, s))
+          .ToList();
+
+      var statementsWithAnnotation = methodDeclaration.Body!.Statements;
+      for (var i = 1; i <= annotations.Count; i++)
+      {
+        var index = annotations.Count + i;
+        statementsWithAnnotation = statementsWithAnnotation.Replace (
+            statementsWithAnnotation[^index],
+            statementsWithAnnotation[^index].WithAdditionalAnnotations (annotations[^i]));
+      }
+
+      var originalTree = originalNode.SyntaxTree;
+      var newMethodDeclaration = methodDeclaration.WithBody (methodDeclaration.Body.WithStatements (statementsWithAnnotation));
+      originalNode = originalNode.ReplaceNode (methodDeclaration, newMethodDeclaration);
+
+      var compilation = (CSharpCompilation) originalModel.Compilation;
+      compilation = compilation.ReplaceSyntaxTreeAndUpdateCompilation (originalTree, originalNode.SyntaxTree);
+
+      var methodDeclarationWithAnnotations = compilation.SyntaxTrees.Single()
+          .GetRoot()
+          .DescendantNodes()
+          .OfType<MethodDeclarationSyntax>()
+          .Last();
+
+      var updatedSemanticModel = compilation.GetSemanticModel (compilation.SyntaxTrees.Single());
+
+      return (updatedSemanticModel, methodDeclarationWithAnnotations);
+    }
+
     public static (SemanticModel, MethodDeclarationSyntax) CompileMethodDeclarationWithContext (string source, Context context, bool ignoreErrors = false)
     {
       var (semanticModel, node) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
@@ -132,27 +178,6 @@ namespace RhinoMocksToMoqRewriter.Tests
           .LastOrDefault();
 
       return (semanticModel, localDeclaration);
-    }
-
-    private static (SemanticModel, SyntaxNode) CompileInMethod (string methodName, string methodContentSource, bool ignoreErrors = false)
-    {
-      var methodTemplate =
-          $"public void {methodName} () {{\r\n" +
-          $"{methodContentSource}" +
-          "}";
-
-      return CompileInClass ("TestClass", methodTemplate, ignoreErrors);
-    }
-
-    private static (SemanticModel, SyntaxNode) CompileInMethodWithContext (string methodName, string source, Context context, bool ignoreErrors = false)
-    {
-      var methodTemplate =
-          $"public void {methodName} () {{\r\n" +
-          $"{context.MethodContext}\r\n" +
-          $"{source}" +
-          "}";
-
-      return CompileInClassWithContext ("TestClass", methodTemplate, context, ignoreErrors);
     }
 
     public static (SemanticModel, SyntaxNode) CompileCompilationUnitWithContext (string source, Context context, bool ignoreErrors = false)
@@ -181,6 +206,27 @@ namespace RhinoMocksToMoqRewriter.Tests
           "namespace TestNameSpace{}";
 
       return Compile (nameSpaceTemplate, ignoreErrors);
+    }
+
+    private static (SemanticModel, SyntaxNode) CompileInMethod (string methodName, string methodContentSource, bool ignoreErrors = false)
+    {
+      var methodTemplate =
+          $"public void {methodName} () {{\r\n" +
+          $"{methodContentSource}" +
+          "}";
+
+      return CompileInClass ("TestClass", methodTemplate, ignoreErrors);
+    }
+
+    private static (SemanticModel, SyntaxNode) CompileInMethodWithContext (string methodName, string source, Context context, bool ignoreErrors = false)
+    {
+      var methodTemplate =
+          $"public void {methodName} () {{\r\n" +
+          $"{context.MethodContext}\r\n" +
+          $"{source}" +
+          "}";
+
+      return CompileInClassWithContext ("TestClass", methodTemplate, context, ignoreErrors);
     }
 
     private static (SemanticModel, SyntaxNode) CompileInClass (string className, string classContentSource, bool ignoreErrors = false)
