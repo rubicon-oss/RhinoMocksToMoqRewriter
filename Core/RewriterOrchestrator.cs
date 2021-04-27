@@ -32,16 +32,17 @@ namespace RhinoMocksToMoqRewriter.Core
             new LastCallRewriter(),
             new SetupResultForRewriter(),
             new ExpectCallRewriter(),
+            new ConstraintsRewriter(),
             new UsingDirectiveRewriter(),
-            new OrderedMockRewriter(),
             new FieldRewriter (new Formatter()),
             new IgnoreArgumentsRewriter(),
             new MockSetupRewriter(),
+            new OrderedMockRewriter(),
             new MethodRewriter(),
             new ArgumentRewriter(),
-            new ConstraintsRewriter(),
             new MockInstantiationRewriter (new Formatter()),
             new NoMoqRewriter(),
+            new ObjectRewriter(),
         };
 
     public static async Task RewriteAsync (IEnumerable<CSharpCompilation> compilations, SyntaxGenerator generator)
