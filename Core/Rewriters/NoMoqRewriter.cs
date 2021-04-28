@@ -31,7 +31,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
       }
 
-      var nodesToBeReplaced = GetAllNodesToBeReplaced (node, rhinoMocksMockRepositoryCompilationSymbol, rhinoMocksExtensionsCompilationSymbol).ToList();
+      var nodesToBeReplaced = GetNodesToBeReplaced (node, rhinoMocksMockRepositoryCompilationSymbol, rhinoMocksExtensionsCompilationSymbol);
       return node.RemoveNodes (nodesToBeReplaced, SyntaxRemoveOptions.KeepNoTrivia);
     }
 
@@ -49,17 +49,17 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           : node;
     }
 
-    private IEnumerable<SyntaxNode> GetAllNodesToBeReplaced (
+    private IEnumerable<SyntaxNode> GetNodesToBeReplaced (
         MethodDeclarationSyntax node,
         INamedTypeSymbol rhinoMocksMockRepositoryCompilationSymbol,
         INamedTypeSymbol rhinoMocksExtensionsCompilationSymbol)
     {
-      return GetReplayAndReplayAllExpressionStatements (node, GetSimpleMockSymbols (rhinoMocksExtensionsCompilationSymbol, rhinoMocksMockRepositoryCompilationSymbol))
-          .Concat (GetAllRhinoMocksMockRepositoryLocalDeclarationStatements (node, rhinoMocksMockRepositoryCompilationSymbol))
-          .Concat (GetAllRhinoMocksAssignmentExpressions (node, rhinoMocksMockRepositoryCompilationSymbol));
+      return GetObsoleteExpressionStatements (node, GetSimpleMockSymbols (rhinoMocksExtensionsCompilationSymbol, rhinoMocksMockRepositoryCompilationSymbol))
+          .Concat (GetObsoleteLocalDeclarationStatements (node, rhinoMocksMockRepositoryCompilationSymbol))
+          .Concat (GetObsoleteAssignmentExpressions (node, rhinoMocksMockRepositoryCompilationSymbol));
     }
 
-    private IEnumerable<ExpressionStatementSyntax> GetAllRhinoMocksAssignmentExpressions (
+    private IEnumerable<ExpressionStatementSyntax> GetObsoleteAssignmentExpressions (
         MethodDeclarationSyntax node,
         INamedTypeSymbol rhinoMocksMockRepositoryCompilationSymbol)
     {
@@ -72,7 +72,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                    && rhinoMocksMockRepositoryCompilationSymbol.Equals (Model.GetTypeInfo (assignmentExpression).Type, SymbolEqualityComparer.Default));
     }
 
-    private IEnumerable<SyntaxNode> GetAllRhinoMocksMockRepositoryLocalDeclarationStatements (
+    private IEnumerable<SyntaxNode> GetObsoleteLocalDeclarationStatements (
         MethodDeclarationSyntax node,
         INamedTypeSymbol rhinoMocksMockRepositoryCompilationSymbol)
     {
@@ -82,7 +82,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Where (s => rhinoMocksMockRepositoryCompilationSymbol.Equals (Model.GetSymbolInfo (s.Declaration.Type).Symbol, SymbolEqualityComparer.Default));
     }
 
-    private IEnumerable<SyntaxNode> GetReplayAndReplayAllExpressionStatements (
+    private IEnumerable<SyntaxNode> GetObsoleteExpressionStatements (
         MethodDeclarationSyntax node,
         IEnumerable<ISymbol> simpleMockSymbols)
     {
