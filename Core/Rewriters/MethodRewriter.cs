@@ -47,11 +47,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return node;
       }
 
-      var treeWithTrackedNodes = node.TrackNodes (rhinoMocksExpressionStatements, CompilationId);
+      var trackedNodes = node.TrackNodes (rhinoMocksExpressionStatements, CompilationId);
       foreach (var expressionStatement in rhinoMocksExpressionStatements)
       {
-        var trackedExpressionStatement = treeWithTrackedNodes.GetCurrentNode (expressionStatement, CompilationId);
-        treeWithTrackedNodes = treeWithTrackedNodes
+        var trackedExpressionStatement = trackedNodes.GetCurrentNode (expressionStatement, CompilationId);
+        trackedNodes = trackedNodes
             .ReplaceNode (
                 trackedExpressionStatement!,
                 ComputeReplacementNode (
@@ -62,7 +62,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                     assertWasNotCalledMethodSymbols));
       }
 
-      return treeWithTrackedNodes;
+      return trackedNodes;
     }
 
     private IEnumerable<ExpressionStatementSyntax> ComputeReplacementNode (
