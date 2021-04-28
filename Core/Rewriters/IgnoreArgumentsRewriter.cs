@@ -56,11 +56,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         var expressionsWithModifiedArgumentLists = rhinoMocksExpressions.Select (s => (s.Name, ConvertArgumentList (s.ArgumentList))).ToList();
         return SyntaxFactory.ExpressionStatement (MoqSyntaxFactory.NestedMemberAccessExpression (mockIdentifierName, expressionsWithModifiedArgumentLists));
       }
-      catch (Exception)
+      catch (Exception ex)
       {
         Console.Error.WriteLine (
-            $"  WARNING: Unable to rewrite .IgnoreArguments\r\n"
-            + $"  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
+            $"  WARNING: Unable to convert .IgnoreArguments\r\n"
+            + $"  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}"
+            + $"  {ex.Message}");
 
         return baseCallNode;
       }
