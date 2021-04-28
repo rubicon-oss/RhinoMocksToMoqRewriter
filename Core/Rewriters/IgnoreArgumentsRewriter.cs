@@ -51,9 +51,19 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           ? ExtractIdentifierNameFromArguments (rhinoMocksExpressions, expectSymbols)
           : baseCallNode.GetFirstIdentifierName();
 
-      var expressionsWithModifiedArgumentLists = rhinoMocksExpressions.Select (s => (s.Name, ConvertArgumentList (s.ArgumentList))).ToList();
+      try
+      {
+        var expressionsWithModifiedArgumentLists = rhinoMocksExpressions.Select (s => (s.Name, ConvertArgumentList (s.ArgumentList))).ToList();
+        return SyntaxFactory.ExpressionStatement (MoqSyntaxFactory.NestedMemberAccessExpression (mockIdentifierName, expressionsWithModifiedArgumentLists));
+      }
+      catch (Exception)
+      {
+        Console.Error.WriteLine (
+            $"  WARNING: Unable to rewrite .IgnoreArguments\r\n"
+            + $"  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
 
-      return SyntaxFactory.ExpressionStatement (MoqSyntaxFactory.NestedMemberAccessExpression (mockIdentifierName, expressionsWithModifiedArgumentLists));
+        return baseCallNode;
+      }
     }
 
     private IdentifierNameSyntax ExtractIdentifierNameFromArguments (
@@ -70,9 +80,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .First();
     }
 
-    private bool ContainsIgnoreArgumentsMethod (
-        ExpressionStatementSyntax node,
-        IReadOnlyList<ISymbol> ignoreArgumentsSymbols)
+    private bool ContainsIgnoreArgumentsMethod (ExpressionStatementSyntax node, IReadOnlyList<ISymbol> ignoreArgumentsSymbols)
     {
       return node.DescendantNodesAndSelf()
           .Any (
@@ -155,14 +163,19 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return (TypeSyntax) Generator.NullableTypeExpression (ConvertTypeSyntaxNodes (((INamedTypeSymbol) typeSymbol).TypeArguments.First()));
       }
 
-      if (typeSymbol.SpecialType == SpecialType.None)
+      if (typeSymbol.SpecialType != SpecialType.None)
       {
-        return MoqSyntaxFactory.GenericName (
-            SyntaxFactory.Identifier (typeSymbol.Name),
-            MoqSyntaxFactory.SimpleTypeArgumentList (((INamedTypeSymbol) typeSymbol).TypeArguments.Select (ConvertTypeSyntaxNodes)));
+        return (PredefinedTypeSyntax) Generator.TypeExpression (typeSymbol.SpecialType);
       }
 
-      return (PredefinedTypeSyntax) Generator.TypeExpression (typeSymbol.SpecialType);
+      return typeSymbol switch
+      {
+          INamedTypeSymbol { TypeArguments: { IsEmpty: true } } => SyntaxFactory.IdentifierName (typeSymbol.Name),
+          IArrayTypeSymbol arrayTypeSymbol => MoqSyntaxFactory.ArrayType (ConvertTypeSyntaxNodes (arrayTypeSymbol.ElementType)),
+          _ => MoqSyntaxFactory.GenericName (
+              SyntaxFactory.Identifier (typeSymbol.Name),
+              MoqSyntaxFactory.SimpleTypeArgumentList (((INamedTypeSymbol) typeSymbol).TypeArguments.Select (ConvertTypeSyntaxNodes)))
+      };
     }
   }
 }

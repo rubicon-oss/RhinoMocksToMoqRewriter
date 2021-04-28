@@ -22,22 +22,34 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
   [TestFixture]
   public class IgnoreArgumentsRewriterTests
   {
-    [TestFixture]
-    public class MethodRewriterTests
-    {
-      private IgnoreArgumentsRewriter _rewriter;
+    private IgnoreArgumentsRewriter _rewriter;
 
-      private readonly Context _context =
-          new Context
-          {
-              //language=C#
-              UsingContext =
-                  @"
+    private readonly Context _context =
+        new Context
+        {
+            //language=C#
+            UsingContext =
+                @"
 using Moq;
 using MockRepository = Rhino.Mocks.MockRepository;
 #nullable enable",
-              //language=C#
-              InterfaceContext = @"
+            //language=C#
+            NamespaceContext =
+                @"
+public interface IA
+{
+  int DoSomething();
+}
+
+public class A : IA
+{
+  public int DoSomething()
+  {
+    throw new System.NotImplementedException();
+  }
+}",
+            //language=C#
+            InterfaceContext = @"
 int DoSomething (Func<int> i);
 int DoSomething (int i);
 int DoSomething (Func<int> i, Func<bool> b);
@@ -48,60 +60,63 @@ int DoSomething (Func<Func<int>, string> func);
 int DoSomething();
 int DoSomething (int? a);
 int DoSomething (int? a, int? b);
-int DoSomething (Func<int?, bool?> f);",
-              //language=C#
-              ClassContext =
-                  @"
- private static ITestInterface _mock = MockRepository.GenerateMock<ITestInterface>();",
-          };
+int DoSomething (Func<int?, bool?> f);
+int DoSomething (List<IA> a);
+int DoSomething (string a, object[] args);",
+            //language=C#
+            ClassContext =
+                @"
+private void DoSomething (Action a) => throw new NotImplementedException();
+private static ITestInterface _mock = MockRepository.GenerateMock<ITestInterface>();",
+        };
 
-      [SetUp]
-      public void Setup ()
-      {
-        _rewriter = new IgnoreArgumentsRewriter();
-        _rewriter.Generator = SyntaxGenerator.GetGenerator (new AdhocWorkspace(), "C#");
-      }
+    [SetUp]
+    public void Setup ()
+    {
+      _rewriter = new IgnoreArgumentsRewriter();
+      _rewriter.Generator = SyntaxGenerator.GetGenerator (new AdhocWorkspace(), "C#");
+    }
 
-      [Test]
-      [TestCase (
-          //language=C#
-          @"
+    [Test]
+    [TestCase (
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething ((Func<int>)null))
   .IgnoreArguments()
   .Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (It.IsAny<Func<int>>()))
   .Return (1);")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething ((Func<int>)null, (Func<bool>)null))
   .IgnoreArguments()
   .Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (It.IsAny<Func<int>>(), It.IsAny<Func<bool>>()))
   .Return (1);")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (null, null, """"))
   .IgnoreArguments()
   .Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (It.IsAny<Func<int>>(), It.IsAny<Func<bool>>(), It.IsAny<string>()))
   .Return (1);")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 _mock.DoSomething (
   () => 
   {
@@ -111,8 +126,8 @@ _mock.DoSomething (
       .Return (1);
     return _mock;
    });",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock.DoSomething (
   () => 
   {
@@ -121,128 +136,181 @@ _mock.DoSomething (
       .Return (1);
     return _mock;
   });")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething ((Func<int, string>)null))
   .IgnoreArguments()
   .Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (It.IsAny<Func<int, string>>()))
   .Return (1);")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (0))
   .IgnoreArguments()
   .Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (It.IsAny<int>()))
   .Return (1);")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (0))
   .Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (0))
   .Return (1);")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 Rhino.Mocks.RhinoMocksExtensions.Expect(_mock, m => m.DoSomething (0)).Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 Rhino.Mocks.RhinoMocksExtensions.Expect(_mock, m => m.DoSomething (0)).Return (1);")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 Rhino.Mocks.RhinoMocksExtensions.Expect(_mock, m => m.DoSomething (0))
   .IgnoreArguments()
   .Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock.Expect (m => m.DoSomething (It.IsAny<int>()))
   .Return (1);")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething ((Func<Func<int>, string>)null))
   .IgnoreArguments()
   .Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (It.IsAny<Func<Func<int>, string>>()))
   .Return (1);")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething())
   .IgnoreArguments()
   .Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething())
   .Return (1);")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething ((int?)null))
   .IgnoreArguments()
   .Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (It.IsAny<int?>()))
   .Return (1);")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething ((int?)null, (int?)null))
   .IgnoreArguments()
   .Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (It.IsAny<int?>(), It.IsAny<int?>()))
   .Return (1);")]
-      [TestCase (
-          //language=C#
-          @"
+    [TestCase (
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething ((Func<int?, bool?>)null))
   .IgnoreArguments()
   .Return (1);",
-          //language=C#
-          @"
+        //language=C#
+        @"
 _mock
   .Expect (m => m.DoSomething (It.IsAny<Func<int?, bool?>>()))
   .Return (1);")]
-      public void Rewrite_IgnoreArguments (string source, string expected)
-      {
-        var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
-        var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
-        _rewriter.Model = model;
-        var actualNode = node.Accept (_rewriter);
+    [TestCase (
+        //language=C#
+        @"
+DoSomething (delegate
+  {
+    _mock
+      .Expect (m => m.DoSomething (0))
+      .IgnoreArguments()
+      .Return (1);
+  });",
+        //language=C#
+        @"
+DoSomething (delegate
+  {
+    _mock
+      .Expect (m => m.DoSomething (It.IsAny<int>()))
+      .Return (1);
+  });")]
+    [TestCase (
+        //language=C#
+        @"
+_mock
+  .Expect (m => m.DoSomething ((Func<int?, bool?>)null))
+  .IgnoreArguments()
+  .Return (1);",
+        //language=C#
+        @"
+_mock
+  .Expect (m => m.DoSomething (It.IsAny<Func<int?, bool?>>()))
+  .Return (1);")]
+    [TestCase (
+        //language=C#
+        @"
+_mock
+  .Expect (m => m.DoSomething ((List<IA>)null))
+  .IgnoreArguments()
+  .Return (1);",
+        //language=C#
+        @"
+_mock
+  .Expect (m => m.DoSomething (It.IsAny<List<IA>>()))
+  .Return (1);")]
+    [TestCase (
+        //language=C#
+        @"
+_mock
+  .Expect (m => m.DoSomething ((string)null, (object[])null))
+  .IgnoreArguments()
+  .Return (1);",
+        //language=C#
+        @"
+_mock
+  .Expect (m => m.DoSomething (It.IsAny<string>(), It.IsAny<object[]>()))
+  .Return (1);")]
+    public void Rewrite_IgnoreArguments (string source, string expected)
+    {
+      var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
+      _rewriter.Model = model;
+      var actualNode = node.Accept (_rewriter);
 
-        Assert.NotNull (actualNode);
-        Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
-      }
+      Assert.NotNull (actualNode);
+      Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
     }
   }
 }
