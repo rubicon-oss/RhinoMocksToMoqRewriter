@@ -36,21 +36,20 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       var rhinoMocksArgMatchesSymbol = rhinoMocksArgSymbol!.GetMembers ("Matches");
 
-      if (node.Expression is InvocationExpressionSyntax invocationExpression)
+      if (node.Expression is not InvocationExpressionSyntax invocationExpression)
       {
-        if (rhinoMocksArgMatchesSymbol.Contains (Model.GetSymbolInfo (invocationExpression).Symbol?.OriginalDefinition, SymbolEqualityComparer.Default))
-        {
-          var lambda = MoqSyntaxFactory.SimpleLambdaExpression (ConvertExpression (invocationExpression.ArgumentList.GetFirstArgument().Expression));
-
-          return MoqSyntaxFactory.SimpleArgument (
-              invocationExpression.WithArgumentList (
-                  SyntaxFactory.ArgumentList (
-                      SyntaxFactory.SingletonSeparatedList (
-                          SyntaxFactory.Argument (lambda)))));
-        }
+        return baseCallNode;
       }
 
-      return baseCallNode;
+      var symbol = Model.GetSymbolInfo (invocationExpression).Symbol?.OriginalDefinition;
+      if (!rhinoMocksArgMatchesSymbol.Contains (symbol, SymbolEqualityComparer.Default))
+      {
+        return baseCallNode;
+      }
+
+      var lambda = MoqSyntaxFactory.SimpleLambdaExpression (ConvertExpression (invocationExpression.ArgumentList.GetFirstArgument().Expression));
+
+      return MoqSyntaxFactory.SimpleArgument (invocationExpression.WithArgumentList (MoqSyntaxFactory.SimpleArgumentList (lambda)));
     }
 
     private ExpressionSyntax ConvertExpression (ExpressionSyntax expression)

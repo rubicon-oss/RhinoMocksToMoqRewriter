@@ -49,7 +49,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         if (lastCalledMock == null)
         {
           Console.Error.WriteLine (
-              $"WARNING: Unable to convert {lastCallExpressionStatement.Node}, last called mock was not inside the same method."
+              $"WARNING: Unable to convert LastCall"
               + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
           continue;
         }

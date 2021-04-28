@@ -645,6 +645,16 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               SyntaxFactory.IdentifierName ("Any")));
     }
 
+    public static TypeSyntax ArrayType (TypeSyntax type)
+    {
+      return SyntaxFactory.ArrayType (
+          type,
+          SyntaxFactory.SingletonList (
+              SyntaxFactory.ArrayRankSpecifier (
+                  SyntaxFactory.SingletonSeparatedList<ExpressionSyntax> (
+                      SyntaxFactory.OmittedArraySizeExpression()))));
+    }
+
     #region Private MoqSyntaxFactory
 
     private static BinaryExpressionSyntax BinaryExpression (SyntaxKind kind, ExpressionSyntax left, ExpressionSyntax right)
