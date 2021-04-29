@@ -60,8 +60,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       {
         Console.Error.WriteLine (
             $"  WARNING: Unable to convert .IgnoreArguments\r\n"
-            + $"  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}"
-            + $"  {ex.Message}");
+            + $"  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}\r\n"
+            + ex);
 
         return baseCallNode;
       }
