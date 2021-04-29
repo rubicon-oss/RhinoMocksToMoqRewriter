@@ -30,7 +30,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
                 @"
 void DoSomething();
 int DoSomething (int b);
-T Do<T> (Func<T> func);",
+T DoSomething<T> (Func<T> func);",
             //language=C#
             ClassContext =
                 @"
@@ -210,7 +210,7 @@ mock
     [TestCase (
         //language=C#
         @"
-mock.Do (
+mock.DoSomething (
   () =>
   {
     mock
@@ -219,7 +219,7 @@ mock.Do (
   });",
         //language=C#
         @"
-mock.Do (
+mock.DoSomething (
   () =>
   {
     mock

@@ -12,6 +12,9 @@
 //
 
 using System;
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using NUnit.Framework;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
@@ -176,8 +179,14 @@ _mock2.InSequence (sequence2).Setup (mock => mock.End());")]
       _rewriter.Model = model;
       var actualNode = node.Accept (_rewriter);
 
-      Assert.NotNull (actualNode);
-      Assert.That (expectedNode.IsEquivalentTo (actualNode, true));
+      var expectedExpressionStatements = expectedNode.DescendantNodes().Where (s => s.IsKind (SyntaxKind.ExpressionStatement)).ToList();
+      var actualExpressionStatements = actualNode.DescendantNodes().Where (s => s.IsKind (SyntaxKind.ExpressionStatement)).ToList();
+
+      Assert.AreEqual (expectedExpressionStatements.Count, actualExpressionStatements.Count);
+      for (var i = 0; i < expectedExpressionStatements.Count; i++)
+      {
+        Assert.That (expectedExpressionStatements[i].IsEquivalentTo (actualExpressionStatements[i], false));
+      }
     }
   }
 }
