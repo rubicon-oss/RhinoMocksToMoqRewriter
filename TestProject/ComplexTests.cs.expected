@@ -1,0 +1,165 @@
+﻿//  Copyright (c) rubicon IT GmbH
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+//
+
+using System;
+using NUnit.Framework;
+using Rhino.Mocks;
+using TestProject.TestClasses;
+using TestProject.TestInterfaces;
+using Moq;
+using MockRepository = Rhino.Mocks.MockRepository;
+
+namespace TestProject
+{
+  [TestFixture]
+  public class ComplexTests
+  {
+    private ITestInterface _memberCaller;
+    private Order _order1;
+
+    private Customer _customer1;
+    private DomainObjectMockEventReceiver _order1MockEventReceiver;
+    private DomainObjectMockEventReceiver _customer1MockEventReceiver;
+    private ClientTransaction _subTransaction;
+    private Mock<ITestInterface> _serviceStub;
+    private Mock<ITypeInformation> _typeInformationForResourceResolutionStub;
+    private Mock<ITypeInformation> _typeInformationStub;
+    private Mock<IPropertyInformation> _propertyInformationStub;
+
+    [SetUp]
+    public void SetUp ()
+    {
+      _memberCaller = new TestClass();
+      _serviceStub = new Mock<ITestInterface>();
+      _typeInformationStub = new Mock<ITypeInformation>();
+      _typeInformationForResourceResolutionStub = new Mock<ITypeInformation>();
+      _propertyInformationStub = new Mock<IPropertyInformation>();
+    }
+
+    [Test]
+    public void InitRecursive ()
+    {
+      Page namingContainer = new Page();
+      var parentControlMock = new Mock<IControl>() { CallBase = true };
+      var childControlMock = new Mock<IControl>() { CallBase = true };
+      var sequence1 = new MockSequence();
+      childControlMock.InSequence (sequence1).Setup (mock => PrivateInvoke.InvokeNonPublicMethod (mock, "OnInit", EventArgs.Empty)).Verifiable();
+      parentControlMock.InSequence (sequence1).Setup (mock => PrivateInvoke.InvokeNonPublicMethod (mock, "OnInit", EventArgs.Empty)).Verifiable();
+
+      namingContainer.Controls.Add (parentControlMock.Object);
+      parentControlMock.Object.Controls.Add (childControlMock.Object);
+      _memberCaller.InitRecursive (parentControlMock.Object, namingContainer);
+
+      parentControlMock.Verify();
+
+      childControlMock.Verify();
+    }
+
+    [Test]
+    public void SubCommit_OfDeletedObject_DoesNotRaiseDeletedEvent ()
+    {
+      using (_subTransaction.EnterDiscardingScope())
+      {
+        ITestInterface domainObject = new TestClass();
+
+        var extensionMock = new Mock<IClientTransactionExtension> (MockBehavior.Strict);
+        extensionMock.Setup (stub => stub.Key).Returns ("Mock");
+        _subTransaction.Extensions.Add (extensionMock.ToString());
+        try
+        {
+
+          extensionMock.Object.ObjectDeleting (_subTransaction, domainObject);
+          extensionMock.Object.ObjectDeleted (_subTransaction, domainObject);
+          domainObject.Delete();
+          extensionMock.Verify();
+
+          extensionMock.Setup (_ => _.Committing (It.IsAny<ITestInterface>(), It.IsAny<Order>(), It.IsAny<ClientTransaction>())).Verifiable();
+          extensionMock.Setup (_ => _.CommitValidate (It.IsAny<ITestInterface>(), It.IsAny<ClientTransaction>())).Verifiable();
+          extensionMock.Setup (_ => _.Committed (It.IsAny<ITestInterface>(), It.IsAny<ClientTransaction>())).Verifiable();
+          _subTransaction.Commit();
+          extensionMock.Verify();
+        }
+        finally
+        {
+          _subTransaction.Extensions.Remove ("Mock");
+        }
+      }
+    }
+
+    [Test]
+    public void Test_SetupResultFor ()
+    {
+
+      var mock = new Mock<ITestInterface>();
+      mock.Setup (_ => _.A).Returns (42).Verifiable();
+
+      mock.Verify();
+      Assert.Pass();
+    }
+
+    private void ChangeCustomerNameCallback (object sender, EventArgs e)
+    {
+      LastCall.IgnoreArguments();
+    }
+
+    [Test]
+    public void ContainsPropertyDisplayName_NoResourceFound_ReturnsFalse ()
+    {
+      _serviceStub
+          .Setup (
+              _ => _.TryGetPropertyDisplayName (
+                  _propertyInformationStub.Object,
+                  _typeInformationForResourceResolutionStub.Object,
+                  out Arg<string>.Out (null).Dummy))
+          .Returns (false);
+
+      var result = _serviceStub.Object.ContainsPropertyDisplayName (_propertyInformationStub.Object, _typeInformationForResourceResolutionStub.Object);
+
+      Assert.That (result, Is.False);
+    }
+
+    [Test]
+    public void ContainsPropertyDisplayName_ResourceFound_ReturnsTrue ()
+    {
+      _serviceStub
+          .Setup (
+              _ => _.TryGetPropertyDisplayName (
+                  _propertyInformationStub.Object,
+                  _typeInformationForResourceResolutionStub.Object,
+                  out Arg<string>.Out ("expected").Dummy))
+          .Returns (true);
+
+      var result = _serviceStub.Object.ContainsPropertyDisplayName (_propertyInformationStub.Object, _typeInformationForResourceResolutionStub.Object);
+
+      Assert.That (result, Is.True);
+    }
+
+    [Test]
+    public void GetPropertyDisplayName_NoResourceFound_ReturnsShortPropertyName ()
+    {
+      _serviceStub
+          .Setup (
+              _ => _.TryGetPropertyDisplayName (
+                  _propertyInformationStub.Object,
+                  _typeInformationForResourceResolutionStub.Object,
+                  out Arg<string>.Out (null).Dummy))
+          .Returns (false);
+
+      _propertyInformationStub.Setup (_ => _.DeclaringType).Returns (_typeInformationStub.Object);
+
+      var result = _serviceStub.Object.GetPropertyDisplayName (_propertyInformationStub.Object, _typeInformationForResourceResolutionStub.Object);
+
+      Assert.That (result, Is.EqualTo ("PropertyName"));
+    }
+  }
+}

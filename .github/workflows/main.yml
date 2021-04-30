@@ -16,4 +16,4 @@ jobs:
       run: dotnet build --configuration Release --no-restore
       
     - name: test
-      run: dotnet test --configuration Release --no-build --verbosity minimal
+      run: dotnet test Tests/Tests.csproj --configuration Release --no-build --verbosity minimal

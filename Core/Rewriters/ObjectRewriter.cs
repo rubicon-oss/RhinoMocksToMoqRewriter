@@ -39,7 +39,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var trackedNodes = TrackNodes (node);
       var baseCallNode = (MemberAccessExpressionSyntax) base.VisitMemberAccessExpression (trackedNodes)!;
 
-      var nameSymbol = Model.GetSymbolInfo (baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!.Name).Symbol;
+      var nameSymbol = Model.GetSymbolInfo (baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!.Name).GetFirstOverloadOrDefault();
       var typeSymbol = Model.GetTypeInfo (baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!.Expression).Type?.OriginalDefinition;
       if (!genericMoqCompilationSymbol.Equals (typeSymbol, SymbolEqualityComparer.Default))
       {
