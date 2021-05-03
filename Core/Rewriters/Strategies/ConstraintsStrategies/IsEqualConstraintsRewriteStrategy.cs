@@ -12,34 +12,13 @@
 //
 
 using System;
-using NUnit.Framework;
-using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategies;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RhinoMocksToMoqRewriter.Core.Extensions;
 
-namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ConstraintsStrategies
+namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategies
 {
-  [TestFixture]
-  public class IsEqualOrSameConstraintsRewriteStrategyTests
+  public class IsEqualConstraintsRewriteStrategy : BaseConstraintsRewriteStrategy<IsEqualConstraintsRewriteStrategy>
   {
-    private readonly IConstraintsRewriteStrategy _strategy = new IsEqualOrSameConstraintsRewriteStrategy();
-
-    [Test]
-    [TestCase (
-        //language=C#
-        @"Rhino.Mocks.Constraints.Is.Equal (2)",
-        //language=C#
-        @"_ == 2")]
-    [TestCase (
-        //language=C#
-        @"Rhino.Mocks.Constraints.Is.Same (2)",
-        //language=C#
-        @"_ == 2")]
-    public void Rewrite_IsEqualOrSame (string source, string expected)
-    {
-      var (_, node) = CompiledSourceFileProvider.CompileExpressionStatement (source, true);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatement (expected, true);
-      var actualNode = _strategy.Rewrite (node.Expression);
-
-      Assert.That (expectedNode.Expression.IsEquivalentTo (actualNode, false));
-    }
+    public override ExpressionSyntax Rewrite (ExpressionSyntax node) => MoqSyntaxFactory.Equals (node.GetFirstArgument().Expression);
   }
 }

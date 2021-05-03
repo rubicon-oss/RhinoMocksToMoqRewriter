@@ -12,29 +12,30 @@
 //
 
 using System;
-using NUnit.Framework;
-using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategies;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RhinoMocksToMoqRewriter.Core.Extensions;
 
-namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ConstraintsStrategies
+namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
 {
-  [TestFixture]
-  public class IsGreaterThanOrEqualConstraintsRewriteStrategyTests
+  public class ArgIsNotSameArgumentRewriteStrategy : BaseArgumentRewriteStrategy<ArgIsNotSameArgumentRewriteStrategy>
   {
-    private readonly IConstraintsRewriteStrategy _strategy = new IsGreaterThanOrEqualConstraintsRewriteStrategy();
-
-    [Test]
-    [TestCase (
-        //language=C#
-        @"Rhino.Mocks.Constraints.Is.GreaterThanOrEqual (2)",
-        //language=C#
-        @"_ >= 2")]
-    public void Rewrite_IsGreaterThanOrEqual (string source, string expected)
+    public override ArgumentSyntax Rewrite (ArgumentSyntax node)
     {
-      var (_, node) = CompiledSourceFileProvider.CompileExpressionStatement (source, true);
-      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatement (expected, true);
-      var actualNode = _strategy.Rewrite (node.Expression);
+      var typeArgumentList = node.GetTypeArgumentListOrDefault();
+      var argument = node.GetFirstArgumentOrDefault();
+      if (typeArgumentList == null)
+      {
+        throw new InvalidOperationException ("Node must contain a TypeArgumentList");
+      }
 
-      Assert.That (expectedNode.Expression.IsEquivalentTo (actualNode, false));
+      if (argument == null)
+      {
+        throw new InvalidOperationException ("Node must contain an Argument");
+      }
+
+      return MoqSyntaxFactory.IsNotSameArgument (typeArgumentList, argument.Expression)
+          .WithLeadingTrivia (node.GetLeadingTrivia());
     }
   }
 }

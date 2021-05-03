@@ -27,8 +27,8 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ConstraintsStrategi
         //language=C#
         @"Rhino.Mocks.Constraints.Property.Value (""A"", 42)",
         //language=C#
-        @"_.A == 42")]
-    public void Rewrite_ListIsIn (string source, string expected)
+        @"_ != null && object.Equals (_.A, 42))")]
+    public void Rewrite_PropertyValue (string source, string expected)
     {
       var (_, node) = CompiledSourceFileProvider.CompileExpressionStatement (source, true);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatement (expected, true);

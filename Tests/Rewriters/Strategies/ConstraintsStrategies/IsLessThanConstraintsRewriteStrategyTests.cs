@@ -13,7 +13,6 @@
 
 using System;
 using NUnit.Framework;
-using RhinoMocksToMoqRewriter.Core.Extensions;
 using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategies;
 
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ConstraintsStrategies

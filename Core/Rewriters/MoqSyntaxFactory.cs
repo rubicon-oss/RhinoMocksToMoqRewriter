@@ -43,246 +43,193 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return MockCreationExpression (typeArgumentList, argumentListWithStrictMockArgument);
     }
 
-    public static ArgumentSyntax ItIsGenericArgument (TypeArgumentListSyntax typeArgumentList, LambdaExpressionSyntax lambdaExpression) =>
-        SyntaxFactory.Argument (
-            SyntaxFactory.InvocationExpression (
-                    SyntaxFactory.MemberAccessExpression (
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        SyntaxFactory.IdentifierName ("It"),
-                        SyntaxFactory.GenericName (
-                                SyntaxFactory.Identifier ("Is"))
-                            .WithTypeArgumentList (typeArgumentList)))
-                .WithArgumentList (
-                    SyntaxFactory.ArgumentList (
-                            SyntaxFactory.SingletonSeparatedList (
-                                SyntaxFactory.Argument (lambdaExpression)))
-                        .WithLeadingTrivia (SyntaxFactory.Space)));
+    public static ArgumentSyntax ItIsGenericArgument (TypeArgumentListSyntax typeArgumentList, LambdaExpressionSyntax lambdaExpression)
+    {
+      return MoqSyntaxFactory.Argument (
+          MoqSyntaxFactory.InvocationExpression (
+              MoqSyntaxFactory.MemberAccessExpression (
+                  MoqSyntaxFactory.ItIdentifierName,
+                  MoqSyntaxFactory.GenericName (
+                      MoqSyntaxFactory.IsIdentifier,
+                      typeArgumentList)),
+              MoqSyntaxFactory.ArgumentList (
+                      MoqSyntaxFactory.Argument (lambdaExpression))
+                  .WithLeadingTrivia (SyntaxFactory.Space)));
+    }
 
-    public static ArgumentSyntax SimpleArgument (ExpressionSyntax expression) =>
-        SyntaxFactory.Argument (expression);
+    public static ArgumentSyntax IsAnyArgument (TypeArgumentListSyntax typeArgumentList)
+    {
+      return MoqSyntaxFactory.Argument (
+          MoqSyntaxFactory.InvocationExpression (
+              MoqSyntaxFactory.MemberAccessExpression (
+                  MoqSyntaxFactory.ItIdentifierName,
+                  MoqSyntaxFactory.GenericName (
+                      MoqSyntaxFactory.IsAnyIdentifier,
+                      typeArgumentList))));
+    }
 
-    public static ArgumentSyntax IsAnyArgument (TypeArgumentListSyntax typeArgumentList) =>
-        SyntaxFactory.Argument (
-            SyntaxFactory.InvocationExpression (
-                SyntaxFactory.MemberAccessExpression (
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    SyntaxFactory.IdentifierName ("It"),
-                    SyntaxFactory.GenericName (
-                            SyntaxFactory.Identifier ("IsAny"))
-                        .WithTypeArgumentList (typeArgumentList))));
+    public static ArgumentSyntax NullArgument ()
+    {
+      return SyntaxFactory.Argument (MoqSyntaxFactory.NullLiteralExpression);
+    }
 
-    public static ArgumentSyntax NullArgument () =>
-        SyntaxFactory.Argument (
-            SyntaxFactory.LiteralExpression (
-                SyntaxKind.NullLiteralExpression));
+    public static ArgumentSyntax IsNotNullArgument (TypeArgumentListSyntax typeArgumentList)
+    {
+      return MoqSyntaxFactory.Argument (
+          MoqSyntaxFactory.InvocationExpression (
+              MoqSyntaxFactory.MemberAccessExpression (
+                  MoqSyntaxFactory.ItIdentifierName,
+                  MoqSyntaxFactory.GenericName (
+                      MoqSyntaxFactory.IsNotNullIdentifier,
+                      typeArgumentList))));
+    }
 
-    public static ArgumentSyntax IsNotNullArgument (TypeArgumentListSyntax typeArgumentList) =>
-        SyntaxFactory.Argument (
-            SyntaxFactory.InvocationExpression (
-                SyntaxFactory.MemberAccessExpression (
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    SyntaxFactory.IdentifierName ("It"),
-                    SyntaxFactory.GenericName (
-                            SyntaxFactory.Identifier ("IsNotNull"))
-                        .WithTypeArgumentList (typeArgumentList))));
+    public static ArgumentSyntax IsNotSameArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.Argument (
+          MoqSyntaxFactory.InvocationExpression (
+              MoqSyntaxFactory.MemberAccessExpression (
+                  MoqSyntaxFactory.ItIdentifierName,
+                  MoqSyntaxFactory.GenericName (MoqSyntaxFactory.IsIdentifier, typeArgumentList)),
+              MoqSyntaxFactory.ArgumentList (
+                      MoqSyntaxFactory.Argument (
+                          MoqSyntaxFactory.SimpleLambdaExpression (
+                              MoqSyntaxFactory.Not (MoqSyntaxFactory.ReferenceEquals (expression)))))
+                  .WithLeadingTrivia (SyntaxFactory.Space)));
+    }
 
-    public static ArgumentSyntax IsNotSameArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression) =>
-        SyntaxFactory.Argument (
-            SyntaxFactory.InvocationExpression (
-                    SyntaxFactory.MemberAccessExpression (
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        SyntaxFactory.IdentifierName ("It"),
-                        SyntaxFactory.GenericName (
-                                SyntaxFactory.Identifier ("Is"))
-                            .WithTypeArgumentList (typeArgumentList)))
-                .WithArgumentList (
-                    SyntaxFactory.ArgumentList (
-                            SyntaxFactory.SingletonSeparatedList (
-                                SyntaxFactory.Argument (
-                                    SyntaxFactory.SimpleLambdaExpression (
-                                            SyntaxFactory.Parameter (
-                                                SyntaxFactory.Identifier ("param")
-                                                    .WithLeadingTrivia (SyntaxFactory.Space)))
-                                        .WithExpressionBody (
-                                            SyntaxFactory.BinaryExpression (
-                                                SyntaxKind.NotEqualsExpression,
-                                                SyntaxFactory.IdentifierName ("param")
-                                                    .WithLeadingTrivia (SyntaxFactory.Space)
-                                                    .WithTrailingTrivia (SyntaxFactory.Space),
-                                                expression
-                                                    .WithLeadingTrivia (SyntaxFactory.Space))))))
-                        .WithLeadingTrivia (SyntaxFactory.Space)));
+    public static ArgumentSyntax IsNotEqualArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.Argument (
+          MoqSyntaxFactory.InvocationExpression (
+              MoqSyntaxFactory.MemberAccessExpression (
+                  MoqSyntaxFactory.ItIdentifierName,
+                  MoqSyntaxFactory.GenericName (MoqSyntaxFactory.IsIdentifier, typeArgumentList)),
+              MoqSyntaxFactory.ArgumentList (
+                      MoqSyntaxFactory.Argument (
+                          MoqSyntaxFactory.SimpleLambdaExpression (
+                              MoqSyntaxFactory.Not (MoqSyntaxFactory.Equals (expression)))))
+                  .WithLeadingTrivia (SyntaxFactory.Space)));
+    }
 
-    public static ArgumentSyntax IsGreaterThanArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression) =>
-        SyntaxFactory.Argument (
-            SyntaxFactory.InvocationExpression (
-                    SyntaxFactory.MemberAccessExpression (
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        SyntaxFactory.IdentifierName ("It"),
-                        SyntaxFactory.GenericName (
-                                SyntaxFactory.Identifier ("Is"))
-                            .WithTypeArgumentList (typeArgumentList)))
-                .WithArgumentList (
-                    SyntaxFactory.ArgumentList (
-                            SyntaxFactory.SingletonSeparatedList (
-                                SyntaxFactory.Argument (
-                                    SyntaxFactory.SimpleLambdaExpression (
-                                            SyntaxFactory.Parameter (
-                                                SyntaxFactory.Identifier ("param")
-                                                    .WithTrailingTrivia (SyntaxFactory.Space)))
-                                        .WithExpressionBody (
-                                            SyntaxFactory.BinaryExpression (
-                                                SyntaxKind.GreaterThanExpression,
-                                                SyntaxFactory.IdentifierName ("param")
-                                                    .WithLeadingTrivia (SyntaxFactory.Space)
-                                                    .WithTrailingTrivia (SyntaxFactory.Space),
-                                                expression
-                                                    .WithLeadingTrivia (SyntaxFactory.Space))))))
-                        .WithLeadingTrivia (SyntaxFactory.Space)));
+    public static ArgumentSyntax IsGreaterThanArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.Argument (
+              MoqSyntaxFactory.InvocationExpression (
+                  MoqSyntaxFactory.MemberAccessExpression (
+                      MoqSyntaxFactory.ItIdentifierName,
+                      SyntaxFactory.GenericName (
+                          MoqSyntaxFactory.IsIdentifier,
+                          typeArgumentList)),
+                  MoqSyntaxFactory.ArgumentList (
+                      MoqSyntaxFactory.Argument (
+                          MoqSyntaxFactory.SimpleLambdaExpression (
+                              MoqSyntaxFactory.GreaterThanBinaryExpression (
+                                  expression))))))
+          .WithLeadingTrivia (SyntaxFactory.Space);
+    }
 
-    public static ArgumentSyntax IsGreaterThanOrEqualArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression) =>
-        SyntaxFactory.Argument (
-            SyntaxFactory.InvocationExpression (
-                    SyntaxFactory.MemberAccessExpression (
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        SyntaxFactory.IdentifierName ("It"),
-                        SyntaxFactory.GenericName (
-                                SyntaxFactory.Identifier ("Is"))
-                            .WithTypeArgumentList (typeArgumentList)))
-                .WithArgumentList (
-                    SyntaxFactory.ArgumentList (
-                            SyntaxFactory.SingletonSeparatedList (
-                                SyntaxFactory.Argument (
-                                    SyntaxFactory.SimpleLambdaExpression (
-                                            SyntaxFactory.Parameter (
-                                                SyntaxFactory.Identifier ("param")
-                                                    .WithTrailingTrivia (SyntaxFactory.Space)))
-                                        .WithExpressionBody (
-                                            SyntaxFactory.BinaryExpression (
-                                                SyntaxKind.GreaterThanOrEqualExpression,
-                                                SyntaxFactory.IdentifierName ("param")
-                                                    .WithLeadingTrivia (SyntaxFactory.Space)
-                                                    .WithTrailingTrivia (SyntaxFactory.Space),
-                                                expression
-                                                    .WithLeadingTrivia (SyntaxFactory.Space))))))
-                        .WithLeadingTrivia (SyntaxFactory.Space)));
+    public static ArgumentSyntax IsGreaterThanOrEqualArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.Argument (
+          MoqSyntaxFactory.InvocationExpression (
+              MoqSyntaxFactory.MemberAccessExpression (
+                  MoqSyntaxFactory.ItIdentifierName,
+                  MoqSyntaxFactory.GenericName (
+                      MoqSyntaxFactory.IsIdentifier,
+                      typeArgumentList)),
+              MoqSyntaxFactory.ArgumentList (
+                      MoqSyntaxFactory.Argument (
+                          MoqSyntaxFactory.SimpleLambdaExpression (
+                              MoqSyntaxFactory.GreaterThanOrEqualBinaryExpression (
+                                  expression))))
+                  .WithLeadingTrivia (SyntaxFactory.Space)));
+    }
 
-    public static ArgumentSyntax IsLessThanArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression) =>
-        SyntaxFactory.Argument (
-            SyntaxFactory.InvocationExpression (
-                    SyntaxFactory.MemberAccessExpression (
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        SyntaxFactory.IdentifierName ("It"),
-                        SyntaxFactory.GenericName (
-                                SyntaxFactory.Identifier ("Is"))
-                            .WithTypeArgumentList (typeArgumentList)))
-                .WithArgumentList (
-                    SyntaxFactory.ArgumentList (
-                            SyntaxFactory.SingletonSeparatedList (
-                                SyntaxFactory.Argument (
-                                    SyntaxFactory.SimpleLambdaExpression (
-                                            SyntaxFactory.Parameter (
-                                                SyntaxFactory.Identifier ("param")
-                                                    .WithTrailingTrivia (SyntaxFactory.Space)))
-                                        .WithExpressionBody (
-                                            SyntaxFactory.BinaryExpression (
-                                                SyntaxKind.LessThanExpression,
-                                                SyntaxFactory.IdentifierName ("param")
-                                                    .WithLeadingTrivia (SyntaxFactory.Space)
-                                                    .WithTrailingTrivia (SyntaxFactory.Space),
-                                                expression
-                                                    .WithLeadingTrivia (SyntaxFactory.Space))))))
-                        .WithLeadingTrivia (SyntaxFactory.Space)));
+    public static ArgumentSyntax IsLessThanArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.Argument (
+          MoqSyntaxFactory.InvocationExpression (
+              MoqSyntaxFactory.MemberAccessExpression (
+                  MoqSyntaxFactory.ItIdentifierName,
+                  MoqSyntaxFactory.GenericName (
+                      MoqSyntaxFactory.IsIdentifier,
+                      typeArgumentList)),
+              MoqSyntaxFactory.ArgumentList (
+                      MoqSyntaxFactory.Argument (
+                          MoqSyntaxFactory.SimpleLambdaExpression (
+                              MoqSyntaxFactory.LessThanBinaryExpression (
+                                  expression))))
+                  .WithLeadingTrivia (SyntaxFactory.Space)));
+    }
 
-    public static ArgumentSyntax IsLessThanOrEqualArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression) =>
-        SyntaxFactory.Argument (
-            SyntaxFactory.InvocationExpression (
-                    SyntaxFactory.MemberAccessExpression (
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        SyntaxFactory.IdentifierName ("It"),
-                        SyntaxFactory.GenericName (
-                                SyntaxFactory.Identifier ("Is"))
-                            .WithTypeArgumentList (typeArgumentList)))
-                .WithArgumentList (
-                    SyntaxFactory.ArgumentList (
-                            SyntaxFactory.SingletonSeparatedList (
-                                SyntaxFactory.Argument (
-                                    SyntaxFactory.SimpleLambdaExpression (
-                                            SyntaxFactory.Parameter (
-                                                SyntaxFactory.Identifier ("param")
-                                                    .WithTrailingTrivia (SyntaxFactory.Space)))
-                                        .WithExpressionBody (
-                                            SyntaxFactory.BinaryExpression (
-                                                SyntaxKind.LessThanOrEqualExpression,
-                                                SyntaxFactory.IdentifierName ("param")
-                                                    .WithLeadingTrivia (SyntaxFactory.Space)
-                                                    .WithTrailingTrivia (SyntaxFactory.Space),
-                                                expression
-                                                    .WithLeadingTrivia (SyntaxFactory.Space))))))
-                        .WithLeadingTrivia (SyntaxFactory.Space)));
+    public static ArgumentSyntax IsLessThanOrEqualArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.Argument (
+          MoqSyntaxFactory.InvocationExpression (
+              MoqSyntaxFactory.MemberAccessExpression (
+                  MoqSyntaxFactory.ItIdentifierName,
+                  MoqSyntaxFactory.GenericName (
+                      MoqSyntaxFactory.IsIdentifier,
+                      typeArgumentList)),
+              MoqSyntaxFactory.ArgumentList (
+                      MoqSyntaxFactory.Argument (
+                          MoqSyntaxFactory.SimpleLambdaExpression (
+                              MoqSyntaxFactory.LessThanOrEqualBinaryExpression (
+                                  expression))))
+                  .WithLeadingTrivia (SyntaxFactory.Space)));
+    }
 
-    public static ArgumentSyntax ContainsAllArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression) =>
-        SyntaxFactory.Argument (
-            SyntaxFactory.InvocationExpression (
-                    SyntaxFactory.MemberAccessExpression (
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        SyntaxFactory.IdentifierName ("It"),
-                        SyntaxFactory.GenericName (
-                                SyntaxFactory.Identifier ("Is"))
-                            .WithTypeArgumentList (typeArgumentList)))
-                .WithArgumentList (
-                    SyntaxFactory.ArgumentList (
-                        SyntaxFactory.SingletonSeparatedList (
-                            SyntaxFactory.Argument (
-                                SyntaxFactory.SimpleLambdaExpression (
-                                        SyntaxFactory.Parameter (
-                                            SyntaxFactory.Identifier ("param")
-                                                .WithTrailingTrivia (SyntaxFactory.Space)))
-                                    .WithExpressionBody (
-                                        SyntaxFactory.InvocationExpression (
-                                                SyntaxFactory.MemberAccessExpression (
-                                                    SyntaxKind.SimpleMemberAccessExpression,
-                                                    expression,
-                                                    SyntaxFactory.IdentifierName ("All")))
-                                            .WithArgumentList (
-                                                SyntaxFactory.ArgumentList (
-                                                        SyntaxFactory.SingletonSeparatedList (
-                                                            SyntaxFactory.Argument (
-                                                                SyntaxFactory.MemberAccessExpression (
-                                                                    SyntaxKind.SimpleMemberAccessExpression,
-                                                                    SyntaxFactory.IdentifierName ("param"),
-                                                                    SyntaxFactory.IdentifierName ("Contains")))))
-                                                    .WithLeadingTrivia (SyntaxFactory.Space)))))))
-                .WithLeadingTrivia (SyntaxFactory.Space));
+    public static ArgumentSyntax ContainsAllArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.Argument (
+          MoqSyntaxFactory.InvocationExpression (
+                  MoqSyntaxFactory.MemberAccessExpression (
+                      MoqSyntaxFactory.ItIdentifierName,
+                      MoqSyntaxFactory.GenericName (
+                          MoqSyntaxFactory.IsIdentifier,
+                          typeArgumentList)),
+                  MoqSyntaxFactory.ArgumentList (
+                      MoqSyntaxFactory.Argument (
+                          MoqSyntaxFactory.SimpleLambdaExpression (
+                              MoqSyntaxFactory.InvocationExpression (
+                                  MoqSyntaxFactory.MemberAccessExpression (
+                                      expression,
+                                      MoqSyntaxFactory.AllIdentifierName),
+                                  MoqSyntaxFactory.ArgumentList (
+                                          MoqSyntaxFactory.Argument (
+                                              MoqSyntaxFactory.MemberAccessExpression (
+                                                  MoqSyntaxFactory.LambdaParameterIdentifierName,
+                                                  MoqSyntaxFactory.ContainsIdentifierName)))
+                                      .WithLeadingTrivia (SyntaxFactory.Space))))))
+              .WithLeadingTrivia (SyntaxFactory.Space));
+    }
 
-    public static ArgumentSyntax IsInArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression) =>
-        SyntaxFactory.Argument (
-            SyntaxFactory.InvocationExpression (
-                    SyntaxFactory.MemberAccessExpression (
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        SyntaxFactory.IdentifierName ("It"),
-                        SyntaxFactory.GenericName (
-                                SyntaxFactory.Identifier ("Is"))
-                            .WithTypeArgumentList (typeArgumentList)))
-                .WithArgumentList (
-                    SyntaxFactory.ArgumentList (
-                        SyntaxFactory.SingletonSeparatedList (
-                            SyntaxFactory.Argument (
-                                SyntaxFactory.SimpleLambdaExpression (
-                                        SyntaxFactory.Parameter (
-                                            SyntaxFactory.Identifier ("param")
-                                                .WithTrailingTrivia (SyntaxFactory.Space)))
-                                    .WithExpressionBody (
-                                        SyntaxFactory.InvocationExpression (
-                                                SyntaxFactory.MemberAccessExpression (
-                                                    SyntaxKind.SimpleMemberAccessExpression,
-                                                    SyntaxFactory.IdentifierName ("param"),
-                                                    SyntaxFactory.IdentifierName ("Contains")))
-                                            .WithArgumentList (
-                                                SyntaxFactory.ArgumentList (
-                                                    SyntaxFactory.SingletonSeparatedList (
-                                                        SyntaxFactory.Argument (expression)))))))))
-                .WithLeadingTrivia (SyntaxFactory.Space));
+    public static ArgumentSyntax IsInArgument (TypeArgumentListSyntax typeArgumentList, ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.Argument (
+          MoqSyntaxFactory.InvocationExpression (
+                  MoqSyntaxFactory.MemberAccessExpression (
+                      MoqSyntaxFactory.ItIdentifierName,
+                      MoqSyntaxFactory.GenericName (
+                          MoqSyntaxFactory.IsIdentifier,
+                          typeArgumentList)),
+                  MoqSyntaxFactory.ArgumentList (
+                      MoqSyntaxFactory.Argument (
+                          MoqSyntaxFactory.SimpleLambdaExpression (
+                              MoqSyntaxFactory.InvocationExpression (
+                                  MoqSyntaxFactory.MemberAccessExpression (
+                                      MoqSyntaxFactory.LambdaParameterIdentifierName,
+                                      MoqSyntaxFactory.ContainsIdentifierName),
+                                  MoqSyntaxFactory.ArgumentList (
+                                      MoqSyntaxFactory.Argument (expression)))))))
+              .WithLeadingTrivia (SyntaxFactory.Space));
+    }
+
+    public static ArgumentSyntax SimpleArgument (ExpressionSyntax expression)
+    {
+      return SyntaxFactory.Argument (expression);
+    }
 
     public static ExpressionStatementSyntax VerifyStatement (SyntaxToken identifierName) =>
         SyntaxFactory.ExpressionStatement (
@@ -434,14 +381,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           expression.WithLeadingTrivia (SyntaxFactory.Space));
     }
 
-    public static ExpressionSyntax NotEqualOrSameBinaryExpression (ExpressionSyntax expression)
-    {
-      return MoqSyntaxFactory.BinaryExpression (
-          SyntaxKind.NotEqualsExpression,
-          MoqSyntaxFactory.LambdaParameterIdentifierName.WithTrailingTrivia (SyntaxFactory.Space),
-          expression.WithLeadingTrivia (SyntaxFactory.Space));
-    }
-
     public static ExpressionSyntax GreaterThanBinaryExpression (ExpressionSyntax expression)
     {
       return MoqSyntaxFactory.BinaryExpression (
@@ -520,17 +459,17 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     public static ExpressionSyntax PropertyValueBinaryExpression (ExpressionSyntax propertyName, ExpressionSyntax propertyValue)
     {
-      return MoqSyntaxFactory.BinaryExpression (
-          SyntaxKind.EqualsExpression,
-          MoqSyntaxFactory.MemberAccessExpression (
-              MoqSyntaxFactory.LambdaParameterIdentifierName,
-              SyntaxFactory.IdentifierName (propertyName.ToString().Replace ("\"", ""))),
-          propertyValue);
+      return MoqSyntaxFactory.LogicalAndBinaryExpression (
+          MoqSyntaxFactory.NotNullBinaryExpression(),
+          MoqSyntaxFactory.Equals (
+                  propertyValue,
+                  MoqSyntaxFactory.PropertyMemberAccessExpression (propertyName))
+              .WithLeadingTrivia (SyntaxFactory.Space));
     }
 
     public static LambdaExpressionSyntax SimpleLambdaExpression (ExpressionSyntax expressionBody)
     {
-      return LambdaExpression (MoqSyntaxFactory.LambdaParameterIdentifier, expressionBody);
+      return LambdaExpression (MoqSyntaxFactory.LambdaParameterIdentifier, expressionBody.WithLeadingTrivia (SyntaxFactory.Space));
     }
 
     public static ArgumentListSyntax SimpleArgumentList (ArgumentSyntax argument)
@@ -602,7 +541,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       return argumentList == null || argumentList.IsEmpty()
           ? SyntaxFactory.InvocationExpression (expression)
-          : SyntaxFactory.InvocationExpression (expression, argumentList).WithLeadingTrivia (SyntaxFactory.Space);
+          : SyntaxFactory.InvocationExpression (expression, argumentList.WithLeadingTrivia (SyntaxFactory.Space));
     }
 
     public static MemberAccessExpressionSyntax MemberAccessExpression (ExpressionSyntax expression, SimpleNameSyntax name)
@@ -655,11 +594,52 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                       SyntaxFactory.OmittedArraySizeExpression()))));
     }
 
+    public static PrefixUnaryExpressionSyntax Not (ExpressionSyntax expression)
+    {
+      return SyntaxFactory.PrefixUnaryExpression (SyntaxKind.LogicalNotExpression, expression);
+    }
+
+    public static InvocationExpressionSyntax Equals (ExpressionSyntax right, ExpressionSyntax? left = null)
+    {
+      left ??= MoqSyntaxFactory.LambdaParameterIdentifierName;
+      return MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (
+              MoqSyntaxFactory.ObjectKeyword,
+              MoqSyntaxFactory.EqualsIdentifierName),
+          MoqSyntaxFactory.ArgumentList (
+              new[]
+              {
+                  MoqSyntaxFactory.Argument (left),
+                  MoqSyntaxFactory.Argument (right).WithLeadingTrivia (SyntaxFactory.Space)
+              }));
+    }
+
+    public static InvocationExpressionSyntax ReferenceEquals (ExpressionSyntax expression)
+    {
+      return MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (
+              MoqSyntaxFactory.ObjectKeyword,
+              MoqSyntaxFactory.ReferenceEqualsIdentifierName),
+          MoqSyntaxFactory.ArgumentList (
+              new[]
+              {
+                  MoqSyntaxFactory.Argument (MoqSyntaxFactory.LambdaParameterIdentifierName),
+                  MoqSyntaxFactory.Argument (expression).WithLeadingTrivia (SyntaxFactory.Space)
+              }));
+    }
+
+    public static MemberAccessExpressionSyntax PropertyMemberAccessExpression (ExpressionSyntax propertyName)
+    {
+      return MoqSyntaxFactory.MemberAccessExpression (
+          MoqSyntaxFactory.LambdaParameterIdentifierName,
+          SyntaxFactory.IdentifierName (propertyName.ToString().Replace ("\"", "")));
+    }
+
     #region Private MoqSyntaxFactory
 
     private static BinaryExpressionSyntax BinaryExpression (SyntaxKind kind, ExpressionSyntax left, ExpressionSyntax right)
     {
-      return SyntaxFactory.BinaryExpression (kind, left, right);
+      return SyntaxFactory.BinaryExpression (kind, left.WithLeadingTrivia (SyntaxFactory.Space), right.WithTrailingTrivia (SyntaxFactory.Space));
     }
 
     private static LambdaExpressionSyntax LambdaExpression (SyntaxToken parameter, ExpressionSyntax expressionBody)
@@ -673,7 +653,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       return argument == null
           ? SyntaxFactory.ArgumentList()
-          : SyntaxFactory.ArgumentList (SyntaxFactory.SingletonSeparatedList<ArgumentSyntax> (argument));
+          : SyntaxFactory.ArgumentList (SyntaxFactory.SingletonSeparatedList (argument));
     }
 
     private static ArgumentListSyntax ArgumentList (IEnumerable<ArgumentSyntax> arguments)
@@ -688,7 +668,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static TypeArgumentListSyntax TypeArgumentList (IEnumerable<TypeSyntax> typeArguments)
     {
-      return SyntaxFactory.TypeArgumentList (SyntaxFactory.SeparatedList<TypeSyntax> (typeArguments));
+      return SyntaxFactory.TypeArgumentList (SyntaxFactory.SeparatedList (typeArguments));
     }
 
     private static InitializerExpressionSyntax ObjectInitializerExpression (ExpressionSyntax expression)
@@ -742,13 +722,19 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.ParenthesizedLambdaExpression (expression);
     }
 
-    public static SimpleNameSyntax ExpectIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ExpectIdentifier);
+    public static IdentifierNameSyntax ExpectIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ExpectIdentifier);
+
+    private static LiteralExpressionSyntax NullLiteralExpression => SyntaxFactory.LiteralExpression (SyntaxKind.NullLiteralExpression);
+
+    private static LiteralExpressionSyntax TrueLiteralExpression => SyntaxFactory.LiteralExpression (SyntaxKind.TrueLiteralExpression);
+
+    private static PredefinedTypeSyntax ObjectKeyword => SyntaxFactory.PredefinedType (SyntaxFactory.Token (SyntaxKind.ObjectKeyword));
 
     public static IdentifierNameSyntax LambdaParameterIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.LambdaParameterIdentifier);
 
-    private static IdentifierNameSyntax ContainsIdentifierName => SyntaxFactory.IdentifierName ("Contains");
+    private static IdentifierNameSyntax ContainsIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ContainsIdentifier);
 
-    private static IdentifierNameSyntax AllIdentifierName => SyntaxFactory.IdentifierName ("All");
+    private static IdentifierNameSyntax AllIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.AllIdentifier);
 
     private static IdentifierNameSyntax MockBehaviorIdentifierName => SyntaxFactory.IdentifierName ("MockBehavior");
 
@@ -759,10 +745,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static IdentifierNameSyntax RhinoIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.RhinoIdentifier);
 
     private static IdentifierNameSyntax MocksIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.MocksIdentifier);
-
-    private static LiteralExpressionSyntax NullLiteralExpression => SyntaxFactory.LiteralExpression (SyntaxKind.NullLiteralExpression);
-
-    private static LiteralExpressionSyntax TrueLiteralExpression => SyntaxFactory.LiteralExpression (SyntaxKind.TrueLiteralExpression);
 
     private static IdentifierNameSyntax MatchesIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.MatchesIdentifier);
 
@@ -775,6 +757,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static IdentifierNameSyntax VerifyIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.VerifyIdentifier);
 
     private static IdentifierNameSyntax ObjectIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ObjectIdentifier);
+
+    private static IdentifierNameSyntax ItIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ItIdentifier);
+
+    private static IdentifierNameSyntax IsIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.IsIdentifier);
+
+    private static SimpleNameSyntax EqualsIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.EqualsIdentifier);
+
+    private static SimpleNameSyntax ReferenceEqualsIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ReferenceEqualsIdentifier);
 
     private static SyntaxToken DotToken => SyntaxFactory.Token (SyntaxKind.DotToken);
 
@@ -799,6 +789,22 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static SyntaxToken VerifyIdentifier => SyntaxFactory.Identifier ("Verify");
 
     private static SyntaxToken ExpectIdentifier => SyntaxFactory.Identifier ("Expect");
+
+    private static SyntaxToken ItIdentifier => SyntaxFactory.Identifier ("It");
+
+    private static SyntaxToken IsIdentifier => SyntaxFactory.Identifier ("Is");
+
+    private static SyntaxToken IsAnyIdentifier => SyntaxFactory.Identifier ("IsAny");
+
+    private static SyntaxToken IsNotNullIdentifier => SyntaxFactory.Identifier ("IsNotNull");
+
+    private static SyntaxToken ContainsIdentifier => SyntaxFactory.Identifier ("Contains");
+
+    private static SyntaxToken AllIdentifier => SyntaxFactory.Identifier ("All");
+
+    private static SyntaxToken EqualsIdentifier => SyntaxFactory.Identifier ("Equals");
+
+    private static SyntaxToken ReferenceEqualsIdentifier => SyntaxFactory.Identifier ("ReferenceEquals");
 
     private static SyntaxToken ObjectIdentifier => SyntaxFactory.Identifier ("Object");
 
