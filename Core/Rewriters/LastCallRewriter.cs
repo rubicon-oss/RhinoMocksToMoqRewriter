@@ -25,7 +25,26 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitBlock (BlockSyntax node)
     {
-      var trackedNodes = node.TrackNodes (node.DescendantNodes().OfType<StatementSyntax>(), CompilationId);
+      BlockSyntax trackedNodes = null!;
+      try
+      {
+        trackedNodes = node.TrackNodes (node.DescendantNodes().OfType<StatementSyntax>(), CompilationId);
+      }
+      catch (Exception ex)
+      {
+        Console.Error.WriteLine (
+            $"WARNING: Unable to convert LastCall"
+            + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}"
+            + $"\r\n{ex}");
+
+        return node;
+      }
+
+      if (trackedNodes is null)
+      {
+        return node;
+      }
+
       var baseCallNode = (BlockSyntax) base.VisitBlock (trackedNodes)!;
 
       var rhinoMocksLastCallSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.LastCall");
