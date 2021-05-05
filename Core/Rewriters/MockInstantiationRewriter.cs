@@ -30,6 +30,40 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       _formatter = formatter;
     }
 
+    public override SyntaxNode? VisitLocalDeclarationStatement (LocalDeclarationStatementSyntax node)
+    {
+      var rhinoMocksMockRepositorySymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
+      if (rhinoMocksMockRepositorySymbol == null)
+      {
+        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
+      }
+
+      var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.LocalDeclarationStatement) || s.IsKind (SyntaxKind.InvocationExpression)), CompilationId);
+      var baseCallNode = (LocalDeclarationStatementSyntax) base.VisitLocalDeclarationStatement (trackedNodes)!;
+
+      if (IsRhinoMocksLocalDeclarationWithoutVarType (baseCallNode, rhinoMocksMockRepositorySymbol))
+      {
+        return baseCallNode.WithDeclaration (
+            baseCallNode.Declaration
+                .WithType (
+                    MoqSyntaxFactory.VarType
+                        .WithLeadingTrivia (baseCallNode.Declaration.Type.GetLeadingTrivia())
+                        .WithTrailingTrivia (baseCallNode.Declaration.Type.GetTrailingTrivia())));
+      }
+
+      return baseCallNode;
+    }
+
+    private bool IsRhinoMocksLocalDeclarationWithoutVarType (LocalDeclarationStatementSyntax node, INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    {
+      return node.GetOriginalNode (node, CompilationId)!.Declaration.Variables
+                 .Any (
+                     s => s.Initializer is { } initializer
+                          && Model.GetSymbolInfo (initializer.Value).Symbol?.ContainingType is { } symbol
+                          && rhinoMocksMockRepositorySymbol.Equals (symbol, SymbolEqualityComparer.Default))
+             && !node.Declaration.Type.IsEquivalentTo (MoqSyntaxFactory.VarType, false);
+    }
+
     public override SyntaxNode? VisitInvocationExpression (InvocationExpressionSyntax node)
     {
       var rhinoMocksMockRepositorySymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
@@ -38,7 +72,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
       }
 
-      var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.InvocationExpression)), CompilationId);
+      var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.LocalDeclarationStatement) || s.IsKind (SyntaxKind.InvocationExpression)), CompilationId);
       var baseCallNode = (InvocationExpressionSyntax) base.VisitInvocationExpression (trackedNodes)!;
 
       var mockOrStubSymbols = GetAllMockOrStubSymbols (rhinoMocksMockRepositorySymbol);
