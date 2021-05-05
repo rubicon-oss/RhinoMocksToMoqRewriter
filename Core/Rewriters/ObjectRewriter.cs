@@ -36,9 +36,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Concat (moqCompilationSymbol.GetMembers())
           .Concat (moqSequenceCompilationSymbol.GetMembers());
 
-      var trackedNodes = node.TrackNodes (
-          node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression) || s.IsKind (SyntaxKind.IdentifierName)),
-          CompilationId);
+      var trackedNodes = TrackNodes (node);
       var baseCallNode = (MemberAccessExpressionSyntax) base.VisitMemberAccessExpression (trackedNodes)!;
 
       var nameSymbol = Model.GetSymbolInfo (baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!.Name).Symbol;
@@ -67,15 +65,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       try
       {
         return baseCallNode.ReplaceNode (identifierNameToBeReplaced, MoqSyntaxFactory.MockObjectExpression (identifierNameToBeReplaced))
-                .WithLeadingTrivia (baseCallNode.GetLeadingTrivia())
-                .WithTrailingTrivia (baseCallNode.GetTrailingTrivia());
+            .WithLeadingTrivia (baseCallNode.GetLeadingTrivia())
+            .WithTrailingTrivia (baseCallNode.GetTrailingTrivia());
       }
       catch (Exception ex)
       {
         Console.Error.WriteLine (
             $"WARNING: Unable to insert .Object"
             + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}"
-            + $"{ex}");
+            + $"\r\n{ex}");
 
         return baseCallNode;
       }
@@ -89,9 +87,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         throw new InvalidOperationException ("Moq cannot be found.");
       }
 
-      var trackedNodes = node.TrackNodes (
-          node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression) || s.IsKind (SyntaxKind.IdentifierName)),
-          CompilationId);
+      var trackedNodes = TrackNodes (node);
 
       var baseCallNode = (ArgumentSyntax) base.VisitArgument (trackedNodes)!;
       if (baseCallNode.Expression is not IdentifierNameSyntax identifierName)
@@ -116,10 +112,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         throw new InvalidOperationException ("Moq cannot be found.");
       }
 
-      var trackedNodes = node.TrackNodes (
-          node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression) || s.IsKind (SyntaxKind.IdentifierName)),
-          CompilationId);
-
+      var trackedNodes = TrackNodes (node);
       var baseCallNode = (ReturnStatementSyntax) base.VisitReturnStatement (trackedNodes)!;
       if (baseCallNode.Expression is not IdentifierNameSyntax identifierName)
       {
@@ -133,6 +126,51 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       }
 
       return baseCallNode.WithExpression (MoqSyntaxFactory.MockObjectExpression (identifierName));
+    }
+
+    public override SyntaxNode? VisitInitializerExpression (InitializerExpressionSyntax node)
+    {
+      var genericMoqCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.Mock`1");
+      if (genericMoqCompilationSymbol == null)
+      {
+        throw new InvalidOperationException ("Moq cannot be found.");
+      }
+
+      var trackedNodes = TrackNodes (node);
+
+      var baseCallNode = (InitializerExpressionSyntax) base.VisitInitializerExpression (trackedNodes)!;
+      var newExpressions = baseCallNode.Expressions;
+      foreach (var expression in baseCallNode.Expressions)
+      {
+        if (expression is not IdentifierNameSyntax identifierName)
+        {
+          continue;
+        }
+
+        var typeSymbol = Model.GetTypeInfo (baseCallNode.GetOriginalNode (identifierName, CompilationId)!).Type?.OriginalDefinition;
+        if (!genericMoqCompilationSymbol.Equals (typeSymbol, SymbolEqualityComparer.Default))
+        {
+          continue;
+        }
+
+        newExpressions = newExpressions.Replace (expression, MoqSyntaxFactory.MockObjectExpression (identifierName));
+      }
+
+      return baseCallNode.WithExpressions (newExpressions);
+    }
+
+    private T TrackNodes<T> (T node)
+        where T : SyntaxNode
+    {
+      return node.TrackNodes (
+          node.DescendantNodesAndSelf()
+              .Where (
+                  s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression)
+                       || s.IsKind (SyntaxKind.IdentifierName)
+                       || s.IsKind (SyntaxKind.CollectionInitializerExpression)
+                       || s.IsKind (SyntaxKind.ArrayInitializerExpression)
+                       || s.IsKind (SyntaxKind.ObjectInitializerExpression)),
+          CompilationId);
     }
   }
 }
