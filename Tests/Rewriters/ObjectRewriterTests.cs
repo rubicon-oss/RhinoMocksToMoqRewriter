@@ -41,7 +41,8 @@ private ITestInterface _noMock;",
             MethodContext =
                 @"
 _mock = new Mock<ITestInterface>();
-var mock = new Mock<ITestInterface>();"
+var mock = new Mock<ITestInterface>();
+var sequence = new MockSequence();"
         };
 
     [SetUp]
@@ -81,6 +82,11 @@ var mock = new Mock<ITestInterface>();"
         @"_mock.Setup (m => m.DoSomething (1)).Returns (new[] {1}).Callback (null).Verifiable();",
         //language=C#
         @"_mock.Setup (m => m.DoSomething (1)).Returns (new[] {1}).Callback (null).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.InSequence (sequence).Setup (m => m.DoSomething (1)).Returns (new[] {1});",
+        //language=C#
+        @"_mock.InSequence (sequence).Setup (m => m.DoSomething (1)).Returns (new[] {1});")]
     public void Rewrite_MemberAccessExpression (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context, true);

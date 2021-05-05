@@ -26,35 +26,59 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       var genericMoqCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.Mock`1");
       var moqCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.Mock");
-      if (genericMoqCompilationSymbol == null || moqCompilationSymbol == null)
+      var moqSequenceCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.MockSequenceHelper");
+      if (genericMoqCompilationSymbol == null || moqCompilationSymbol == null || moqSequenceCompilationSymbol == null)
       {
         throw new InvalidOperationException ("Moq cannot be found.");
       }
 
-      var mockMembers = genericMoqCompilationSymbol.GetMembers().Concat (moqCompilationSymbol.GetMembers());
+      var mockMembers = genericMoqCompilationSymbol.GetMembers()
+          .Concat (moqCompilationSymbol.GetMembers())
+          .Concat (moqSequenceCompilationSymbol.GetMembers());
 
       var trackedNodes = node.TrackNodes (
           node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression) || s.IsKind (SyntaxKind.IdentifierName)),
           CompilationId);
       var baseCallNode = (MemberAccessExpressionSyntax) base.VisitMemberAccessExpression (trackedNodes)!;
 
-      var nameSymbol = Model.GetSymbolInfo (baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!.Name).Symbol?.OriginalDefinition;
+      var nameSymbol = Model.GetSymbolInfo (baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!.Name).Symbol;
       var typeSymbol = Model.GetTypeInfo (baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!.Expression).Type?.OriginalDefinition;
       if (!genericMoqCompilationSymbol.Equals (typeSymbol, SymbolEqualityComparer.Default))
       {
         return baseCallNode;
       }
 
-      if (mockMembers.Contains (nameSymbol, SymbolEqualityComparer.Default))
+      if (mockMembers.Contains ((nameSymbol as IMethodSymbol)?.ReducedFrom ?? nameSymbol?.OriginalDefinition, SymbolEqualityComparer.Default))
       {
         return baseCallNode;
       }
 
       var currentNode = baseCallNode.GetCurrentNode (baseCallNode, CompilationId);
+      if (currentNode is null)
+      {
+        Console.Error.WriteLine (
+            $"WARNING: Unable to insert .Object"
+            + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
+
+        return baseCallNode;
+      }
+
       var identifierNameToBeReplaced = currentNode!.GetFirstIdentifierName();
-      return baseCallNode.ReplaceNode (identifierNameToBeReplaced, MoqSyntaxFactory.MockObjectExpression (identifierNameToBeReplaced))
-          .WithLeadingTrivia (baseCallNode.GetLeadingTrivia())
-          .WithTrailingTrivia (baseCallNode.GetTrailingTrivia());
+      try
+      {
+        return baseCallNode.ReplaceNode (identifierNameToBeReplaced, MoqSyntaxFactory.MockObjectExpression (identifierNameToBeReplaced))
+                .WithLeadingTrivia (baseCallNode.GetLeadingTrivia())
+                .WithTrailingTrivia (baseCallNode.GetTrailingTrivia());
+      }
+      catch (Exception ex)
+      {
+        Console.Error.WriteLine (
+            $"WARNING: Unable to insert .Object"
+            + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}"
+            + $"{ex}");
+
+        return baseCallNode;
+      }
     }
 
     public override SyntaxNode? VisitArgument (ArgumentSyntax node)
