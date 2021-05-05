@@ -166,6 +166,21 @@ private static void DoSomething (AnyDelegate d) => throw new NotImplementedExcep
         @"var anotherMock = new Mock<ITestInterface>(
     1,
     2) { CallBase = true };")]
+    [TestCase (
+        //language=C#
+        @"ITestInterface anotherMock = MockRepository.GenerateStub<ITestInterface>();",
+        //language=C#
+        @"var anotherMock = new Mock<ITestInterface>();")]
+    [TestCase (
+        //language=C#
+        @"ITestInterface anotherMock = _mockRepository.StrictMock<ITestInterface>();",
+        //language=C#
+        @"var anotherMock = new Mock<ITestInterface> (MockBehavior.Strict);")]
+    [TestCase (
+        //language=C#
+        @"string anotherMock = ""abc"";",
+        //language=C#
+        @"string anotherMock = ""abc"";")]
     public void Rewrite_LocalDeclarationStatement (string source, string expected)
     {
       var (model, actualNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatementWithContext (source, _context);

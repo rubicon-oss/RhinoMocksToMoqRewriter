@@ -264,7 +264,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               }));
     }
 
-
     public static FieldDeclarationSyntax MockFieldDeclaration (
         SyntaxList<AttributeListSyntax> attributeList,
         SyntaxTokenList modifiers,
@@ -630,6 +629,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           SyntaxFactory.IdentifierName (propertyName.ToString().Replace ("\"", "")));
     }
 
+    public static TypeSyntax VarType => MoqSyntaxFactory.VarIdentifierName;
+
     #region Annotations
 
     public static SyntaxAnnotation VerifyAnnotation (SyntaxNode? currentNode = null, object? times = null)
@@ -809,6 +810,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static SimpleNameSyntax ReferenceEqualsIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ReferenceEqualsIdentifier);
 
+    private static TypeSyntax VarIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.VarIdentifier);
+
     private static SyntaxToken DotToken => SyntaxFactory.Token (SyntaxKind.DotToken);
 
     private static SyntaxToken LambdaParameterIdentifier => SyntaxFactory.Identifier ("_");
@@ -858,6 +861,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static SyntaxToken ReferenceEqualsIdentifier => SyntaxFactory.Identifier ("ReferenceEquals");
 
     private static SyntaxToken ObjectIdentifier => SyntaxFactory.Identifier ("Object");
+
+    private static SyntaxToken VarIdentifier => SyntaxFactory.Identifier (SyntaxFactory.TriviaList(), SyntaxKind.VarKeyword, "var", "var", SyntaxFactory.TriviaList());
 
     #endregion
   }
