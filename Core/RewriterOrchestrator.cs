@@ -34,13 +34,13 @@ namespace RhinoMocksToMoqRewriter.Core
             new ExpectCallRewriter(),
             new ConstraintsRewriter(),
             new UsingDirectiveRewriter(),
-            new FieldRewriter (new Formatter()),
-            new IgnoreArgumentsRewriter(),
             new MockSetupRewriter(),
-            new OrderedMockRewriter(),
             new MethodRewriter(),
-            new ArgumentRewriter(),
+            new FieldRewriter (new Formatter()),
+            new OrderedMockRewriter(),
             new MockInstantiationRewriter (new Formatter()),
+            new IgnoreArgumentsRewriter(),
+            new ArgumentRewriter(),
             new NoMoqRewriter(),
             new ObjectRewriter(),
         };
@@ -72,6 +72,8 @@ namespace RhinoMocksToMoqRewriter.Core
           {
             syntaxTrees.Add (currentTree);
           }
+
+          SyntaxNodeTrackingExtensions.ClearLookup();
         }
       }
 

@@ -17,182 +17,193 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public class MockSetupRewriter : RewriterBase
   {
-    public override SyntaxNode? VisitMethodDeclaration (MethodDeclarationSyntax node)
+    public override SyntaxNode? VisitExpressionStatement (ExpressionStatementSyntax node)
     {
       var rhinoMocksExtensionsCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.RhinoMocksExtensions");
-      var rhinoMocksIMethodOptionsSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Interfaces.IMethodOptions`1");
-      if (rhinoMocksExtensionsCompilationSymbol == null || rhinoMocksIMethodOptionsSymbol == null)
+      var rhinoMocksIRepeatSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Interfaces.IRepeat`1");
+      if (rhinoMocksExtensionsCompilationSymbol == null || rhinoMocksIRepeatSymbol == null)
       {
         throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
       }
 
       var expectSymbols = rhinoMocksExtensionsCompilationSymbol.GetMembers ("Expect");
-      var stubSymbols = rhinoMocksExtensionsCompilationSymbol.GetMembers ("Stub");
-      var returnSymbols = rhinoMocksIMethodOptionsSymbol.GetMembers ("Return");
-      var whenCalledSymbols = rhinoMocksIMethodOptionsSymbol.GetMembers ("WhenCalled");
-      var callbackSymbols = rhinoMocksIMethodOptionsSymbol.GetMembers ("Callback");
 
-      var rhinoMocksExpressionStatements = GetAllRhinoMocksExpressionStatements (node, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols, callbackSymbols)
-          .ToList();
+      var trackedNodes = TrackDescendantNodes (node);
+      var baseCallNode = (ExpressionStatementSyntax) base.VisitExpressionStatement (trackedNodes)!;
 
-      var trackedNodes = node.TrackNodes (rhinoMocksExpressionStatements, CompilationId);
-      foreach (var expressionStatement in rhinoMocksExpressionStatements)
+      var originalNode = baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!;
+      if (NeedsVerifiableExpression (originalNode, expectSymbols))
       {
-        var newExpressionStatement =
-            RewriteMockSetupExpression (expressionStatement, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols);
-
-        trackedNodes = trackedNodes.ReplaceNode (
-            trackedNodes.GetCurrentNode (expressionStatement, CompilationId)!,
-            newExpressionStatement);
+        baseCallNode = baseCallNode.WithExpression (MoqSyntaxFactory.VerifiableMock (baseCallNode.Expression));
       }
 
-      return trackedNodes;
+      if (NeedsAdditionalAnnotations (originalNode, rhinoMocksIRepeatSymbol))
+      {
+        baseCallNode = baseCallNode.WithAdditionalAnnotations (CreateAnnotation (originalNode, baseCallNode, rhinoMocksIRepeatSymbol));
+      }
+
+      return baseCallNode;
     }
 
-    private SyntaxNode RewriteMockSetupExpression (
-        SyntaxNode originalNode,
-        IReadOnlyCollection<ISymbol> expectSymbols,
-        IReadOnlyCollection<ISymbol> stubSymbols,
-        IReadOnlyCollection<ISymbol> returnSymbols,
-        IReadOnlyCollection<ISymbol> whenCalledSymbols)
+    public override SyntaxNode? VisitMemberAccessExpression (MemberAccessExpressionSyntax node)
     {
-      var nodesToBeReplacedInOriginalNode = GetAllNodesToBeReplaced (originalNode, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols).ToList();
-      var trackedNodesToBeReplacedInOriginalNode = originalNode.TrackNodes (nodesToBeReplacedInOriginalNode, CompilationId);
-      foreach (var currentNode in nodesToBeReplacedInOriginalNode)
+      var rhinoMocksExtensionsCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.RhinoMocksExtensions");
+      var rhinoMocksIMethodOptionsSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Interfaces.IMethodOptions`1");
+      var rhinoMocksIRepeatSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Interfaces.IRepeat`1");
+      if (rhinoMocksExtensionsCompilationSymbol == null || rhinoMocksIMethodOptionsSymbol == null || rhinoMocksIRepeatSymbol == null)
       {
-        var trackedNode = trackedNodesToBeReplacedInOriginalNode.GetCurrentNode (currentNode, CompilationId);
-        trackedNodesToBeReplacedInOriginalNode = trackedNodesToBeReplacedInOriginalNode.ReplaceNode (
-            trackedNode!,
-            ComputeReplacementNode (
-                currentNode,
-                expectSymbols,
-                stubSymbols,
-                returnSymbols,
-                whenCalledSymbols));
+        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
       }
 
-      if (ContainsExceptMethodSymbol (nodesToBeReplacedInOriginalNode, expectSymbols))
-      {
-        return MoqSyntaxFactory.VerifiableMock (((ExpressionStatementSyntax) trackedNodesToBeReplacedInOriginalNode).Expression)
-            .WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine));
-      }
+      var trackedNodes = node.TrackNodes (
+          node.DescendantNodesAndSelf().Where (
+              s => s.IsKind (SyntaxKind.InvocationExpression) || s.IsKind (SyntaxKind.ExpressionStatement) || s.IsKind (SyntaxKind.IdentifierName)
+                   || s.IsKind (SyntaxKind.SimpleMemberAccessExpression)),
+          CompilationId);
+      var baseCallNode = (MemberAccessExpressionSyntax) base.VisitMemberAccessExpression (trackedNodes)!;
 
-      return trackedNodesToBeReplacedInOriginalNode;
+      return ConvertMemberAccessExpression (baseCallNode, rhinoMocksExtensionsCompilationSymbol, rhinoMocksIMethodOptionsSymbol, rhinoMocksIRepeatSymbol);
     }
 
-    private IEnumerable<ExpressionStatementSyntax> GetAllRhinoMocksExpressionStatements (
-        MethodDeclarationSyntax node,
-        IReadOnlyCollection<ISymbol> expectSymbols,
-        IReadOnlyCollection<ISymbol> stubSymbols,
-        IReadOnlyCollection<ISymbol> returnSymbols,
-        IReadOnlyCollection<ISymbol> whenCalledSymbols,
-        IReadOnlyCollection<ISymbol> callbackSymbols)
+    public override SyntaxNode? VisitInvocationExpression (InvocationExpressionSyntax node)
     {
-      return node.DescendantNodes()
-          .Where (s => s.IsKind (SyntaxKind.ExpressionStatement))
-          .Select (s => (ExpressionStatementSyntax) s)
-          .Where (
-              s => Model.GetSymbolInfo (s.Expression).Symbol is IMethodSymbol methodSymbol
-                   && (expectSymbols.Contains (methodSymbol.ReducedFrom ?? methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                       || stubSymbols.Contains (methodSymbol.ReducedFrom ?? methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                       || returnSymbols.Contains (methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                       || whenCalledSymbols.Contains (methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                       || callbackSymbols.Contains (methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)));
-    }
-
-    private bool ContainsExceptMethodSymbol (IEnumerable<SyntaxNode> nodes, IEnumerable<ISymbol> expectSymbols)
-    {
-      return nodes
-          .Select (s => Model.GetSymbolInfo (s).Symbol)
-          .Any (s => expectSymbols.Contains ((s as IMethodSymbol)?.ReducedFrom ?? s?.OriginalDefinition, SymbolEqualityComparer.Default));
-    }
-
-    private SyntaxNode ComputeReplacementNode (
-        SyntaxNode originalNode,
-        IReadOnlyCollection<ISymbol> expectSymbols,
-        IReadOnlyCollection<ISymbol> stubSymbols,
-        IReadOnlyCollection<ISymbol> returnSymbols,
-        IReadOnlyCollection<ISymbol> whenCalledSymbols)
-    {
-      var symbol = Model.GetSymbolInfo (originalNode).Symbol as IMethodSymbol;
-      if (stubSymbols.Contains (symbol?.ReducedFrom, SymbolEqualityComparer.Default)
-          || expectSymbols.Contains (symbol?.ReducedFrom, SymbolEqualityComparer.Default))
+      var rhinoMocksExtensionsCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.RhinoMocksExtensions");
+      var rhinoMocksIRepeatSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Interfaces.IRepeat`1");
+      if (rhinoMocksExtensionsCompilationSymbol == null || rhinoMocksIRepeatSymbol == null)
       {
-        return MoqSyntaxFactory.SetupIdentifierName().WithTrailingTrivia (SyntaxFactory.Space);
+        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
       }
 
-      if (stubSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
-          || expectSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default))
-      {
-        var (identifierName, lambdaExpression) = GetIdentifierNameAndLambdaExpression (originalNode);
-        return MoqSyntaxFactory.SetupExpression (identifierName, lambdaExpression);
-      }
+      var trackedNodes = TrackDescendantNodes (node);
+      var baseCallNode = (InvocationExpressionSyntax) base.VisitInvocationExpression (trackedNodes)!;
 
-      if (returnSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default))
-      {
-        return MoqSyntaxFactory.ReturnsIdentifierName().WithTrailingTrivia (SyntaxFactory.Space);
-      }
-
-      if (whenCalledSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default))
-      {
-        return MoqSyntaxFactory.CallbackIdentifierName().WithTrailingTrivia (SyntaxFactory.Space);
-      }
-
-      throw new InvalidOperationException ("Cannot resolve MethodSymbol from RhinoMocks Method");
+      return ConvertInvocationExpression (baseCallNode, rhinoMocksIRepeatSymbol, rhinoMocksExtensionsCompilationSymbol);
     }
 
-    private static (IdentifierNameSyntax, LambdaExpressionSyntax) GetIdentifierNameAndLambdaExpression (SyntaxNode originalNode)
+    private SyntaxNode? ConvertInvocationExpression (
+        InvocationExpressionSyntax baseCallNode,
+        INamedTypeSymbol rhinoMocksIRepeatSymbol,
+        INamedTypeSymbol rhinoMocksExtensionsCompilationSymbol)
     {
-      if (originalNode is not InvocationExpressionSyntax invocationExpression)
+      var symbol = Model.GetSymbolInfo (baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!).Symbol as IMethodSymbol;
+      return symbol switch
       {
-        throw new InvalidOperationException ("Node must be an InvocationExpression");
+          _ when rhinoMocksIRepeatSymbol.GetMembers().Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+              => ((MemberAccessExpressionSyntax) baseCallNode.Expression).Expression,
+          _ when rhinoMocksExtensionsCompilationSymbol.GetMembers ("Expect").Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+              => RewriteStaticExpression (baseCallNode).WithLeadingAndTrailingTriviaOfNode (baseCallNode),
+          _ when rhinoMocksExtensionsCompilationSymbol.GetMembers ("Stub").Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+              => RewriteStaticExpression (baseCallNode).WithLeadingAndTrailingTriviaOfNode (baseCallNode),
+          _ => baseCallNode
+      };
+    }
+
+    private SyntaxNode? ConvertMemberAccessExpression (
+        MemberAccessExpressionSyntax node,
+        INamedTypeSymbol rhinoMocksExtensionsCompilationSymbol,
+        INamedTypeSymbol rhinoMocksIMethodOptionsSymbol,
+        INamedTypeSymbol rhinoMocksIRepeatSymbol)
+    {
+      var symbol = Model.GetSymbolInfo (node.GetOriginalNode (node, CompilationId)!.Name).Symbol;
+      if (symbol is not IMethodSymbol methodSymbol)
+      {
+        return rhinoMocksIRepeatSymbol.Equals (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+            ? node.Expression
+            : node;
       }
 
-      var identifierName = (IdentifierNameSyntax) invocationExpression.ArgumentList.Arguments.First()!.Expression;
-      var lambdaExpression = (LambdaExpressionSyntax) invocationExpression.ArgumentList.Arguments.Last()!.Expression;
-
-      return (identifierName, lambdaExpression)!;
+      return symbol switch
+      {
+          _ when rhinoMocksExtensionsCompilationSymbol.GetMembers ("Expect").Contains (methodSymbol?.ReducedFrom, SymbolEqualityComparer.Default)
+              => node.WithName (MoqSyntaxFactory.SetupIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
+          _ when rhinoMocksExtensionsCompilationSymbol.GetMembers ("Stub").Contains (methodSymbol?.ReducedFrom, SymbolEqualityComparer.Default)
+              => node.WithName (MoqSyntaxFactory.SetupIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
+          _ when rhinoMocksIMethodOptionsSymbol.GetMembers ("WhenCalled").Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+              => node.WithName (MoqSyntaxFactory.CallbackIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
+          _ when rhinoMocksIMethodOptionsSymbol.GetMembers ("Return").Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+              => node.WithName (MoqSyntaxFactory.ReturnsIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
+          _ when rhinoMocksIMethodOptionsSymbol.GetMembers ("Throw").Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+              => node.WithName (MoqSyntaxFactory.ThrowsIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
+          _ when rhinoMocksIRepeatSymbol.GetMembers().Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+              => node.Expression,
+          _ => node
+      };
     }
 
-    private IEnumerable<SyntaxNode> GetAllNodesToBeReplaced (
-        SyntaxNode node,
-        IReadOnlyCollection<ISymbol> expectSymbols,
-        IReadOnlyCollection<ISymbol> stubSymbols,
-        IReadOnlyCollection<ISymbol> returnSymbols,
-        IReadOnlyCollection<ISymbol> whenCalledSymbols)
-
+    private SyntaxAnnotation CreateAnnotation (ExpressionStatementSyntax originalNode, ExpressionStatementSyntax currentNode, INamedTypeSymbol rhinoMocksIRepeatSymbol)
     {
-      return GetAllRhinoMocksIdentifierNames (node, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols)
-          .Concat (
-              node.DescendantNodesAndSelf()
-                  .Where (s => s.IsKind (SyntaxKind.InvocationExpression))
-                  .Where (
-                      s => Model.GetSymbolInfo (s).Symbol?.OriginalDefinition is IMethodSymbol methodSymbol
-                           && (stubSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default)
-                               || expectSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default))));
+      var symbol = Model.GetSymbolInfo (originalNode.Expression).Symbol?.OriginalDefinition;
+      return symbol switch
+      {
+          _ when rhinoMocksIRepeatSymbol.GetMembers ("Never").Single().Equals (symbol, SymbolEqualityComparer.Default)
+              => MoqSyntaxFactory.VerifyAnnotation (currentNode, 0),
+          _ when rhinoMocksIRepeatSymbol.GetMembers ("Once").Single().Equals (symbol, SymbolEqualityComparer.Default)
+              => MoqSyntaxFactory.VerifyAnnotation (currentNode, 1),
+          _ when rhinoMocksIRepeatSymbol.GetMembers ("Twice").Single().Equals (symbol, SymbolEqualityComparer.Default)
+              => MoqSyntaxFactory.VerifyAnnotation (currentNode, 2),
+          _ when rhinoMocksIRepeatSymbol.GetMembers ("AtLeastOnce").Single().Equals (symbol, SymbolEqualityComparer.Default)
+              => MoqSyntaxFactory.VerifyAnnotation (currentNode, -1),
+          _ when rhinoMocksIRepeatSymbol.GetMembers ("Times").Contains (symbol, SymbolEqualityComparer.Default)
+              => MoqSyntaxFactory.VerifyAnnotation (currentNode, GetTimesValue (originalNode)),
+          _ => throw new InvalidOperationException ("Unable to resolve symbol")
+      };
     }
 
-    private IEnumerable<SyntaxNode> GetAllRhinoMocksIdentifierNames (
-        SyntaxNode node,
-        IReadOnlyCollection<ISymbol> expectSymbols,
-        IReadOnlyCollection<ISymbol> stubSymbols,
-        IReadOnlyCollection<ISymbol> returnSymbols,
-        IReadOnlyCollection<ISymbol> whenCalledSymbols)
+    private static string GetTimesValue (ExpressionStatementSyntax originalNode)
     {
-      return node.DescendantNodes()
-          .Where (s => s.IsKind (SyntaxKind.IdentifierName))
-          .Where (
-              s => Model.GetSymbolInfo (s).Symbol is IMethodSymbol methodSymbol
-                   && (expectSymbols.Contains (methodSymbol.ReducedFrom, SymbolEqualityComparer.Default)
-                       || stubSymbols.Contains (methodSymbol.ReducedFrom, SymbolEqualityComparer.Default)
-                       || returnSymbols.Contains (methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                       || whenCalledSymbols.Contains (methodSymbol.OriginalDefinition, SymbolEqualityComparer.Default)))
-          .Select (s => (IdentifierNameSyntax) s);
+      if (originalNode.Expression is not InvocationExpressionSyntax invocationExpression)
+      {
+        throw new InvalidOperationException ("Unable to resolve times value.");
+      }
+
+      return invocationExpression.ArgumentList.Arguments.Count switch
+      {
+          1 when invocationExpression.ArgumentList.Arguments.Single().Expression is LiteralExpressionSyntax { Token: { Value: int times } } => times.ToString(),
+          2 when invocationExpression.ArgumentList.Arguments.First().Expression is LiteralExpressionSyntax { Token: { Value: int min } }
+                 && invocationExpression.ArgumentList.Arguments.Last().Expression is LiteralExpressionSyntax { Token: { Value: int max } } => $"{min}:{max}",
+          _ => throw new InvalidOperationException ("Unable to resolve Repeat.Times")
+      };
+    }
+
+    private bool NeedsAdditionalAnnotations (ExpressionStatementSyntax node, INamedTypeSymbol rhinoMocksIRepeatSymbol)
+    {
+      var symbol = Model.GetSymbolInfo (node.Expression).Symbol;
+      return rhinoMocksIRepeatSymbol.GetMembers().Where (s => s.Name != "Any").Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default);
+    }
+
+    private static InvocationExpressionSyntax RewriteStaticExpression (InvocationExpressionSyntax node)
+    {
+      var mockIdentifierName = (IdentifierNameSyntax) node.GetFirstArgument().Expression;
+      var mockedExpression = (LambdaExpressionSyntax) node.ArgumentList.Arguments.Last().Expression;
+
+      return MoqSyntaxFactory.SetupExpression (mockIdentifierName, mockedExpression);
+    }
+
+    private bool NeedsVerifiableExpression (ExpressionStatementSyntax node, IReadOnlyList<ISymbol> expectSymbols)
+    {
+      if (node.Expression is not InvocationExpressionSyntax invocationExpression)
+      {
+        return false;
+      }
+
+      return invocationExpression.Expression.DescendantNodesAndSelf().Any (
+          s => Model.GetSymbolInfo (s).Symbol is IMethodSymbol symbol
+               && expectSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default));
+    }
+
+    private T TrackDescendantNodes<T> (T node)
+        where T : SyntaxNode
+    {
+      return node.TrackNodes (
+          node.DescendantNodesAndSelf().Where (
+              s => s.IsKind (SyntaxKind.InvocationExpression) || s.IsKind (SyntaxKind.ExpressionStatement) || s.IsKind (SyntaxKind.SimpleMemberAccessExpression)),
+          CompilationId);
     }
   }
 }

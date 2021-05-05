@@ -12,6 +12,9 @@
 //
 
 using System;
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using NUnit.Framework;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
@@ -38,7 +41,8 @@ private ITestInterface _mock;",
             //language=C#
             MethodContext = @"
 var stub = MockRepository.GenerateStub<ITestInterface>();
-var mock = MockRepository.GenerateMock<ITestInterface>();"
+var mock = MockRepository.GenerateMock<ITestInterface>();
+var strictMock = MockRepository.GenerateStrictMock<ITestInterface>();"
         };
 
     [SetUp]
@@ -209,6 +213,38 @@ mock
   .Callback (null);")]
     [TestCase (
         //language=C#
+        @"_mock.Expect (_ => _.DoSomething (42)).Return (21).Throw (new InvalidOperationException (""mimimi""));",
+        //language=C#
+        @"_mock.Setup (_ => _.DoSomething (42)).Returns (21).Throws (new InvalidOperationException (""mimimi"")).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.Stub (_ => _.DoSomething (42)).Return (21).Throw (new InvalidOperationException (""mimimi""));",
+        //language=C#
+        @"_mock.Setup (_ => _.DoSomething (42)).Returns (21).Throws (new InvalidOperationException (""mimimi""));")]
+    [TestCase (
+        //language=C#
+        @"strictMock.Expect (m => m.DoSomething());",
+        //language=C#
+        @"strictMock.Setup (m => m.DoSomething()).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (m => m.DoSomething()).Callback (null).Repeat.Any();",
+        //language=C#
+        @"_mock.Setup (m => m.DoSomething()).Callback (null).Verifiable();")]
+    public void Rewrite_MockSetup (string source, string expected)
+    {
+      var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context, true);
+      _rewriter.Model = model;
+      var actualNode = _rewriter.Visit (node);
+
+      Assert.NotNull (actualNode);
+      Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
+    }
+
+    [Test]
+    [TestCase (
+        //language=C#
         @"
 mock.DoSomething (
   () =>
@@ -226,13 +262,62 @@ mock.DoSomething (
       .Setup (m => m.DoSomething (1)).Returns (2).Verifiable();
     return mock;
   });")]
-    public void Rewrite_Setup (string source, string expected)
+    public void Rewrite_NestedMockSetup (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context, true);
       _rewriter.Model = model;
       var actualNode = _rewriter.Visit (node);
 
+      var expectedExpressionStatements = expectedNode.DescendantNodes().Where (s => s.IsKind (SyntaxKind.ExpressionStatement)).ToList();
+      var actualExpressionStatements = actualNode.DescendantNodes().Where (s => s.IsKind (SyntaxKind.ExpressionStatement)).ToList();
+
+      Assert.AreEqual (expectedExpressionStatements.Count, actualExpressionStatements.Count);
+      for (var i = 0; i < expectedExpressionStatements.Count; i++)
+      {
+        Assert.That (expectedExpressionStatements[i].IsEquivalentTo (actualExpressionStatements[i], false));
+      }
+    }
+
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (m => m.DoSomething()).Callback (null).Repeat.Once();",
+        //language=C#
+        @"_mock.Setup (m => m.DoSomething()).Callback (null).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (m => m.DoSomething()).Callback (null).Repeat.Twice();",
+        //language=C#
+        @"_mock.Setup (m => m.DoSomething()).Callback (null).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (m => m.DoSomething()).Callback (null).Repeat.AtLeastOnce();",
+        //language=C#
+        @"_mock.Setup (m => m.DoSomething()).Callback (null).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (m => m.DoSomething()).Callback (null).Repeat.Never();",
+        //language=C#
+        @"_mock.Setup (m => m.DoSomething()).Callback (null).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (m => m.DoSomething()).Callback (null).Repeat.Times (1, 3);",
+        //language=C#
+        @"_mock.Setup (m => m.DoSomething()).Callback (null).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (m => m.DoSomething()).Callback (null).Repeat.Times (4);",
+        //language=C#
+        @"_mock.Setup (m => m.DoSomething()).Callback (null).Verifiable();")]
+    public void Rewrite_MockSetupWithVerifyAnnotation (string source, string expected)
+    {
+      var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context, true);
+      _rewriter.Model = model;
+      var actualNode = _rewriter.Visit (node);
+
+      var data = actualNode.GetAnnotations (MoqSyntaxFactory.VerifyAnnotationKind).Single().Data;
+      Assert.NotNull (data);
       Assert.NotNull (actualNode);
       Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
     }
