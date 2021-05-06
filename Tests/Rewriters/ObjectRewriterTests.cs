@@ -33,6 +33,14 @@ int[] DoSomething (int a);
 ITestInterface DoSomething (ITestInterface m);
 ITestInterface DoSomething (int i, ITestInterface m);",
             //language=C#
+            NamespaceContext =
+                @"
+public class A
+{
+  public A() {}
+  public A (ITestInterface a) {}
+}",
+            //language=C#
             ClassContext =
                 @"
 private Mock<ITestInterface> _mock;
@@ -160,6 +168,53 @@ var sequence = new MockSequence();"
     {
       var (model, node) = CompiledSourceFileProvider.CompileReturnStatementWithContext (source, _context, true);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileReturnStatementWithContext (expected, _context, true);
+      _rewriter.Model = model;
+      var actualNode = _rewriter.Visit (node);
+
+      Assert.NotNull (actualNode);
+      Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
+    }
+
+    [Test]
+    [TestCase (
+        //language=C#
+        @"var array = new[] { _mock };",
+        //language=C#
+        @"var array = new[] { _mock.Object };")]
+    [TestCase (
+        //language=C#
+        @"var array = new[] { _noMock };",
+        //language=C#
+        @"var array = new[] { _noMock };")]
+    [TestCase (
+        //language=C#
+        @"var array = new[] { _mock, _noMock };",
+        //language=C#
+        @"var array = new[] { _mock.Object, _noMock };")]
+    [TestCase (
+        //language=C#
+        @"var a = new A (_mock);",
+        //language=C#
+        @"var a = new A (_mock.Object);")]
+    [TestCase (
+        //language=C#
+        @"var a = new A (_noMock);",
+        //language=C#
+        @"var a = new A (_noMock);")]
+    [TestCase (
+        //language=C#
+        @"var list = new List<ITestInterface>() { _mock, _noMock };",
+        //language=C#
+        @"var list = new List<ITestInterface>() { _mock.Object, _noMock };")]
+    [TestCase (
+        //language=C#
+        @"var array = new[] { _mock.DoSomething (mock) };",
+        //language=C#
+        @"var array = new[] { _mock.Object.DoSomething (mock.Object) };")]
+    public void Rewrite_Initializer (string source, string expected)
+    {
+      var (model, node) = CompiledSourceFileProvider.CompileLocalDeclarationStatementWithContext (source, _context, true);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatementWithContext (expected, _context);
       _rewriter.Model = model;
       var actualNode = _rewriter.Visit (node);
 
