@@ -126,6 +126,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               => node.WithName (MoqSyntaxFactory.SetupIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
           _ when rhinoMocksIMethodOptionsSymbol.GetMembers ("WhenCalled").Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
               => node.WithName (MoqSyntaxFactory.CallbackIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
+          _ when rhinoMocksIMethodOptionsSymbol.GetMembers ("Do").Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+              => node.WithName (MoqSyntaxFactory.CallbackIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
           _ when rhinoMocksIMethodOptionsSymbol.GetMembers ("Return").Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
               => node.WithName (MoqSyntaxFactory.ReturnsIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
           _ when rhinoMocksIMethodOptionsSymbol.GetMembers ("Throw").Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)

@@ -231,6 +231,11 @@ mock
         @"_mock.Expect (m => m.DoSomething()).Callback (null).Repeat.Any();",
         //language=C#
         @"_mock.Setup (m => m.DoSomething()).Callback (null).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (m => m.DoSomething()).Do (null);",
+        //language=C#
+        @"_mock.Setup (m => m.DoSomething()).Callback (null).Verifiable();")]
     public void Rewrite_MockSetup (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
