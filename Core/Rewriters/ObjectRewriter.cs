@@ -64,9 +64,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var identifierNameToBeReplaced = currentNode!.GetFirstIdentifierName();
       try
       {
-        return baseCallNode.ReplaceNode (identifierNameToBeReplaced, MoqSyntaxFactory.MockObjectExpression (identifierNameToBeReplaced))
-            .WithLeadingTrivia (baseCallNode.GetLeadingTrivia())
-            .WithTrailingTrivia (baseCallNode.GetTrailingTrivia());
+        return baseCallNode.ReplaceNode (
+            identifierNameToBeReplaced,
+            MoqSyntaxFactory.MockObjectExpression (identifierNameToBeReplaced)
+                .WithLeadingAndTrailingTriviaOfNode (identifierNameToBeReplaced)!);
       }
       catch (Exception ex)
       {
@@ -154,7 +155,19 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           continue;
         }
 
-        newExpressions = newExpressions.Replace (expression, MoqSyntaxFactory.MockObjectExpression (identifierName));
+        try
+        {
+          newExpressions = newExpressions.Replace (expression, MoqSyntaxFactory.MockObjectExpression (identifierName));
+        }
+        catch (Exception ex)
+        {
+          Console.Error.WriteLine (
+              $"WARNING: Unable to insert .Object"
+              + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}"
+              + $"\r\n{ex}");
+
+          return baseCallNode;
+        }
       }
 
       return baseCallNode.WithExpressions (newExpressions);

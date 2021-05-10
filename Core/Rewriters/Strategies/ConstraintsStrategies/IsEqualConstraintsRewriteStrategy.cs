@@ -19,6 +19,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategie
 {
   public class IsEqualConstraintsRewriteStrategy : BaseConstraintsRewriteStrategy<IsEqualConstraintsRewriteStrategy>
   {
-    public override ExpressionSyntax Rewrite (ExpressionSyntax node) => MoqSyntaxFactory.Equals (node.GetFirstArgument().Expression);
+    public override ExpressionSyntax Rewrite (ExpressionSyntax node)
+    {
+      return Formatter.MarkWithFormatAnnotation (MoqSyntaxFactory.Equals (node.GetFirstArgument().Expression))
+          .WithLeadingAndTrailingTriviaOfNode (node);
+    }
   }
 }

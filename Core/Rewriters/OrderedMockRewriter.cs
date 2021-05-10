@@ -75,11 +75,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         int current)
     {
       var nodesToBeReplaced = GetAllMoqExpressionStatements (statements, moqSymbols).ToList();
+      var parentTrivia = statements.First().Parent?.GetLeadingTrivia();
       for (var i = 0; i < statements.Count; i++)
       {
         var statement = statements[i];
         if (!nodesToBeReplaced.Any (s => s.IsEquivalentTo (statement, false)))
         {
+          statements = statements.Replace (statement, statement.WithLeadingTrivia (parentTrivia));
           continue;
         }
 
@@ -88,13 +90,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
             firstIdentifierName,
             MoqSyntaxFactory.InSequenceExpression (firstIdentifierName, current.ToString()));
 
-        statements = statements.Replace (statement, newExpressionStatement);
+        statements = statements.Replace (statement, newExpressionStatement.WithLeadingTrivia (parentTrivia));
       }
 
       statements = statements.Insert (
           0,
           MoqSyntaxFactory.MockSequenceLocalDeclarationStatement (current.ToString())
-              .WithLeadingTrivia (statements.First().GetLeadingTrivia())
+              .WithLeadingTrivia (parentTrivia)
               .WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine)));
 
       return statements;

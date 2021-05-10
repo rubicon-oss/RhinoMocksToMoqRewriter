@@ -22,6 +22,10 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
 {
   public static class SyntaxNodeExtensions
   {
+    private const string c_carriageReturnLineFeed = "\r\n";
+    private const string c_lineFeed = "\n";
+    private const string c_whiteSpace = " ";
+
     public static string GetLeadingWhiteSpaces (this SyntaxNode node)
     {
       if (!node.HasLeadingTrivia)
@@ -29,7 +33,7 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
         return string.Empty;
       }
 
-      var numberOfSpaces = node.GetLeadingTrivia().ToString().Count (c => c.ToString() == " ");
+      var numberOfSpaces = node.GetLeadingTrivia().ToString().Count (c => c.ToString() == c_whiteSpace);
       return Strings.Space (numberOfSpaces);
     }
 
@@ -83,10 +87,47 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
       return node.DescendantNodes().FirstOrDefault (s => s.IsKind (SyntaxKind.GenericName)) as GenericNameSyntax;
     }
 
-    public static SyntaxNode? WithLeadingAndTrailingTriviaOfNode (this SyntaxNode node, SyntaxNode triviaNode)
+    public static T WithLeadingAndTrailingTriviaOfNode<T> (this T node, SyntaxNode triviaNode)
+        where T : SyntaxNode
     {
       return node.WithLeadingTrivia (triviaNode.GetLeadingTrivia())
           .WithTrailingTrivia (triviaNode.GetTrailingTrivia());
+    }
+
+    public static string GetNewLineCharacter (this SyntaxNode node)
+    {
+      if (node is null)
+      {
+        return string.Empty;
+      }
+
+      var nodeAsString = node.ToString().Split ("(");
+      if (node.ToString().Split ("(").Length < 2)
+      {
+        return string.Empty;
+      }
+
+      if (nodeAsString[1].Contains (c_carriageReturnLineFeed))
+      {
+        return c_carriageReturnLineFeed;
+      }
+
+      if (nodeAsString[1].Contains (c_lineFeed))
+      {
+        return c_lineFeed;
+      }
+
+      return string.Empty;
+    }
+
+    public static string GetIndentation (this SyntaxNode node)
+    {
+      var nodeAsString = node.ToFullString();
+      return string.Join (
+          "",
+          nodeAsString.Select ((c, index) => nodeAsString[index..].TakeWhile (e => e.ToString() == c_whiteSpace))
+              .OrderByDescending (e => e.Count())
+              .First());
     }
   }
 }

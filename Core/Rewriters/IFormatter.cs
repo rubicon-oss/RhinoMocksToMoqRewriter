@@ -12,14 +12,11 @@
 //
 
 using System;
-using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
-
 namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public interface IFormatter
   {
-    [Pure]
-    public SyntaxNode Format (SyntaxNode node);
+    public T Format<T> (T node) where T : SyntaxNode;
   }
 }

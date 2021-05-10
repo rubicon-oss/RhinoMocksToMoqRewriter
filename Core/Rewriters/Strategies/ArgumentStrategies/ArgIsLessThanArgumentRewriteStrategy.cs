@@ -33,7 +33,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
         throw new InvalidOperationException ("Node must contain an Argument");
       }
 
-      return MoqSyntaxFactory.IsLessThanArgument (typeArgumentList, objectToCompare.Expression);
+      return Formatter.MarkWithFormatAnnotation (MoqSyntaxFactory.IsLessThanArgument (typeArgumentList, objectToCompare.Expression))
+          .WithLeadingAndTrailingTriviaOfNode (node);
     }
   }
 }

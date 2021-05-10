@@ -150,5 +150,53 @@ MockBehavior.Strict,    42,
 
       Assert.AreEqual (expected, formattedNode.ToString());
     }
+
+    [Test]
+    [TestCase (
+        //language=C#
+        @"mock.Setup (_ => _.DoSomething()).Returns (3).Verifiable();",
+        //language=C#
+        @"mock.Setup (_ => _.DoSomething()).Returns (3).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"mock.Setup (_ => _.DoSomething())
+    .Returns (3).Verifiable();",
+        //language=C#
+        @"mock.Setup (_ => _.DoSomething())
+    .Returns (3)
+    .Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"mock.Setup(_ => _.DoSomething (
+      1,
+      2)).Returns (3).Verifiable();",
+        //language=C#
+        @"mock.Setup (_ => _.DoSomething (
+      1,
+      2)).Returns (3).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"mock.Setup (_ => _.DoSomething (
+      1,
+      2)).Returns (3).Verifiable();",
+        //language=C#
+        @"mock.Setup (_ => _.DoSomething (
+      1,
+      2)).Returns (3).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"mock.Setup (_ => _.DoSomething (1, 2))
+    .Returns (3).Verifiable();",
+        //language=C#
+        @"mock.Setup (_ => _.DoSomething (1, 2))
+    .Returns (3)
+    .Verifiable();")]
+    public void Format_ExpressionStatement (string source, string expected)
+    {
+      var (_, node) = CompiledSourceFileProvider.CompileExpressionStatement (source, true);
+      var formattedNode = _formatter.Format (node);
+
+      Assert.AreEqual (expected, formattedNode.ToString());
+    }
   }
 }

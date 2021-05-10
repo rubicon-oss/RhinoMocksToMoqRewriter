@@ -42,8 +42,7 @@ private static void DoSomething (AnyDelegate d) => throw new NotImplementedExcep
     public void SetUp ()
     {
       _formatter = new Mock<IFormatter>();
-      _formatter.Setup (f => f.Format (It.IsAny<SyntaxNode>()))
-          .Returns<SyntaxNode> (s => s);
+      _formatter.Setup (f => f.Format (It.IsAny<SyntaxNode>())).Returns<SyntaxNode> (s => s);
       _rewriter = new MockInstantiationRewriter (_formatter.Object);
     }
 

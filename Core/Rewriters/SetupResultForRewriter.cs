@@ -16,6 +16,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
@@ -44,8 +45,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           baseCallNode.GetCurrentNode (setupResultForMemberAccessExpression, CompilationId)!,
           MoqSyntaxFactory.ExpectCallMemberAccessExpression());
 
-      return baseCallNode
-          .WithExpression (MoqSyntaxFactory.RepeatAnyExpressionStatement (expectCallExpression.Expression)).WithLeadingTrivia (baseCallNode.GetLeadingTrivia());
+      return baseCallNode.WithExpression (
+              Formatter.MarkWithFormatAnnotation (MoqSyntaxFactory.RepeatAnyExpressionStatement (expectCallExpression.Expression)))
+          .WithLeadingAndTrailingTriviaOfNode (node);
     }
 
     private SyntaxNode? GetSetupResultForExpressionOrDefault (ExpressionStatementSyntax baseCallNode, ISymbol setupResultForSymbol)

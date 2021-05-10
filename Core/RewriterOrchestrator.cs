@@ -26,6 +26,8 @@ namespace RhinoMocksToMoqRewriter.Core
 {
   public static class RewriterOrchestrator
   {
+    private static IFormatter Formatter { get; } = new Formatter();
+
     private static readonly List<RewriterBase> s_rewriters =
         new List<RewriterBase>
         {
@@ -34,25 +36,27 @@ namespace RhinoMocksToMoqRewriter.Core
             new ExpectCallRewriter(),
             new ConstraintsRewriter(),
             new UsingDirectiveRewriter(),
-            new MockSetupRewriter(),
+            new MockSetupRewriter (Formatter),
             new MethodRewriter(),
-            new FieldRewriter (new Formatter()),
+            new FieldRewriter (Formatter),
             new OrderedMockRewriter(),
-            new MockInstantiationRewriter (new Formatter()),
+            new MockInstantiationRewriter (Formatter),
             new IgnoreArgumentsRewriter(),
             new ArgumentRewriter(),
             new NoMoqRewriter(),
             new ObjectRewriter(),
         };
 
-    public static async Task RewriteAsync (IEnumerable<CSharpCompilation> compilations, SyntaxGenerator generator)
+    public static async Task RewriteAsync (IEnumerable<CSharpCompilation> compilations, SyntaxGenerator generator, Workspace workspace)
     {
       var syntaxTrees = new List<SyntaxTree>();
       foreach (var compilation in compilations)
       {
+        await Console.Error.WriteLineAsync (compilation.AssemblyName);
         var currentCompilation = compilation;
         foreach (var syntaxTree in compilation.SyntaxTrees.Where (s => s.ContainsRhinoMocksUsingDirective()))
         {
+          await Console.Error.WriteLineAsync ($"- {syntaxTree.FilePath}");
           var currentTree = syntaxTree;
           foreach (var rewriter in s_rewriters)
           {
@@ -70,7 +74,7 @@ namespace RhinoMocksToMoqRewriter.Core
 
           if (currentTree != syntaxTree)
           {
-            syntaxTrees.Add (currentTree);
+            syntaxTrees.Add (Rewriters.Formatter.FormatAnnotatedNodes (currentTree, workspace));
           }
 
           SyntaxNodeTrackingExtensions.ClearLookup();

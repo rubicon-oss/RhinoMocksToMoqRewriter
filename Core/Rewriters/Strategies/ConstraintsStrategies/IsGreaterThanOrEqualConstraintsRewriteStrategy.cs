@@ -19,6 +19,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategie
 {
   public class IsGreaterThanOrEqualConstraintsRewriteStrategy : BaseConstraintsRewriteStrategy<IsGreaterThanOrEqualConstraintsRewriteStrategy>
   {
-    public override ExpressionSyntax Rewrite (ExpressionSyntax node) => MoqSyntaxFactory.GreaterThanOrEqualBinaryExpression (node.GetFirstArgument().Expression);
+    public override ExpressionSyntax Rewrite (ExpressionSyntax node)
+    {
+      return Formatter.MarkWithFormatAnnotation (
+              MoqSyntaxFactory.GreaterThanOrEqualBinaryExpression (node.GetFirstArgument().Expression))
+          .WithLeadingAndTrailingTriviaOfNode (node);
+    }
   }
 }

@@ -37,7 +37,7 @@ namespace RhinoMocksToMoqRewriter.Application
         return 1;
       }
 
-      await RewriterOrchestrator.RewriteAsync (compilations, compilationLoader.Generator);
+      await RewriterOrchestrator.RewriteAsync (compilations, compilationLoader.Generator, compilationLoader.Workspace);
 
       return 0;
     }

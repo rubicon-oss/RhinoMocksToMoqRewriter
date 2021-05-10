@@ -12,15 +12,13 @@
 //
 
 using System;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
 {
   public class ArgIsNullArgumentRewriteStrategy : BaseArgumentRewriteStrategy<ArgIsNullArgumentRewriteStrategy>
   {
-    public override ArgumentSyntax Rewrite (ArgumentSyntax node) =>
-        MoqSyntaxFactory.NullArgument()
-            .WithLeadingTrivia (node.GetLeadingTrivia());
+    public override ArgumentSyntax Rewrite (ArgumentSyntax node) => Formatter.MarkWithFormatAnnotation (MoqSyntaxFactory.NullArgument()).WithLeadingAndTrailingTriviaOfNode (node);
   }
 }

@@ -13,7 +13,7 @@
 
 using System;
 using System.Linq;
-using JetBrains.Annotations;
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -21,36 +21,104 @@ using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
-  public class Formatter : IFormatter
+  public class Formatter : CSharpSyntaxRewriter, IFormatter
   {
-    [Pure]
-    public SyntaxNode Format (SyntaxNode node)
+    private static readonly SyntaxAnnotation s_formatAnnotation = new SyntaxAnnotation ("FormatMePleeeease");
+
+    public T Format<T> (T node) where T : SyntaxNode
     {
-      if (node is ObjectCreationExpressionSyntax objectCreationNode)
-      {
-        var formattedNode = FormatObjectCreationExpression (objectCreationNode);
-        return formattedNode;
-      }
-
-      if (node is ArgumentListSyntax argumentListNode)
-      {
-        var indentation = argumentListNode.GetIndentation();
-        var newLineCharacter = argumentListNode.GetNewLineCharacter();
-        var formattedNode = FormatArgumentList (argumentListNode, indentation, newLineCharacter);
-        return formattedNode;
-      }
-
-      if (node is FieldDeclarationSyntax fieldDeclarationNode)
-      {
-        var formattedVariableDeclaration = FormatVariableDeclaration (fieldDeclarationNode.Declaration);
-        return fieldDeclarationNode.WithDeclaration (formattedVariableDeclaration);
-      }
-
-      return node;
+      return (T) base.Visit (node);
     }
 
-    [Pure]
-    private VariableDeclarationSyntax FormatVariableDeclaration (VariableDeclarationSyntax node)
+    public static SyntaxTree FormatAnnotatedNodes (SyntaxTree tree, Workspace workspace)
+    {
+      var root = tree.GetCompilationUnitRoot();
+      var formattedRoot = Microsoft.CodeAnalysis.Formatting.Formatter.Format (root, s_formatAnnotation, workspace, workspace.Options);
+      return tree.WithFilePath (tree.FilePath).WithRootAndOptions (formattedRoot, tree.Options);
+    }
+
+    public static T MarkWithFormatAnnotation<T> (T node)
+        where T : SyntaxNode
+    {
+      return node.WithAdditionalAnnotations (s_formatAnnotation);
+    }
+
+    public override SyntaxNode? VisitObjectCreationExpression (ObjectCreationExpressionSyntax node)
+    {
+      var baseCallNode = (ObjectCreationExpressionSyntax) base.VisitObjectCreationExpression (node)!;
+      return FormatObjectCreationExpression (baseCallNode);
+    }
+
+    public override SyntaxNode? VisitArgumentList (ArgumentListSyntax node)
+    {
+      var baseCallNode = (ArgumentListSyntax) base.VisitArgumentList (node)!;
+      return FormatArgumentList (baseCallNode);
+    }
+
+    public override SyntaxNode? VisitFieldDeclaration (FieldDeclarationSyntax node)
+    {
+      var baseCallNode = (FieldDeclarationSyntax) base.VisitFieldDeclaration (node)!;
+      return baseCallNode.WithDeclaration (FormatVariableDeclaration (baseCallNode.Declaration));
+    }
+
+    public override SyntaxNode? VisitExpressionStatement (ExpressionStatementSyntax node)
+    {
+      var baseCallNode = (ExpressionStatementSyntax) base.VisitExpressionStatement (node)!;
+      baseCallNode = RemoveRedundantWhitespaces (baseCallNode);
+
+      if (baseCallNode.Expression is not InvocationExpressionSyntax || !IsMultiLineStatement (node))
+      {
+        return baseCallNode;
+      }
+
+      return baseCallNode.WithExpression (FormatInvocationExpression ((InvocationExpressionSyntax) node.Expression));
+    }
+
+    private static ExpressionStatementSyntax RemoveRedundantWhitespaces (ExpressionStatementSyntax baseCallNode)
+    {
+      var nodeAsString = baseCallNode.ToFullString();
+      const string? redundantSpaceBetweenParenthesesPattern = @"(?<!^).{1} {2,}\(";
+      var matches = Regex.Matches (nodeAsString, redundantSpaceBetweenParenthesesPattern).Select (s => s.ToString());
+      foreach (var match in matches)
+      {
+        var parenthesesWithFormattedWhiteSpace = $"{match.First()} {match.Last()}";
+        nodeAsString = nodeAsString.Replace (match, parenthesesWithFormattedWhiteSpace);
+      }
+
+      return (ExpressionStatementSyntax) SyntaxFactory.ParseStatement (nodeAsString);
+    }
+
+    private static InvocationExpressionSyntax FormatInvocationExpression (InvocationExpressionSyntax node)
+    {
+      var indentation = node.Expression.GetIndentation();
+      return node.Expression is not MemberAccessExpressionSyntax memberAccessExpression
+          ? node
+          : node.WithExpression (FormatMemberAccessExpression (memberAccessExpression, indentation)).WithoutTrailingTrivia();
+    }
+
+    private static MemberAccessExpressionSyntax FormatMemberAccessExpression (MemberAccessExpressionSyntax node, string indentation)
+    {
+      return MoqSyntaxFactory.MemberAccessExpression (
+          node.Expression.WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine + indentation)),
+          node.Name);
+    }
+
+    private static bool IsMultiLineStatement (SyntaxNode node)
+    {
+      var nodes = node.DescendantNodes().Where (
+          s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression)
+               && !s.Ancestors().Any (s => s.IsKind (SyntaxKind.Argument))).Select (s => (MemberAccessExpressionSyntax) s);
+
+      return nodes.Any (
+          s => s.Expression.GetTrailingTrivia().ToFullString().Contains (Environment.NewLine)
+               || s.Expression.GetLeadingTrivia().ToFullString().Contains (Environment.NewLine)
+               || s.Name.GetTrailingTrivia().ToFullString().Contains (Environment.NewLine)
+               || s.Name.GetLeadingTrivia().ToFullString().Contains (Environment.NewLine)
+               || s.OperatorToken.TrailingTrivia.ToFullString().Contains (Environment.NewLine)
+               || s.OperatorToken.LeadingTrivia.ToFullString().Contains (Environment.NewLine));
+    }
+
+    private static VariableDeclarationSyntax FormatVariableDeclaration (VariableDeclarationSyntax node)
     {
       var newLineCharacter = node.GetNewLineCharacter();
       var indentation = node.GetIndentation();
@@ -64,16 +132,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .WithVariables (formattedVariables);
     }
 
-    [Pure]
-    private TypeSyntax FormatType (TypeSyntax node, string newLineCharacter)
+    private static TypeSyntax FormatType (TypeSyntax node, string newLineCharacter)
     {
       return newLineCharacter == string.Empty
           ? node.WithTrailingTrivia (SyntaxFactory.Space)
           : node;
     }
 
-    [Pure]
-    private SeparatedSyntaxList<VariableDeclaratorSyntax> FormatVariableDeclarator (
+    private static SeparatedSyntaxList<VariableDeclaratorSyntax> FormatVariableDeclarator (
         SeparatedSyntaxList<VariableDeclaratorSyntax> variables,
         string indentation,
         string newLineCharacter)
@@ -83,17 +149,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           : FormatMultiLineSyntaxNodeList (variables, indentation, newLineCharacter);
     }
 
-    [Pure]
-    private ObjectCreationExpressionSyntax FormatObjectCreationExpression (ObjectCreationExpressionSyntax node)
+    private static ObjectCreationExpressionSyntax FormatObjectCreationExpression (ObjectCreationExpressionSyntax node)
     {
       var newLineCharacter = node.ArgumentList!.GetNewLineCharacter();
       var indentation = node.ArgumentList!.GetIndentation();
 
-      var formattedArgumentList = FormatArgumentList (node.ArgumentList!, indentation, newLineCharacter);
       var genericNameSyntax = node.DescendantNodes().FirstOrDefault (n => n.IsKind (SyntaxKind.GenericName)) as GenericNameSyntax;
       if (genericNameSyntax == null)
       {
-        return node.WithArgumentList (formattedArgumentList);
+        return node;
       }
 
       var formattedObjectInitializer = FormatObjectInitializer (node.Initializer, indentation, newLineCharacter);
@@ -104,13 +168,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                       genericNameSyntax.TypeArgumentList
                           .WithoutTrivia())
                   .WithLeadingTrivia (SyntaxFactory.Space))
-          .WithArgumentList (formattedArgumentList)
+          .WithArgumentList (node.ArgumentList)
           .WithInitializer (formattedObjectInitializer);
     }
 
-    [Pure]
-    private ArgumentListSyntax FormatArgumentList (ArgumentListSyntax argumentList, string indentation, string newLineCharacter)
+    private static ArgumentListSyntax FormatArgumentList (ArgumentListSyntax argumentList)
     {
+      var indentation = argumentList.GetIndentation();
+      var newLineCharacter = argumentList.GetNewLineCharacter();
+
       if (argumentList.IsEmpty())
       {
         return argumentList;
@@ -138,8 +204,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return newArgumentList.WithLeadingTrivia (SyntaxFactory.Space);
     }
 
-    [Pure]
-    private SeparatedSyntaxList<SyntaxNode> FormatMultiLineSyntaxNodeList (
+    private static SeparatedSyntaxList<SyntaxNode> FormatMultiLineSyntaxNodeList (
         SeparatedSyntaxList<SyntaxNode> separatedSyntaxList,
         string indentation,
         string newLineCharacter)
@@ -158,8 +223,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return separatedSyntaxList;
     }
 
-    [Pure]
-    private SeparatedSyntaxList<SyntaxNode> FormatSingleLineSyntaxNodeList (SeparatedSyntaxList<SyntaxNode> separatedSyntaxList)
+    private static SeparatedSyntaxList<SyntaxNode> FormatSingleLineSyntaxNodeList (SeparatedSyntaxList<SyntaxNode> separatedSyntaxList)
     {
       for (var i = 1; i < separatedSyntaxList.Count; i++)
       {
@@ -174,8 +238,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return separatedSyntaxList;
     }
 
-    [Pure]
-    private InitializerExpressionSyntax? FormatObjectInitializer (InitializerExpressionSyntax? initializer, string indentation, string newLineCharacter)
+    private static InitializerExpressionSyntax? FormatObjectInitializer (InitializerExpressionSyntax? initializer, string indentation, string newLineCharacter)
     {
       if (initializer == null)
       {
@@ -187,8 +250,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         indentation = SyntaxFactory.Space.ToString();
       }
 
-      return initializer.WithLeadingTrivia (
-          SyntaxFactory.Whitespace (newLineCharacter + indentation));
+      return initializer.WithLeadingTrivia (SyntaxFactory.Whitespace (indentation));
     }
   }
 }

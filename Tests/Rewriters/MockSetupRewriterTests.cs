@@ -15,6 +15,7 @@ using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Moq;
 using NUnit.Framework;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
@@ -24,6 +25,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
   public class MockSetupRewriterTests
   {
     private MockSetupRewriter _rewriter;
+    private Mock<IFormatter> _formatter;
 
     private readonly Context _context =
         new Context
@@ -48,7 +50,9 @@ var strictMock = MockRepository.GenerateStrictMock<ITestInterface>();"
     [SetUp]
     public void SetUp ()
     {
-      _rewriter = new MockSetupRewriter();
+      _formatter = new Mock<IFormatter>();
+      _formatter.Setup (f => f.Format (It.IsAny<SyntaxNode>())).Returns<SyntaxNode> (s => s);
+      _rewriter = new MockSetupRewriter (_formatter.Object);
     }
 
     [Test]

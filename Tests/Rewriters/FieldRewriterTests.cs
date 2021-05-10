@@ -47,8 +47,7 @@ _mockD = MockRepository.GenerateMock<ITestInterface>();"
     public void SetUp ()
     {
       _formatter = new Mock<IFormatter>();
-      _formatter.Setup (f => f.Format (It.IsAny<SyntaxNode>()))
-          .Returns<SyntaxNode> (s => s);
+      _formatter.Setup (f => f.Format (It.IsAny<SyntaxNode>())).Returns<SyntaxNode> (s => s);
       _rewriter = new FieldRewriter (_formatter.Object);
     }
 
