@@ -227,8 +227,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         INamedTypeSymbol mockRepositoryCompilationSymbol)
     {
       var rootNode = node.SyntaxTree.GetRoot();
-      var assignmentExpressions = GetAllAssignmentExpressionsWithInvocationExpression (rootNode);
-      var mockIdentifierNames = GetMockIdentifierNames (assignmentExpressions, node, mockRepositoryCompilationSymbol);
+      var mockSymbols = GetMockSymbols (mockRepositoryCompilationSymbol).ToList();
+      var mockRepositoryIdentifierName = node.GetFirstIdentifierName();
+      var mockIdentifierNames = GetAllMockIdentifierNames (node, rootNode, mockRepositoryIdentifierName, mockSymbols);
 
       return mockIdentifierNames.Select (
           identifierName => MoqSyntaxFactory.VerifyExpressionStatement (identifierName.WithoutTrivia())
@@ -277,25 +278,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Concat (mockExtensionsCompilationSymbol.GetMembers ("AssertWasCalled"));
     }
 
-    private IEnumerable<IdentifierNameSyntax> GetMockIdentifierNames (
-        IEnumerable<AssignmentExpressionSyntax> assignmentExpressions,
-        SyntaxNode node,
-        INamedTypeSymbol mockRepositoryCompilationSymbol)
-    {
-      var mockRepositoryIdentifierName = node.GetFirstIdentifierName();
-      var mockSymbols = GetMockSymbols (mockRepositoryCompilationSymbol);
-
-      return assignmentExpressions
-          .Where (s => mockRepositoryIdentifierName.IsEquivalentTo (s.Right.GetFirstIdentifierName(), false))
-          .Where (
-              s => mockSymbols.Contains (
-                  Model.GetSymbolInfo (((InvocationExpressionSyntax) s.Right).Expression).Symbol!.OriginalDefinition,
-                  SymbolEqualityComparer.Default))
-          .Where (s => s.Left.IsKind (SyntaxKind.IdentifierName))
-          .Select (s => ((IdentifierNameSyntax) s.Left))
-          .ToList();
-    }
-
     private static IEnumerable<ISymbol> GetMockSymbols (INamedTypeSymbol mockRepositoryCompilationSymbol)
     {
       return mockRepositoryCompilationSymbol.GetMembers ("DynamicMock")
@@ -305,14 +287,51 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Concat (mockRepositoryCompilationSymbol.GetMembers ("PartialMultiMock"));
     }
 
-    private static IEnumerable<AssignmentExpressionSyntax> GetAllAssignmentExpressionsWithInvocationExpression (SyntaxNode node)
+    private IEnumerable<IdentifierNameSyntax> GetMockIdentifierNamesFromAssignmentExpressions (
+        SyntaxNode rootNode,
+        IdentifierNameSyntax mockRepositoryIdentifierName,
+        IReadOnlyList<ISymbol> mockSymbols)
     {
-      return node.DescendantNodes()
+      return rootNode.DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.ExpressionStatement))
           .Select (s => (ExpressionStatementSyntax) s)
           .Where (s => s.Expression.IsKind (SyntaxKind.SimpleAssignmentExpression))
           .Select (s => (AssignmentExpressionSyntax) s.Expression)
-          .Where (s => s.Right.IsKind (SyntaxKind.InvocationExpression));
+          .Where (s => s.Right.IsKind (SyntaxKind.InvocationExpression))
+          .Where (s => IsMockFromCurrentMockRepository (mockRepositoryIdentifierName, (InvocationExpressionSyntax) s.Right, mockSymbols))
+          .Where (s => s.Left.IsKind (SyntaxKind.IdentifierName))
+          .Select (s => ((IdentifierNameSyntax) s.Left));
+    }
+
+    private IEnumerable<IdentifierNameSyntax> GetMockIdentifierNamesFromLocalDeclarationStatements (
+        SyntaxNode node,
+        IdentifierNameSyntax mockRepositoryIdentifierName,
+        IReadOnlyList<ISymbol> mockSymbols)
+    {
+      return node.Ancestors().First (a => a.IsKind (SyntaxKind.MethodDeclaration))
+          .DescendantNodes()
+          .Where (s => s.IsKind (SyntaxKind.LocalDeclarationStatement))
+          .Select (s => (LocalDeclarationStatementSyntax) s)
+          .Where (s => s.Declaration.Variables.Any (v => v.Initializer is not null))
+          .SelectMany (s => s.Declaration.Variables)
+          .Where (
+              s => s.Initializer is { Value: InvocationExpressionSyntax invocationExpression }
+                   && IsMockFromCurrentMockRepository (mockRepositoryIdentifierName, invocationExpression, mockSymbols))
+          .Select (s => SyntaxFactory.IdentifierName (s.Identifier));
+    }
+
+    private bool IsMockFromCurrentMockRepository (IdentifierNameSyntax mockRepositoryIdentifierName, InvocationExpressionSyntax generateMockExpression, IReadOnlyList<ISymbol> mockSymbols)
+    {
+      return mockRepositoryIdentifierName.IsEquivalentTo (generateMockExpression.GetFirstIdentifierName(), false)
+             && mockSymbols.Contains (
+                 Model.GetSymbolInfo (generateMockExpression.Expression).Symbol!.OriginalDefinition,
+                 SymbolEqualityComparer.Default);
+    }
+
+    private IEnumerable<IdentifierNameSyntax> GetAllMockIdentifierNames (ExpressionStatementSyntax node, SyntaxNode rootNode, IdentifierNameSyntax mockRepositoryIdentifierName, List<ISymbol> mockSymbols)
+    {
+      return GetMockIdentifierNamesFromAssignmentExpressions (rootNode, mockRepositoryIdentifierName, mockSymbols)
+          .Concat (GetMockIdentifierNamesFromLocalDeclarationStatements (node, mockRepositoryIdentifierName, mockSymbols));
     }
   }
 }

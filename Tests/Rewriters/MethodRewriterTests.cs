@@ -40,13 +40,15 @@ private ITestInterface _mock7;
 private ITestInterface _mock8;
 private MockRepository _mockRepository1;
 private MockRepository _mockRepository2;
-private MockRepository _mockRepository3;",
+private MockRepository _mockRepository3;
+private MockRepository _mockRepository4;",
             //language=C#
             MethodContext =
                 @"
 _mockRepository1 = new MockRepository();
 _mockRepository2 = new MockRepository();
 _mockRepository3 = new MockRepository();
+_mockRepository4 = new MockRepository();
 var mock = MockRepository.GenerateMock<ITestInterface>();
 _mock1 = _mockRepository1.StrictMock<ITestInterface>();
 _mock2 = _mockRepository1.PartialMock<ITestInterface>();
@@ -55,7 +57,10 @@ _mock4 = _mockRepository1.DynamicMock<ITestInterface>();
 _mock5 = _mockRepository2.DynamicMultiMock<ITestInterface>();
 _mock6 = _mockRepository2.StrictMock<ITestInterface>();
 _mock7 = _mockRepository3.StrictMock<ITestInterface>();
-_mock8 = _mockRepository3.StrictMock<ITestInterface>();"
+_mock8 = _mockRepository3.StrictMock<ITestInterface>();
+var localMock1 = _mockRepository4.StrictMock<ITestInterface>();
+var localMock2 = _mockRepository4.StrictMock<ITestInterface>();
+ITestInterface noMock;"
         };
 
     [SetUp]
@@ -173,6 +178,14 @@ using (null)
 }
 
 mock.Verify();")]
+    [TestCase (
+        //language=C#
+        @"
+_mockRepository4.VerifyAll();",
+        //language=C#
+        @"
+localMock1.Verify();
+localMock2.Verify();")]
     public void Rewrite_MethodDeclaration (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
