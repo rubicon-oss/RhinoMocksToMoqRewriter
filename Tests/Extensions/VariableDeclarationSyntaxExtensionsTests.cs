@@ -21,11 +21,31 @@ namespace RhinoMocksToMoqRewriter.Tests.Extensions
   public class VariableDeclarationSyntaxExtensionsTests
   {
     [Test]
-    [TestCase ("private int a;", "")]
-    [TestCase ("private int a, b, c;", "")]
-    [TestCase ("private int\r\na,\r\nb;\r\n", "\r\n")]
-    [TestCase ("private int\n  a,\r\n  b;", "\r\n")]
-    [TestCase ("private int\na,\nb\n;", "\n")]
+    [TestCase (
+        //language=C#
+        @"private int a;",
+        //language=C#
+        @"")]
+    [TestCase (
+        //language=C#
+        @"private int a, b, c;",
+        //language=C#
+        @"")]
+    [TestCase (
+        //language=C#
+        "private int\r\na,\r\nb;\r\n",
+        //language=C#
+        "\r\n")]
+    [TestCase (
+        //language=C#
+        "private int\n  a,\r\n  b;",
+        //language=C#
+        "\r\n")]
+    [TestCase (
+        //language=C#
+        "private int\na,\nb\n;",
+        //language=C#
+        "\n")]
     public void GetNewLineCharacter (string source, string expected)
     {
       var (_, fieldDeclaration) = CompiledSourceFileProvider.CompileFieldDeclaration (source);
@@ -34,9 +54,21 @@ namespace RhinoMocksToMoqRewriter.Tests.Extensions
     }
 
     [Test]
-    [TestCase ("private int a;", "")]
-    [TestCase ("private int a, b, c;", " ")]
-    [TestCase ("private int\n  a,\r\n  b;", "  ")]
+    [TestCase (
+        //language=C#
+        @"private int a;",
+        //language=C#
+        @"")]
+    [TestCase (
+        //language=C#
+        @"private int a, b, c;",
+        //language=C#
+        @" ")]
+    [TestCase (
+        //language=C#
+        "private int\n  a,\r\n  b;",
+        //language=C#
+        @"  ")]
     public void GetIndentation (string source, string expected)
     {
       var (_, fieldDeclaration) = CompiledSourceFileProvider.CompileFieldDeclaration (source);

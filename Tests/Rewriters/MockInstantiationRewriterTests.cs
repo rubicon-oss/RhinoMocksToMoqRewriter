@@ -48,48 +48,112 @@ private static void DoSomething (AnyDelegate d) => throw new NotImplementedExcep
     }
 
     [Test]
-    [TestCase ("_mock = MockRepository.GenerateMock<ITestInterface>();", "_mock = new Mock<ITestInterface>();")]
-    [TestCase ("_mock = MockRepository.GenerateMock<ITestInterface, IDisposable>();", "_mock = new Mock<ITestInterface>();")]
-    [TestCase ("_mock = MockRepository.GenerateMock<ITestInterface, IDisposable, IConvertible>();", "_mock = new Mock<ITestInterface>();")]
-    [TestCase ("_mock = MockRepository.GenerateStrictMock<ITestInterface>();", "_mock = new Mock<ITestInterface> (MockBehavior.Strict);")]
-    [TestCase ("_mock = MockRepository.GenerateStrictMock<ITestInterface> (42);", "_mock = new Mock<ITestInterface> (MockBehavior.Strict, 42);")]
-    [TestCase ("_mock = MockRepository.GenerateStrictMock<ITestInterface, IDisposable>();", "_mock = new Mock<ITestInterface> (MockBehavior.Strict);")]
-    [TestCase ("_mock = MockRepository.GenerateStub<ITestInterface>();", "_mock = new Mock<ITestInterface>();")]
-    [TestCase ("Console.WriteLine(1);", "Console.WriteLine(1);")]
-    [TestCase ("_mock = MockRepository.GenerateMock<ITestInterface>();", "_mock = new Mock<ITestInterface>();")]
-    [TestCase ("_mock = MockRepository.GenerateMock<ITestInterface> (42, 32);", "_mock = new Mock<ITestInterface> (42, 32);")]
     [TestCase (
-        @"      _mock = MockRepository.GenerateMock<ITestInterface> (
-          42,
-          32,
-          43);",
-        @"_mock = new Mock<ITestInterface> (
-          42,
-          32,
-          43);")]
+        //language=C#
+        @"_mock = MockRepository.GenerateMock<ITestInterface>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface>();")]
     [TestCase (
-        @"      _mock = MockRepository.GenerateStrictMock<ITestInterface> (
-          42,
-          32,
-          43);",
-        @"_mock = new Mock<ITestInterface> (
-          MockBehavior.Strict,42,
-          32,
-          43);")]
+        //language=C#
+        @"_mock = MockRepository.GenerateMock<ITestInterface, IDisposable>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface>();")]
     [TestCase (
-        @"_mock = MockRepository.GenerateStrictMock<ITestInterface> (
+        //language=C#
+        @"_mock = MockRepository.GenerateMock<ITestInterface, IDisposable, IConvertible>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface>();")]
+    [TestCase (
+        //language=C#
+        @"_mock = MockRepository.GenerateStrictMock<ITestInterface>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface> (MockBehavior.Strict);")]
+    [TestCase (
+        //language=C#
+        @"_mock = MockRepository.GenerateStrictMock<ITestInterface> (42);",
+        //language=C#
+        @"_mock = new Mock<ITestInterface> (MockBehavior.Strict, 42);")]
+    [TestCase (
+        //language=C#
+        @"_mock = MockRepository.GenerateStrictMock<ITestInterface, IDisposable>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface> (MockBehavior.Strict);")]
+    [TestCase (
+        //language=C#
+        @"_mock = MockRepository.GenerateStub<ITestInterface>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface>();")]
+    [TestCase (
+        //language=C#
+        @"Console.WriteLine(1);",
+        //language=C#
+        @"Console.WriteLine(1);")]
+    [TestCase (
+        //language=C#
+        @"_mock = MockRepository.GenerateMock<ITestInterface>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface>();")]
+    [TestCase (
+        //language=C#
+        @"_mock = MockRepository.GenerateMock<ITestInterface> (42, 32);",
+        //language=C#
+        @"_mock = new Mock<ITestInterface> (42, 32);")]
+    [TestCase (
+        //language=C#
+        @"
+_mock = MockRepository.GenerateMock<ITestInterface> (
     42,
     32,
     43);",
-        @"_mock = new Mock<ITestInterface> (
-    MockBehavior.Strict,42,
+        //language=C#
+        @"
+_mock = new Mock<ITestInterface> (
+    42,
     32,
     43);")]
     [TestCase (
+        //language=C#
+        @"
+_mock = MockRepository.GenerateStrictMock<ITestInterface> (
+    42,
+    32,
+    43);",
+        //language=C#
+        @"
+_mock = new Mock<ITestInterface> (
+    MockBehavior.Strict,
+    42,
+    32,
+    43);")]
+    [TestCase (
+        //language=C#
+        @"
+_mock = MockRepository.GenerateStrictMock<ITestInterface> (
+    42,
+    32,
+    43);",
+        //language=C#
+        @"
+_mock = new Mock<ITestInterface> (
+    MockBehavior.Strict,
+    42,
+    32,
+    43);")]
+    [TestCase (
+        //language=C#
         @"_mock = MockRepository.GenerateMock<ITestInterface> (MockRepository.GenerateStrictMock<ITestInterface>());",
+        //language=C#
         @"_mock = new Mock<ITestInterface> (new Mock<ITestInterface> (MockBehavior.Strict));")]
-    [TestCase ("_mock = MockRepository.GeneratePartialMock<ITestInterface>();", "_mock = new Mock<ITestInterface>(){ CallBase = true };")]
-    [TestCase ("_mock = MockRepository.GeneratePartialMock<ITestInterface> (1, 2);", "_mock = new Mock<ITestInterface>(1, 2){ CallBase = true };")]
+    [TestCase (
+        //language=C#
+        @"_mock = MockRepository.GeneratePartialMock<ITestInterface>();",
+        //language=C#
+        @"_mock = new Mock<ITestInterface>(){ CallBase = true };")]
+    [TestCase (
+        //language=C#
+        @"_mock = MockRepository.GeneratePartialMock<ITestInterface> (1, 2);",
+        //language=C#
+        @"_mock = new Mock<ITestInterface>(1, 2){ CallBase = true };")]
     [TestCase (
         //language=C#
         @"_mock = _mockRepository.DynamicMock<ITestInterface>();",
@@ -147,23 +211,44 @@ private static void DoSomething (AnyDelegate d) => throw new NotImplementedExcep
     }
 
     [Test]
-    [TestCase ("var anotherMock = MockRepository.GenerateStub<ITestInterface>();", "var anotherMock = new Mock<ITestInterface>();")]
     [TestCase (
-        @"      var anotherMock = MockRepository.GenerateStrictMock<ITestInterface> (
-          42,
-          32,
-          43);",
-        @"var anotherMock = new Mock<ITestInterface> (
-          MockBehavior.Strict,42,
-          32,
-          43);")]
-    [TestCase ("var anotherMock = MockRepository.GeneratePartialMock<ITestInterface>();", "var anotherMock = new Mock<ITestInterface>(){ CallBase = true };")]
-    [TestCase ("var anotherMock = MockRepository.GeneratePartialMock<ITestInterface> (1, 2);", "var anotherMock = new Mock<ITestInterface>(1, 2) { CallBase = true };")]
+        //language=C#
+        @"var anotherMock = MockRepository.GenerateStub<ITestInterface>();",
+        //language=C#
+        @"var anotherMock = new Mock<ITestInterface>();")]
     [TestCase (
-        @"var anotherMock = MockRepository.GeneratePartialMock<ITestInterface>(
+        //language=C#
+        @"
+var anotherMock = MockRepository.GenerateStrictMock<ITestInterface> (
+    42,
+    32,
+    43);",
+        //language=C#
+        @"
+var anotherMock = new Mock<ITestInterface> (
+    MockBehavior.Strict,
+    42,
+    32,
+    43);")]
+    [TestCase (
+        //language=C#
+        @"var anotherMock = MockRepository.GeneratePartialMock<ITestInterface>();",
+        //language=C#
+        @"var anotherMock = new Mock<ITestInterface>(){ CallBase = true };")]
+    [TestCase (
+        //language=C#
+        @"var anotherMock = MockRepository.GeneratePartialMock<ITestInterface> (1, 2);",
+        //language=C#
+        @"var anotherMock = new Mock<ITestInterface>(1, 2) { CallBase = true };")]
+    [TestCase (
+        //language=C#
+        @"
+var anotherMock = MockRepository.GeneratePartialMock<ITestInterface>(
     1,
     2);",
-        @"var anotherMock = new Mock<ITestInterface>(
+        //language=C#
+        @"
+var anotherMock = new Mock<ITestInterface>(
     1,
     2) { CallBase = true };")]
     [TestCase (
@@ -194,20 +279,28 @@ private static void DoSomething (AnyDelegate d) => throw new NotImplementedExcep
 
     [Test]
     [TestCase (
-        "private ITestInterface _anotherMock = MockRepository.GenerateMock<ITestInterface>();",
-        "private ITestInterface _anotherMock = new Mock<ITestInterface>();")]
+        //language=C#
+        @"private ITestInterface _anotherMock = MockRepository.GenerateMock<ITestInterface>();",
+        //language=C#
+        @"private ITestInterface _anotherMock = new Mock<ITestInterface>();")]
     [TestCase (
-        @"public ITestInterface Mock = MockRepository.GenerateMock<ITestInterface> (
-        42,
-        32,
-        43);",
-        @"public ITestInterface Mock = new Mock<ITestInterface> (
-        42,
-        32,
-        43);")]
+        //language=C#
+        @"
+public ITestInterface Mock = MockRepository.GenerateMock<ITestInterface> (
+    42,
+    32,
+    43);",
+        //language=C#
+        @"
+public ITestInterface Mock = new Mock<ITestInterface> (
+    42,
+    32,
+    43);")]
     [TestCase (
-        "private ITestInterface _anotherMock = MockRepository.GeneratePartialMock<ITestInterface>();",
-        "private ITestInterface _anotherMock = new Mock<ITestInterface>(){ CallBase = true };")]
+        //language=C#
+        @"private ITestInterface _anotherMock = MockRepository.GeneratePartialMock<ITestInterface>();",
+        //language=C#
+        @"private ITestInterface _anotherMock = new Mock<ITestInterface>(){ CallBase = true };")]
     public void Rewrite_FieldDeclarationStatement (string source, string expected)
     {
       var (model, actualNode) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (source, _context);

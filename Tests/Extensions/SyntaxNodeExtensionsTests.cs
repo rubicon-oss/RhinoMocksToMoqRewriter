@@ -30,8 +30,16 @@ namespace RhinoMocksToMoqRewriter.Tests.Extensions
         };
 
     [Test]
-    [TestCase ("mock.DoSomething (42);", "")]
-    [TestCase ("mock.DoSomething (\r\n 42);", " ")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (42);",
+        //language=C#
+        @"")]
+    [TestCase (
+        //language=C#
+        "mock.DoSomething (\r\n 42);",
+        //language=C#
+        @" ")]
     public void GetLeadingWhiteSpaces (string source, string expected)
     {
       var (_, argumentList) = CompiledSourceFileProvider.CompileArgumentListWithContext (source, _context);
