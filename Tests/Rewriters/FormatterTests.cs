@@ -23,43 +23,67 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
     private readonly IFormatter _formatter = new Formatter();
 
     [Test]
-    [TestCase ("new Mock<string>()", "new Mock<string>()")]
-    [TestCase ("new Mock<string>(1, 2, 3, 4)", "new Mock<string> (1, 2, 3, 4)")]
-    [TestCase ("new Mock<string>(1,2,3,4)", "new Mock<string> (1, 2, 3, 4)")]
     [TestCase (
+        //language=C#
+        @"new Mock<string>()",
+        //language=C#
+        @"new Mock<string>()")]
+    [TestCase (
+        //language=C#
+        @"new Mock<string>(1, 2, 3, 4)",
+        //language=C#
+        @"new Mock<string> (1, 2, 3, 4)")]
+    [TestCase (
+        //language=C#
+        @"new Mock<string>(1,2,3,4)",
+        //language=C#
+        @"new Mock<string> (1, 2, 3, 4)")]
+    [TestCase (
+        //language=C#
         @"      new Mock<string> (
           42,
           32,
           43)",
+        //language=C#
         @"new Mock<string> (
           42,
           32,
           43)")]
     [TestCase (
+        //language=C#
         @"      new Mock<string> (MockBehavior.Strict,
           42,
           32,
           43)",
+        //language=C#
         @"new Mock<string> (
           MockBehavior.Strict,
           42,
           32,
           43)")]
     [TestCase (
+        //language=C#
         @"new Mock<string> (
 MockBehavior.Strict,    42,
     32,
     43)",
+        //language=C#
         @"new Mock<string> (
     MockBehavior.Strict,
     42,
     32,
     43)")]
-    [TestCase ("new Mock<string>(){ CallBase = true }", "new Mock<string>() { CallBase = true }")]
     [TestCase (
+        //language=C#
+        @"new Mock<string>(){ CallBase = true }",
+        //language=C#
+        @"new Mock<string>() { CallBase = true }")]
+    [TestCase (
+        //language=C#
         @"new Mock<string> (
 MockBehavior.Strict,    42,
     32){ CallBase = true }",
+        //language=C#
         @"new Mock<string> (
     MockBehavior.Strict,
     42,
@@ -74,11 +98,17 @@ MockBehavior.Strict,    42,
     }
 
     [Test]
-    [TestCase ("(1,2,3,4)", "(1, 2, 3, 4)")]
     [TestCase (
+        //language=C#
+        @"(1,2,3,4)",
+        //language=C#
+        @"(1, 2, 3, 4)")]
+    [TestCase (
+        //language=C#
         @"(1,
   2,  3,
   4)",
+        //language=C#
         @"(
   1,
   2,

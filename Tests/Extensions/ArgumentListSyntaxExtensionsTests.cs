@@ -32,17 +32,47 @@ void DoSomething (int a, int b);
 void DoSomething (int a, int b, int c);
 void DoSomething (int a, int b, int c, int d);",
             //language=C#
-            MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
+            MethodContext =
+                @"
+var mock = MockRepository.GenerateMock<ITestInterface>();"
         };
 
     [Test]
-    [TestCase ("mock.DoSomething();", "")]
-    [TestCase ("mock.DoSomething(\r\n42);", "\r\n")]
-    [TestCase ("mock.DoSomething( \n  42);", "\n")]
-    [TestCase ("mock.DoSomething(\r\n42   \n);", "\r\n")]
-    [TestCase ("mock.DoSomething(\n42 \r\n );", "\r\n")]
-    [TestCase ("mock.DoSomething(42,\n21,42\r\n);", "\r\n")]
-    [TestCase ("mock.DoSomething(\r\n);", "\r\n")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething();",
+        //language=C#
+        @"")]
+    [TestCase (
+        //language=C#
+        "mock.DoSomething(\r\n42);",
+        //language=C#
+        "\r\n")]
+    [TestCase (
+        //language=C#
+        "mock.DoSomething( \n  42);",
+        //language=C#
+        "\n")]
+    [TestCase (
+        //language=C#
+        "mock.DoSomething(\r\n42   \n);",
+        //language=C#
+        "\r\n")]
+    [TestCase (
+        //language=C#
+        "mock.DoSomething(\n42 \r\n );",
+        //language=C#
+        "\r\n")]
+    [TestCase (
+        //language=C#
+        "mock.DoSomething(42,\n21,42\r\n);",
+        //language=C#
+        "\r\n")]
+    [TestCase (
+        //language=C#
+        "mock.DoSomething(\r\n);",
+        //language=C#
+        "\r\n")]
     public void GetNewLineCharacter (string source, string expected)
     {
       var (_, argumentList) = CompiledSourceFileProvider.CompileArgumentListWithContext (source, _context);
@@ -51,14 +81,46 @@ void DoSomething (int a, int b, int c, int d);",
     }
 
     [Test]
-    [TestCase ("mock.DoSomething();", "")]
-    [TestCase ("mock.DoSomething (\r\n   42);", "   ")]
-    [TestCase ("mock.DoSomething ( \n 42);", " ")]
-    [TestCase ("mock.DoSomething (42);", "")]
-    [TestCase ("mock.DoSomething (\n42 \r\n     );", "")]
-    [TestCase ("mock.DoSomething (\n\r42,    21,\r\n    42);", "    ")]
-    [TestCase ("mock.DoSomething (0, 1,  2,   3);", " ")]
-    [TestCase ("mock.DoSomething (0,1,2,3);", " ")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething();",
+        //language=C#
+        @"")]
+    [TestCase (
+        //language=C#
+        "mock.DoSomething (\r\n   42);",
+        //language=C#
+        @"   ")]
+    [TestCase (
+        //language=C#
+        "mock.DoSomething ( \n 42);",
+        //language=C#
+        @" ")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (42);",
+        //language=C#
+        @"")]
+    [TestCase (
+        //language=C#
+        "mock.DoSomething (\n42 \r\n     );",
+        //language=C#
+        @"")]
+    [TestCase (
+        //language=C#
+        "mock.DoSomething (\n\r42,    21,\r\n    42);",
+        //language=C#
+        @"    ")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (0, 1,  2,   3);",
+        //language=C#
+        @" ")]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (0,1,2,3);",
+        //language=C#
+        @" ")]
     public void GetIndentation (string source, string expected)
     {
       var (_, argumentList) = CompiledSourceFileProvider.CompileArgumentListWithContext (source, _context);
@@ -67,11 +129,26 @@ void DoSomething (int a, int b, int c, int d);",
     }
 
     [Test]
-    [TestCase ("mock.DoSomething();", true)]
-    [TestCase ("mock.DoSomething(   );", true)]
-    [TestCase ("mock.DoSomething (\n42);", false)]
-    [TestCase ("mock.DoSomething (42);", false)]
-    [TestCase ("mock.DoSomething (42, 24, 52);", false)]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething();",
+        true)]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething(   );",
+        true)]
+    [TestCase (
+        //language=C#
+        "mock.DoSomething (\n42);",
+        false)]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (42);",
+        false)]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (42, 24, 52);",
+        false)]
     public void IsEmpty (string source, bool expected)
     {
       var (_, argumentList) = CompiledSourceFileProvider.CompileArgumentListWithContext (source, _context);
@@ -80,9 +157,18 @@ void DoSomething (int a, int b, int c, int d);",
     }
 
     [Test]
-    [TestCase ("mock.DoSomething();", false)]
-    [TestCase ("mock.DoSomething (42);", true)]
-    [TestCase ("mock.DoSomething (42, 53);", false)]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething();",
+        false)]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (42);",
+        true)]
+    [TestCase (
+        //language=C#
+        @"mock.DoSomething (42, 53);",
+        false)]
     public void IsSingleArgumentList (string source, bool expected)
     {
       var (_, argumentList) = CompiledSourceFileProvider.CompileArgumentListWithContext (source, _context);
