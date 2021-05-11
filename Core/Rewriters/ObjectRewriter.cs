@@ -140,8 +140,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       var baseCallNode = (InitializerExpressionSyntax) base.VisitInitializerExpression (trackedNodes)!;
       var newExpressions = baseCallNode.Expressions;
-      foreach (var expression in baseCallNode.Expressions)
+      for (var i = 0; i < baseCallNode.Expressions.Count; i++)
       {
+        var expression = newExpressions[i];
         if (expression is not IdentifierNameSyntax identifierName)
         {
           continue;

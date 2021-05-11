@@ -39,6 +39,7 @@ public class A
 {
   public A() {}
   public A (ITestInterface a) {}
+  public A (ITestInterface[] a) {}
 }",
             //language=C#
             ClassContext =
@@ -211,6 +212,11 @@ var sequence = new MockSequence();"
         @"var array = new[] { _mock.DoSomething (mock) };",
         //language=C#
         @"var array = new[] { _mock.Object.DoSomething (mock.Object) };")]
+    [TestCase (
+        //language=C#
+        @"var a = new A (new[] { mock, mock, mock });",
+        //language=C#
+        @"var a = new A (new[] { mock.Object, mock.Object, mock.Object });")]
     public void Rewrite_Initializer (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileLocalDeclarationStatementWithContext (source, _context, true);
