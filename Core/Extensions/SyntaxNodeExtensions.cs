@@ -37,13 +37,23 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
       return Strings.Space (numberOfSpaces);
     }
 
-    public static TypeArgumentListSyntax? GetTypeArgumentListOrDefault (this ArgumentSyntax node)
+    public static TypeArgumentListSyntax GetTypeArgumentList (this SyntaxNode node)
+    {
+      return node.GetTypeArgumentListOrDefault() ?? throw new InvalidOperationException ("Node must have an TypeArgumentList");
+    }
+
+    public static TypeArgumentListSyntax? GetTypeArgumentListOrDefault (this SyntaxNode node)
     {
       return node.DescendantNodes().FirstOrDefault (
           s => s.IsKind (SyntaxKind.TypeArgumentList) && s.Parent.IsKind (SyntaxKind.GenericName)) as TypeArgumentListSyntax;
     }
 
-    public static LambdaExpressionSyntax? GetLambdaExpressionOrDefault (this ArgumentSyntax node)
+    public static LambdaExpressionSyntax GetLambdaExpression (this SyntaxNode node)
+    {
+      return node.GetLambdaExpressionOrDefault() ?? throw new InvalidOperationException ("Node must contain a LambdaExpression");
+    }
+
+    public static LambdaExpressionSyntax? GetLambdaExpressionOrDefault (this SyntaxNode node)
     {
       return node.DescendantNodes().FirstOrDefault (
           s => s.IsKind (SyntaxKind.SimpleLambdaExpression)) as LambdaExpressionSyntax;
