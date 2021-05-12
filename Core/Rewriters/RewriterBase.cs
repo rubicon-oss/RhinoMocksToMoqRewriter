@@ -36,5 +36,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     }
 
     public Guid CompilationId { get; set; }
+
+    public RhinoMocksSymbols RhinoMocksSymbols { get; set; } = null!;
+
+    public MoqSymbols MoqSymbols { get; set; } = null!;
   }
 }

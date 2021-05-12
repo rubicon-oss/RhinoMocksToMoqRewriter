@@ -14,6 +14,7 @@
 using System;
 using JetBrains.Annotations;
 using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters
@@ -80,6 +81,7 @@ private MockRepository _fieldMockRepository;"
       var (model, node) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       if (expected is null)
@@ -185,6 +187,7 @@ _fieldMock.Replay();",
       var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context, true);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = _rewriter.Visit (node);
 
       Assert.NotNull (actualNode);

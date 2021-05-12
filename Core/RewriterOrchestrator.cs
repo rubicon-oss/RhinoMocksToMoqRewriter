@@ -54,6 +54,8 @@ namespace RhinoMocksToMoqRewriter.Core
       {
         await Console.Error.WriteLineAsync (compilation.AssemblyName);
         var currentCompilation = compilation;
+        var rhinoMocksSymbols = new RhinoMocksSymbols (currentCompilation);
+        var moqSymbols = new MoqSymbols (currentCompilation);
         foreach (var syntaxTree in compilation.SyntaxTrees.Where (s => s.ContainsRhinoMocksUsingDirective()))
         {
           await Console.Error.WriteLineAsync ($"- {syntaxTree.FilePath}");
@@ -64,6 +66,8 @@ namespace RhinoMocksToMoqRewriter.Core
             rewriter.Model = model;
             rewriter.CompilationId = Guid.NewGuid();
             rewriter.Generator = generator;
+            rewriter.RhinoMocksSymbols ??= rhinoMocksSymbols;
+            rewriter.MoqSymbols ??= moqSymbols;
 
             var newRoot = rewriter.Visit (await currentTree.GetRootAsync());
             var newTree = currentTree.WithRootAndOptions (newRoot, currentTree.Options);

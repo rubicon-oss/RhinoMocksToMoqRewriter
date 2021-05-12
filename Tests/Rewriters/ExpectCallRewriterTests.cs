@@ -17,6 +17,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters
@@ -236,6 +237,7 @@ _mock.Expect (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = _rewriter.Visit (node);
 
       Assert.NotNull (actualNode);
@@ -280,6 +282,7 @@ _mock.Expect (
       var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = _rewriter.Visit (node);
 
       var expectedExpressionStatements = expectedNode.DescendantNodes().Where (s => s.IsKind (SyntaxKind.ExpressionStatement)).ToList();
@@ -328,6 +331,7 @@ using(null)
       var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = _rewriter.Visit (node);
 
       var expectedExpressionStatements = expectedNode.DescendantNodes().Where (s => s.IsKind (SyntaxKind.ExpressionStatement)).ToList();

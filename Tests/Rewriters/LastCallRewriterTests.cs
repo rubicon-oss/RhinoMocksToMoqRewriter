@@ -15,6 +15,7 @@ using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Editing;
 using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters
@@ -262,6 +263,7 @@ Expect.Call (() => _mock1.DoSomething (null)).Do (null);")]
       var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);

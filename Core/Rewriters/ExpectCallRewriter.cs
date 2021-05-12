@@ -28,41 +28,23 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf(), CompilationId);
       var baseCallNode = (ExpressionStatementSyntax) base.VisitExpressionStatement (trackedNodes)!;
 
-      var rhinoMocksIMethodOptionsSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Interfaces.IMethodOptions`1");
-      var rhinoMocksExpectSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Expect");
-      var rhinoMocksIRepeatSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Interfaces.IRepeat`1");
-      if (rhinoMocksIMethodOptionsSymbol == null || rhinoMocksExpectSymbol == null || rhinoMocksIRepeatSymbol == null)
-      {
-        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
-      }
-
-      var callSymbols = rhinoMocksExpectSymbol.GetMembers ("Call");
-      var constraintsSymbols = rhinoMocksIMethodOptionsSymbol.GetMembers ("Constraints");
-      var simpleRhinoMocksSymbols = GetAllSimpleRhinoMocksSymbols (rhinoMocksIMethodOptionsSymbol, rhinoMocksIRepeatSymbol).ToList();
-
-      return RewriteExpectCall (baseCallNode, callSymbols, simpleRhinoMocksSymbols, constraintsSymbols)
-          .WithLeadingAndTrailingTriviaOfNode (node);
+      return RewriteExpectCall (baseCallNode).WithLeadingTrivia (node.GetLeadingTrivia());
     }
 
-    private SyntaxNode RewriteExpectCall (
-        SyntaxNode node,
-        IReadOnlyList<ISymbol> callSymbols,
-        IReadOnlyList<ISymbol> simpleRhinoMocksSymbols,
-        IReadOnlyList<ISymbol> constraintsSymbols)
+    private SyntaxNode RewriteExpectCall (SyntaxNode node)
     {
       var symbol = Model.GetSymbolInfo (node.GetOriginalNode (node, CompilationId)!).Symbol?.OriginalDefinition;
 
       if (node is ExpressionStatementSyntax expressionStatement)
       {
-        return expressionStatement.WithExpression (
-            (ExpressionSyntax) RewriteExpectCall (expressionStatement.Expression, callSymbols, simpleRhinoMocksSymbols, constraintsSymbols));
+        return expressionStatement.WithExpression ((ExpressionSyntax) RewriteExpectCall (expressionStatement.Expression));
       }
 
-      if (node is MemberAccessExpressionSyntax rhinoMocksRepeatMemberAccessExpression && simpleRhinoMocksSymbols.Contains (symbol, SymbolEqualityComparer.Default))
+      if (node is MemberAccessExpressionSyntax rhinoMocksRepeatMemberAccessExpression && GetAllSimpleRhinoMocksSymbols().Contains (symbol, SymbolEqualityComparer.Default))
       {
         return rhinoMocksRepeatMemberAccessExpression.ReplaceNode (
             node.GetCurrentNode (rhinoMocksRepeatMemberAccessExpression.Expression, CompilationId)!,
-            (ExpressionSyntax) RewriteExpectCall (rhinoMocksRepeatMemberAccessExpression.Expression, callSymbols, simpleRhinoMocksSymbols, constraintsSymbols));
+            (ExpressionSyntax) RewriteExpectCall (rhinoMocksRepeatMemberAccessExpression.Expression));
       }
 
       if (node is not InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax rhinoMocksMemberAccessExpression } rhinoMocksInvocationExpression)
@@ -70,38 +52,25 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return node;
       }
 
-      if (callSymbols.Contains (symbol, SymbolEqualityComparer.Default))
+      if (RhinoMocksSymbols.ExpectCallSymbols.Contains (symbol, SymbolEqualityComparer.Default))
       {
         return ConvertExpectExpression (rhinoMocksInvocationExpression).WithLeadingAndTrailingTriviaOfNode (node);
       }
 
-      if (constraintsSymbols.Contains (symbol, SymbolEqualityComparer.Default))
+      if (RhinoMocksSymbols.ConstraintsSymbols.Contains (symbol, SymbolEqualityComparer.Default))
       {
-        var rewrittenContainedExpression = RewriteExpectCall (rhinoMocksMemberAccessExpression.Expression, callSymbols, simpleRhinoMocksSymbols, constraintsSymbols);
+        var rewrittenContainedExpression = RewriteExpectCall (rhinoMocksMemberAccessExpression.Expression);
         return ConvertMockedExpression (rewrittenContainedExpression, rhinoMocksMemberAccessExpression, rhinoMocksInvocationExpression);
       }
 
-      if (simpleRhinoMocksSymbols.Contains (symbol, SymbolEqualityComparer.Default))
+      if (GetAllSimpleRhinoMocksSymbols().Contains (symbol, SymbolEqualityComparer.Default))
       {
         return rhinoMocksInvocationExpression.ReplaceNode (
             node.GetCurrentNode (rhinoMocksMemberAccessExpression.Expression, CompilationId)!,
-            (ExpressionSyntax) RewriteExpectCall (rhinoMocksMemberAccessExpression.Expression, callSymbols, simpleRhinoMocksSymbols, constraintsSymbols));
+            (ExpressionSyntax) RewriteExpectCall (rhinoMocksMemberAccessExpression.Expression));
       }
 
       return node;
-    }
-
-    private static IEnumerable<ISymbol> GetAllSimpleRhinoMocksSymbols (INamedTypeSymbol rhinoMocksIMethodOptionsSymbol, INamedTypeSymbol rhinoMocksIRepeatSymbol)
-    {
-      return rhinoMocksIMethodOptionsSymbol.GetMembers ("Return")
-          .Concat (rhinoMocksIMethodOptionsSymbol.GetMembers ("WhenCalled"))
-          .Concat (rhinoMocksIMethodOptionsSymbol.GetMembers ("Callback"))
-          .Concat (rhinoMocksIMethodOptionsSymbol.GetMembers ("IgnoreArguments"))
-          .Concat (rhinoMocksIMethodOptionsSymbol.GetMembers ("Do"))
-          .Concat (rhinoMocksIMethodOptionsSymbol.GetMembers ("Repeat"))
-          .Concat (rhinoMocksIMethodOptionsSymbol.GetMembers ("Throw"))
-          .Concat (rhinoMocksIMethodOptionsSymbol.GetMembers ("CallOriginalMethod"))
-          .Concat (rhinoMocksIRepeatSymbol.GetMembers());
     }
 
     private SyntaxNode ConvertMockedExpression (
@@ -173,6 +142,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return MoqSyntaxFactory.GenericName (
           SyntaxFactory.Identifier (typeSymbol.Name),
           MoqSyntaxFactory.SimpleTypeArgumentList (((INamedTypeSymbol) typeSymbol).TypeArguments.Select (ConvertTypeSyntaxNodes)));
+    }
+
+    private IEnumerable<ISymbol> GetAllSimpleRhinoMocksSymbols ()
+    {
+      return RhinoMocksSymbols.AllIMethodOptionsSymbols
+          .Concat (RhinoMocksSymbols.AllIRepeatSymbols)
+          .Concat (RhinoMocksSymbols.IgnoreArgumentsSymbols);
     }
   }
 }

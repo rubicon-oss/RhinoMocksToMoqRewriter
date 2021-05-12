@@ -25,30 +25,16 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitExpressionStatement (ExpressionStatementSyntax node)
     {
-      var rhinoMocksExtensionsCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.RhinoMocksExtensions");
-      var rhinoMocksIMethodOptionsSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Interfaces.IMethodOptions`1");
-      if (rhinoMocksExtensionsCompilationSymbol == null || rhinoMocksIMethodOptionsSymbol == null)
-      {
-        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
-      }
-
-      var expectSymbols = rhinoMocksExtensionsCompilationSymbol.GetMembers ("Expect");
-      var stubSymbols = rhinoMocksExtensionsCompilationSymbol.GetMembers ("Stub");
-      var returnSymbols = rhinoMocksIMethodOptionsSymbol.GetMembers ("Return");
-      var whenCalledSymbols = rhinoMocksIMethodOptionsSymbol.GetMembers ("WhenCalled");
-      var callbackSymbols = rhinoMocksIMethodOptionsSymbol.GetMembers ("Callback");
-      var ignoreArgumentsSymbols = rhinoMocksIMethodOptionsSymbol.GetMembers ("IgnoreArguments");
-
       var baseCallNode = (ExpressionStatementSyntax) base.VisitExpressionStatement (node)!;
 
-      if (!ContainsIgnoreArgumentsMethod (node, ignoreArgumentsSymbols))
+      if (!ContainsIgnoreArgumentsMethod (node))
       {
         return baseCallNode;
       }
 
-      var rhinoMocksExpressions = GetAllRhinoMocksExpressions (baseCallNode, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols, callbackSymbols).ToList();
+      var rhinoMocksExpressions = GetAllRhinoMocksExpressions (baseCallNode).ToList();
       var mockIdentifierName = rhinoMocksExpressions.Any (s => s.ArgumentList.Arguments.Count > 1)
-          ? ExtractIdentifierNameFromArguments (rhinoMocksExpressions, expectSymbols)
+          ? ExtractIdentifierNameFromArguments (rhinoMocksExpressions)
           : baseCallNode.GetFirstIdentifierName();
 
       try
@@ -67,61 +53,45 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       }
     }
 
-    private IdentifierNameSyntax ExtractIdentifierNameFromArguments (
-        IEnumerable<(SimpleNameSyntax Name, ArgumentListSyntax ArgumentList)> expressions,
-        IReadOnlyList<ISymbol> expectSymbols)
+    private IdentifierNameSyntax ExtractIdentifierNameFromArguments (IEnumerable<(SimpleNameSyntax Name, ArgumentListSyntax ArgumentList)> expressions)
     {
       return expressions
           .Where (
               s => s.ArgumentList.Arguments.Count > 1
                    && Model.GetSymbolInfo (s.Name).Symbol is { } symbol
-                   && (expectSymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                       || expectSymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default)))
+                   && (RhinoMocksSymbols.ExpectSymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default)
+                       || RhinoMocksSymbols.StubSymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default)))
           .Select (s => (IdentifierNameSyntax) s.ArgumentList.Arguments.First().Expression)
           .First();
     }
 
-    private bool ContainsIgnoreArgumentsMethod (ExpressionStatementSyntax node, IReadOnlyList<ISymbol> ignoreArgumentsSymbols)
+    private bool ContainsIgnoreArgumentsMethod (ExpressionStatementSyntax node)
     {
       return node.DescendantNodesAndSelf()
           .Any (
               s => Model.GetSymbolInfo (s).Symbol is IMethodSymbol symbol
-                   && ignoreArgumentsSymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default));
+                   && RhinoMocksSymbols.IgnoreArgumentsSymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default));
     }
 
-    private IEnumerable<(SimpleNameSyntax Name, ArgumentListSyntax ArgumentList)> GetAllRhinoMocksExpressions (
-        ExpressionStatementSyntax node,
-        IReadOnlyCollection<ISymbol> expectSymbols,
-        IReadOnlyCollection<ISymbol> stubSymbols,
-        IReadOnlyCollection<ISymbol> returnSymbols,
-        IReadOnlyCollection<ISymbol> whenCalledSymbols,
-        IReadOnlyCollection<ISymbol> callbackSymbols)
+    private IEnumerable<(SimpleNameSyntax Name, ArgumentListSyntax ArgumentList)> GetAllRhinoMocksExpressions (ExpressionStatementSyntax node)
     {
       return node.DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression) || s.IsKind (SyntaxKind.InvocationExpression))
           .SelectMany (s => s.DescendantNodesAndSelf())
           .Where (s => s.IsKind (SyntaxKind.InvocationExpression))
-          .Where (s => IsRhinoMocksMethod (s, expectSymbols, stubSymbols, returnSymbols, whenCalledSymbols, callbackSymbols))
+          .Where (IsRhinoMocksMethod)
           .Distinct()
           .Select (s => (InvocationExpressionSyntax) s)
           .Select (s => (((MemberAccessExpressionSyntax) s.Expression).Name, s.ArgumentList))
           .Reverse();
     }
 
-    private bool IsRhinoMocksMethod (
-        SyntaxNode node,
-        IReadOnlyCollection<ISymbol> expectSymbols,
-        IReadOnlyCollection<ISymbol> stubSymbols,
-        IReadOnlyCollection<ISymbol> returnSymbols,
-        IReadOnlyCollection<ISymbol> whenCalledSymbols,
-        IReadOnlyCollection<ISymbol> callbackSymbols)
+    private bool IsRhinoMocksMethod (SyntaxNode node)
     {
       return Model.GetSymbolInfo (node).Symbol is IMethodSymbol symbol
-             && (expectSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                 || stubSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                 || returnSymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                 || whenCalledSymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                 || callbackSymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default));
+             && (RhinoMocksSymbols.ExpectSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)
+                 || RhinoMocksSymbols.StubSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)
+                 || RhinoMocksSymbols.AllIMethodOptionsSymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default));
     }
 
     private ArgumentListSyntax ConvertArgumentList (ArgumentListSyntax argumentList)

@@ -25,31 +25,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitMethodDeclaration (MethodDeclarationSyntax node)
     {
-      var rhinoMocksMockRepositoryCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
-      if (rhinoMocksMockRepositoryCompilationSymbol == null)
-      {
-        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
-      }
-
-      var moqSetupSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.Mock`1");
-      var moqCallbackSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.Language.ICallback");
-      var moqReturnsSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.Language.IReturns`2");
-      var moqVerifiableSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.Language.IVerifies");
-      if (moqSetupSymbol == null || moqCallbackSymbol == null || moqReturnsSymbol == null || moqVerifiableSymbol == null)
-      {
-        throw new InvalidOperationException ("Moq cannot be found.");
-      }
-
-      var moqSymbols = GetAllMoqSymbols (moqSetupSymbol, moqCallbackSymbol, moqReturnsSymbol, moqVerifiableSymbol).ToList();
-
-      var usingStatements = GetRhinoMocksOrderedUsingStatements (node, rhinoMocksMockRepositoryCompilationSymbol).ToList();
+     var usingStatements = GetRhinoMocksOrderedUsingStatements (node).ToList();
 
       var treeWithTrackedNodes = node.TrackNodes (usingStatements, CompilationId);
       for (var i = 0; i < usingStatements.Count; i++)
       {
         var usingStatement = usingStatements[i];
         var trackedUsingStatement = treeWithTrackedNodes.GetCurrentNode (usingStatement, CompilationId);
-        var statements = ReplaceExpressionStatements (((BlockSyntax) usingStatement.Statement).Statements, moqSymbols, i + 1);
+        var statements = ReplaceExpressionStatements (((BlockSyntax) usingStatement.Statement).Statements, i + 1);
 
         treeWithTrackedNodes = treeWithTrackedNodes.ReplaceNode (trackedUsingStatement!, statements);
       }
@@ -57,24 +40,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return treeWithTrackedNodes;
     }
 
-    private static IEnumerable<ISymbol> GetAllMoqSymbols (
-        INamedTypeSymbol moqSetupSymbol,
-        INamedTypeSymbol moqCallbackSymbol,
-        INamedTypeSymbol moqReturnsSymbol,
-        INamedTypeSymbol moqVerifiableSymbol)
+    private IEnumerable<SyntaxNode> ReplaceExpressionStatements (SyntaxList<StatementSyntax> statements, int current)
     {
-      return moqSetupSymbol.GetMembers ("Setup")
-          .Concat (moqCallbackSymbol.GetMembers ("Callback"))
-          .Concat (moqReturnsSymbol.GetMembers ("Returns"))
-          .Concat (moqVerifiableSymbol.GetMembers ("Verifiable"));
-    }
-
-    private IEnumerable<SyntaxNode> ReplaceExpressionStatements (
-        SyntaxList<StatementSyntax> statements,
-        IReadOnlyCollection<ISymbol> moqSymbols,
-        int current)
-    {
-      var nodesToBeReplaced = GetAllMoqExpressionStatements (statements, moqSymbols).ToList();
+      var nodesToBeReplaced = GetAllMoqExpressionStatements (statements).ToList();
       var parentTrivia = statements.First().Parent?.GetLeadingTrivia();
       for (var i = 0; i < statements.Count; i++)
       {
@@ -102,28 +70,24 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return statements;
     }
 
-    private IEnumerable<ExpressionStatementSyntax> GetAllMoqExpressionStatements (
-        SyntaxList<StatementSyntax> statements,
-        IReadOnlyCollection<ISymbol> moqSymbols)
+    private IEnumerable<ExpressionStatementSyntax> GetAllMoqExpressionStatements (SyntaxList<StatementSyntax> statements)
     {
       return statements
           .Where (s => s.IsKind (SyntaxKind.ExpressionStatement))
           .Select (s => (ExpressionStatementSyntax) s)
           .Where (
               s => Model.GetSymbolInfo (s.Expression).Symbol?.OriginalDefinition is IMethodSymbol symbol
-                   && moqSymbols.Contains (symbol, SymbolEqualityComparer.Default));
+                   && MoqSymbols.AllMoqSetupSymbols.Contains (symbol, SymbolEqualityComparer.Default));
     }
 
-    private IEnumerable<UsingStatementSyntax> GetRhinoMocksOrderedUsingStatements (MethodDeclarationSyntax node, INamedTypeSymbol mockRepositoryCompilationSymbol)
+    private IEnumerable<UsingStatementSyntax> GetRhinoMocksOrderedUsingStatements (MethodDeclarationSyntax node)
     {
-      var rhinoMocksOrderedSymbol = mockRepositoryCompilationSymbol.GetMembers ("Ordered").Single();
-
       return node.DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.UsingStatement))
           .Select (s => (UsingStatementSyntax) s)
           .Where (
               s => s.Expression is InvocationExpressionSyntax invocationExpression
-                   && rhinoMocksOrderedSymbol.Equals (Model.GetSymbolInfo (invocationExpression).Symbol, SymbolEqualityComparer.Default));
+                   && RhinoMocksSymbols.OrderedSymbols.Contains (Model.GetSymbolInfo (invocationExpression).Symbol, SymbolEqualityComparer.Default));
     }
   }
 }
