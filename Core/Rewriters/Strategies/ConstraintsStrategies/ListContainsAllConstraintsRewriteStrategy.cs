@@ -19,6 +19,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategie
 {
   public class ListContainsAllConstraintsRewriteStrategy : BaseConstraintsRewriteStrategy<ListContainsAllConstraintsRewriteStrategy>
   {
-    public override ExpressionSyntax Rewrite (ExpressionSyntax node) => MoqSyntaxFactory.ContainsAllInvocationExpression (node.GetFirstArgument().Expression);
+    public override ExpressionSyntax Rewrite (ExpressionSyntax node)
+    {
+      return Formatter.MarkWithFormatAnnotation (
+              MoqSyntaxFactory.ContainsAllInvocationExpression (node.GetFirstArgument().Expression))
+          .WithLeadingAndTrailingTriviaOfNode (node);
+    }
   }
 }

@@ -23,6 +23,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   public class FieldRewriter : RewriterBase
   {
     private readonly IFormatter _formatter;
+
     private List<IFieldSymbol>? _generateMockFieldSymbols;
 
     public FieldRewriter (IFormatter formatter)

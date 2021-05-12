@@ -26,8 +26,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     public static ObjectCreationExpressionSyntax MockCreationExpression (TypeArgumentListSyntax typeArgumentList, ArgumentListSyntax? argumentList = null)
     {
       return MoqSyntaxFactory.ObjectCreationExpression (
-          MoqSyntaxFactory.GenericName (MoqSyntaxFactory.MockIdentifier, typeArgumentList).WithLeadingTrivia (SyntaxFactory.Space),
-          argumentList);
+              MoqSyntaxFactory.GenericName (MoqSyntaxFactory.MockIdentifier, typeArgumentList),
+              argumentList)
+          .WithLeadingTrivia (SyntaxFactory.Space);
     }
 
     public static ObjectCreationExpressionSyntax PartialMockCreationExpression (TypeArgumentListSyntax typeArgumentList, ArgumentListSyntax? argumentList = null)
@@ -241,7 +242,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       var argumentList = expression is null || times == null
           ? null
-          : MoqSyntaxFactory.ArgumentList (new[] { Argument (expression), Argument (TimesExpression ((int) times)) });
+          : MoqSyntaxFactory.ArgumentList (new[] { Argument (expression), Argument (TimesExpression ((int) times)).WithLeadingTrivia (SyntaxFactory.Space) });
 
       return MoqSyntaxFactory.InvocationExpression (
           MoqSyntaxFactory.MemberAccessExpression (
@@ -260,7 +261,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               new[]
               {
                   Argument (expression),
-                  Argument (TimesExpression (-2, times.Min, times!.Max))
+                  Argument (TimesExpression (-2, times.Min, times!.Max).WithLeadingTrivia (SyntaxFactory.Space))
               }));
     }
 
@@ -279,6 +280,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                           SyntaxFactory.TypeArgumentList (
                               SyntaxFactory.SingletonSeparatedList (
                                   declarationType))))
+              .WithTrailingTrivia (SyntaxFactory.Space)
               .WithVariables (
                   SyntaxFactory.SeparatedList (
                       variableDeclarators)));

@@ -19,6 +19,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategie
 {
   public class IsLessThanConstraintsRewriteStrategy : BaseConstraintsRewriteStrategy<IsLessThanConstraintsRewriteStrategy>
   {
-    public override ExpressionSyntax Rewrite (ExpressionSyntax node) => MoqSyntaxFactory.LessThanBinaryExpression (node.GetFirstArgument().Expression);
+    public override ExpressionSyntax Rewrite (ExpressionSyntax node)
+    {
+      return Formatter.MarkWithFormatAnnotation (
+              MoqSyntaxFactory.LessThanBinaryExpression (node.GetFirstArgument().Expression))
+          .WithLeadingAndTrailingTriviaOfNode (node);
+    }
   }
 }

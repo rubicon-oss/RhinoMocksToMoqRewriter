@@ -51,7 +51,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           invocationExpression.WithArgumentList (
               MoqSyntaxFactory.SimpleArgumentList (
                   MoqSyntaxFactory.SimpleLambdaExpression (
-                      ConvertExpression (invocationExpression.ArgumentList.GetFirstArgument().Expression)))));
+                      Formatter.MarkWithFormatAnnotation (
+                          ConvertExpression (invocationExpression.ArgumentList.GetFirstArgument().Expression))))));
     }
 
     private ExpressionSyntax ConvertExpression (ExpressionSyntax expression)

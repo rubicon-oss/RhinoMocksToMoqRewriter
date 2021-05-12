@@ -13,6 +13,7 @@
 
 using System;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategies
 {
@@ -27,7 +28,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategie
         throw new InvalidOperationException ("Unable to get name or value from property");
       }
 
-      return MoqSyntaxFactory.PropertyValueBinaryExpression (propertyName, propertyValue);
+      return Formatter.MarkWithFormatAnnotation (
+              MoqSyntaxFactory.PropertyValueBinaryExpression (propertyName, propertyValue))
+          .WithLeadingAndTrailingTriviaOfNode (node);
     }
   }
 }

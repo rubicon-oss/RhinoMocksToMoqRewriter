@@ -13,11 +13,17 @@
 
 using System;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RhinoMocksToMoqRewriter.Core.Extensions;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintsStrategies
 {
   public class IsNotNullConstraintsRewriteStrategy : BaseConstraintsRewriteStrategy<IsNotNullConstraintsRewriteStrategy>
   {
-    public override ExpressionSyntax Rewrite (ExpressionSyntax node) => MoqSyntaxFactory.NotNullBinaryExpression();
+    public override ExpressionSyntax Rewrite (ExpressionSyntax node)
+    {
+      return Formatter.MarkWithFormatAnnotation (
+              MoqSyntaxFactory.NotNullBinaryExpression())
+          .WithLeadingAndTrailingTriviaOfNode (node);
+    }
   }
 }

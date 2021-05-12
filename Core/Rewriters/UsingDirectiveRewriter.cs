@@ -14,7 +14,6 @@
 using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace RhinoMocksToMoqRewriter.Core.Rewriters
@@ -23,18 +22,18 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitCompilationUnit (CompilationUnitSyntax node)
     {
-      var moqUsing = MoqSyntaxFactory.MoqUsingDirective().WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine));
-      var mockRepositoryAlias = MoqSyntaxFactory.RhinoMocksRepositoryAlias().WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine));
+      var moqUsing = MoqSyntaxFactory.MoqUsingDirective();
+      var mockRepositoryAlias = MoqSyntaxFactory.RhinoMocksRepositoryAlias();
       var currentUsings = node.Usings;
 
       if (!currentUsings.Any (u => u.IsEquivalentTo (moqUsing, false)))
       {
-        currentUsings = currentUsings.Add (moqUsing);
+        currentUsings = currentUsings.Add (Formatter.MarkWithFormatAnnotation (moqUsing));
       }
 
       if (!currentUsings.Any (u => u.IsEquivalentTo (mockRepositoryAlias, false)))
       {
-        currentUsings = currentUsings.Add (mockRepositoryAlias);
+        currentUsings = currentUsings.Add (Formatter.MarkWithFormatAnnotation (mockRepositoryAlias));
       }
 
       return node.WithUsings (currentUsings);

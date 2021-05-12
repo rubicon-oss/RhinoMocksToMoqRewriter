@@ -12,7 +12,6 @@
 //
 
 using System;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using RhinoMocksToMoqRewriter.Core.Extensions;
 
@@ -28,8 +27,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
         throw new InvalidOperationException ("Node must contain a TypeArgumentList");
       }
 
-      return MoqSyntaxFactory.IsAnyArgument (typeArgumentList!)
-          .WithLeadingTrivia (node.GetLeadingTrivia());
+      return Formatter.MarkWithFormatAnnotation (MoqSyntaxFactory.IsAnyArgument (typeArgumentList!))
+          .WithLeadingAndTrailingTriviaOfNode (node);
     }
   }
 }

@@ -29,7 +29,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       _formatter = formatter;
     }
-
     public override SyntaxNode? VisitLocalDeclarationStatement (LocalDeclarationStatementSyntax node)
     {
       var rhinoMocksMockRepositorySymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
@@ -98,12 +97,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       return methodSymbol switch
       {
-          _ when mockOrStubSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) => _formatter.Format (
-              MoqSyntaxFactory.MockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList)),
-          _ when partialMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) => _formatter.Format (
-              MoqSyntaxFactory.PartialMockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList)),
-          _ when strictMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default) => _formatter.Format (
-              MoqSyntaxFactory.StrictMockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList)),
+          _ when mockOrStubSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default)
+              => _formatter.Format (MoqSyntaxFactory.MockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList))
+                  .WithLeadingAndTrailingTriviaOfNode (baseCallNode),
+          _ when partialMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default)
+              => _formatter.Format (MoqSyntaxFactory.PartialMockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList))
+                  .WithLeadingAndTrailingTriviaOfNode (baseCallNode),
+          _ when strictMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default)
+              => _formatter.Format (MoqSyntaxFactory.StrictMockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList))
+                  .WithLeadingAndTrailingTriviaOfNode (baseCallNode),
           _ => baseCallNode
       };
     }

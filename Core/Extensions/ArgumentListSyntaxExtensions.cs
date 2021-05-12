@@ -18,31 +18,25 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
 {
   public static class ArgumentListSyntaxExtensions
   {
-    private const string c_carriageReturnLineFeed = "\r\n";
-    private const string c_lineFeed = "\n";
     private const string c_whiteSpace = " ";
 
-    public static bool IsEmpty (this ArgumentListSyntax argumentList) => argumentList.Arguments.Count == 0;
-
-    public static bool IsSingleArgumentList (this ArgumentListSyntax argumentList) => argumentList.Arguments.Count == 1;
-
-    public static string GetNewLineCharacter (this ArgumentListSyntax argumentList)
+    public static bool IsEmpty (this ArgumentListSyntax? argumentList)
     {
-      if (argumentList.ToString().Contains (c_carriageReturnLineFeed))
-      {
-        return c_carriageReturnLineFeed;
-      }
-
-      if (argumentList.ToString().Contains (c_lineFeed))
-      {
-        return c_lineFeed;
-      }
-
-      return string.Empty;
+      return argumentList is null || argumentList.Arguments.Count == 0;
     }
 
-    public static string GetIndentation (this ArgumentListSyntax argumentList)
+    public static bool IsSingleArgumentList (this ArgumentListSyntax? argumentList)
     {
+      return argumentList is null || argumentList?.Arguments.Count == 1;
+    }
+
+    public static string GetIndentation (this ArgumentListSyntax? argumentList)
+    {
+      if (argumentList is null)
+      {
+        return string.Empty;
+      }
+
       if (argumentList.IsEmpty())
       {
         return string.Empty;

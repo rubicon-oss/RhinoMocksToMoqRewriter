@@ -40,7 +40,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var constraintsSymbols = rhinoMocksIMethodOptionsSymbol.GetMembers ("Constraints");
       var simpleRhinoMocksSymbols = GetAllSimpleRhinoMocksSymbols (rhinoMocksIMethodOptionsSymbol, rhinoMocksIRepeatSymbol).ToList();
 
-      return RewriteExpectCall (baseCallNode, callSymbols, simpleRhinoMocksSymbols, constraintsSymbols).WithLeadingTrivia (node.GetLeadingTrivia());
+      return RewriteExpectCall (baseCallNode, callSymbols, simpleRhinoMocksSymbols, constraintsSymbols)
+          .WithLeadingAndTrailingTriviaOfNode (node);
     }
 
     private SyntaxNode RewriteExpectCall (
@@ -71,7 +72,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       if (callSymbols.Contains (symbol, SymbolEqualityComparer.Default))
       {
-        return ConvertExpectExpression (rhinoMocksInvocationExpression);
+        return ConvertExpectExpression (rhinoMocksInvocationExpression).WithLeadingAndTrailingTriviaOfNode (node);
       }
 
       if (constraintsSymbols.Contains (symbol, SymbolEqualityComparer.Default))

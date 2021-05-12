@@ -25,26 +25,32 @@ namespace RhinoMocksToMoqRewriter.Application
 {
   public class CompilationLoader
   {
-    private readonly MSBuildWorkspace _workspace;
+    private readonly MSBuildWorkspace _msBuildWorkspace;
 
     public SyntaxGenerator Generator { get; }
+
+    public Workspace Workspace { get; private set; } = null!;
 
     public CompilationLoader ()
     {
       var instance = MSBuildLocator.QueryVisualStudioInstances().First();
       MSBuildLocator.RegisterInstance (instance);
-      _workspace = MSBuildWorkspace.Create();
-      Generator = SyntaxGenerator.GetGenerator (_workspace, "C#");
+      _msBuildWorkspace = MSBuildWorkspace.Create();
+      Generator = SyntaxGenerator.GetGenerator (_msBuildWorkspace, "C#");
     }
 
     public async Task<Solution> LoadSolutionAsync (string pathToSolution)
     {
-      return await _workspace.OpenSolutionAsync (pathToSolution);
+      var solution = await _msBuildWorkspace.OpenSolutionAsync (pathToSolution);
+      Workspace = solution.Workspace;
+      return solution;
     }
 
     public async Task<Project> LoadProjectAsync (string pathToProject)
     {
-      return await _workspace.OpenProjectAsync (pathToProject);
+      var project = await _msBuildWorkspace.OpenProjectAsync (pathToProject);
+      Workspace = project.Solution.Workspace;
+      return project;
     }
 
     public async Task<IReadOnlyList<CSharpCompilation>> LoadCompilationsAsync (IEnumerable<Project> projects)

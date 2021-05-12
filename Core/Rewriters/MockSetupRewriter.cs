@@ -23,6 +23,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public class MockSetupRewriter : RewriterBase
   {
+    private readonly IFormatter _formatter;
+
+    public MockSetupRewriter (IFormatter formatter)
+    {
+      _formatter = formatter;
+    }
+
     public override SyntaxNode? VisitExpressionStatement (ExpressionStatementSyntax node)
     {
       var rhinoMocksExtensionsCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.RhinoMocksExtensions");
@@ -40,7 +47,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var originalNode = baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!;
       if (NeedsVerifiableExpression (originalNode, expectSymbols))
       {
-        baseCallNode = baseCallNode.WithExpression (MoqSyntaxFactory.VerifiableMock (baseCallNode.Expression));
+        baseCallNode = _formatter.Format (baseCallNode.WithExpression (MoqSyntaxFactory.VerifiableMock (baseCallNode.Expression)));
       }
 
       if (NeedsAdditionalAnnotations (originalNode, rhinoMocksIRepeatSymbol))
@@ -48,7 +55,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         baseCallNode = baseCallNode.WithAdditionalAnnotations (CreateAnnotation (originalNode, baseCallNode, rhinoMocksIRepeatSymbol));
       }
 
-      return baseCallNode;
+      return baseCallNode.WithLeadingAndTrailingTriviaOfNode (node);
     }
 
     public override SyntaxNode? VisitMemberAccessExpression (MemberAccessExpressionSyntax node)
@@ -127,6 +134,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           _ when rhinoMocksIMethodOptionsSymbol.GetMembers ("WhenCalled").Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
               => node.WithName (MoqSyntaxFactory.CallbackIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
           _ when rhinoMocksIMethodOptionsSymbol.GetMembers ("Do").Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+              => node.WithName (MoqSyntaxFactory.CallbackIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
+          _ when rhinoMocksIMethodOptionsSymbol.GetMembers ("Callback").Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
               => node.WithName (MoqSyntaxFactory.CallbackIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
           _ when rhinoMocksIMethodOptionsSymbol.GetMembers ("Return").Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
               => node.WithName (MoqSyntaxFactory.ReturnsIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),

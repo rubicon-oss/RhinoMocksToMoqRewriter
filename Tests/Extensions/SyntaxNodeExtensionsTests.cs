@@ -24,7 +24,11 @@ namespace RhinoMocksToMoqRewriter.Tests.Extensions
         new Context
         {
             //language=C#
-            InterfaceContext = @"void DoSomething (int b);",
+            InterfaceContext = @"
+void DoSomething();
+void DoSomething (int a);
+void DoSomething (int a, int b);
+void DoSomething (int a, int b, int c);",
             //language=C#
             MethodContext = @"var mock = MockRepository.GenerateMock<ITestInterface>();"
         };
@@ -45,6 +49,21 @@ namespace RhinoMocksToMoqRewriter.Tests.Extensions
       var (_, argumentList) = CompiledSourceFileProvider.CompileArgumentListWithContext (source, _context);
       var actual = argumentList.Arguments.First().GetLeadingWhiteSpaces();
       Assert.AreEqual (expected, actual);
+    }
+
+    [Test]
+    [TestCase ("mock.DoSomething();", "")]
+    [TestCase ("mock.DoSomething(\r\n42);", "\r\n")]
+    [TestCase ("mock.DoSomething( \n  42);", "\n")]
+    [TestCase ("mock.DoSomething(\r\n42   \n);", "\r\n")]
+    [TestCase ("mock.DoSomething(\n42 \r\n );", "\r\n")]
+    [TestCase ("mock.DoSomething(42,\n21,42\r\n);", "\r\n")]
+    [TestCase ("mock.DoSomething(\r\n);", "\r\n")]
+    public void GetNewLineCharacter (string source, string expected)
+    {
+      var (_, argumentList) = CompiledSourceFileProvider.CompileArgumentListWithContext (source, _context);
+      var newLineCharacter = argumentList.GetNewLineCharacter();
+      Assert.AreEqual (expected, newLineCharacter);
     }
   }
 }
