@@ -119,7 +119,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               MoqSyntaxFactory.InvocationExpression (
                   MoqSyntaxFactory.MemberAccessExpression (
                       MoqSyntaxFactory.ItIdentifierName,
-                      SyntaxFactory.GenericName (
+                      MoqSyntaxFactory.GenericName (
                           MoqSyntaxFactory.IsIdentifier,
                           typeArgumentList)),
                   MoqSyntaxFactory.ArgumentList (
@@ -242,7 +242,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       var argumentList = expression is null || times == null
           ? null
-          : MoqSyntaxFactory.ArgumentList (new[] { Argument (expression), Argument (TimesExpression ((int) times)).WithLeadingTrivia (SyntaxFactory.Space) });
+          : MoqSyntaxFactory.ArgumentList (
+              new[]
+              {
+                  MoqSyntaxFactory.Argument (expression),
+                  MoqSyntaxFactory.Argument (TimesExpression ((int) times)).WithLeadingTrivia (SyntaxFactory.Space)
+              });
 
       return MoqSyntaxFactory.InvocationExpression (
           MoqSyntaxFactory.MemberAccessExpression (
@@ -260,8 +265,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           MoqSyntaxFactory.ArgumentList (
               new[]
               {
-                  Argument (expression),
-                  Argument (TimesExpression (-2, times.Min, times!.Max).WithLeadingTrivia (SyntaxFactory.Space))
+                  MoqSyntaxFactory.Argument (expression),
+                  MoqSyntaxFactory.Argument (TimesExpression (-2, times.Min, times!.Max).WithLeadingTrivia (SyntaxFactory.Space))
               }));
     }
 
@@ -275,11 +280,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           attributeList,
           modifiers,
           SyntaxFactory.VariableDeclaration (
-                  SyntaxFactory.GenericName (SyntaxFactory.Identifier ("Mock"))
-                      .WithTypeArgumentList (
-                          SyntaxFactory.TypeArgumentList (
-                              SyntaxFactory.SingletonSeparatedList (
-                                  declarationType))))
+                  MoqSyntaxFactory.GenericName (
+                      MoqSyntaxFactory.MockIdentifier,
+                      MoqSyntaxFactory.TypeArgumentList (declarationType)))
               .WithTrailingTrivia (SyntaxFactory.Space)
               .WithVariables (
                   SyntaxFactory.SeparatedList (
@@ -315,7 +318,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     public static UsingDirectiveSyntax MoqUsingDirective ()
     {
       return SyntaxFactory.UsingDirective (
-          SyntaxFactory.IdentifierName ("Moq")
+          MoqSyntaxFactory.MoqIdentifierName
               .WithLeadingTrivia (SyntaxFactory.Space));
     }
 
@@ -324,13 +327,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.UsingDirective (
               SyntaxFactory.QualifiedName (
                       SyntaxFactory.QualifiedName (
-                          SyntaxFactory.IdentifierName ("Rhino"),
-                          SyntaxFactory.IdentifierName ("Mocks")),
-                      SyntaxFactory.IdentifierName ("MockRepository"))
+                          MoqSyntaxFactory.RhinoIdentifierName,
+                          MoqSyntaxFactory.MocksIdentifierName),
+                      MoqSyntaxFactory.MockRepositoryIdentifierName)
                   .WithLeadingTrivia (SyntaxFactory.Space))
           .WithAlias (
               SyntaxFactory.NameEquals (
-                  SyntaxFactory.IdentifierName ("MockRepository")
+                  MoqSyntaxFactory.MockRepositoryIdentifierName
                       .WithLeadingTrivia (SyntaxFactory.Space)
                       .WithTrailingTrivia (SyntaxFactory.Space)));
     }
@@ -339,7 +342,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       return SyntaxFactory.LocalDeclarationStatement (
           SyntaxFactory.VariableDeclaration (
-              SyntaxFactory.IdentifierName ("var"),
+              MoqSyntaxFactory.VarIdentifierName,
               SyntaxFactory.SingletonSeparatedList (
                   SyntaxFactory.VariableDeclarator (
                           SyntaxFactory.Identifier ($"sequence{number}")
@@ -347,12 +350,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                               .WithTrailingTrivia (SyntaxFactory.Space))
                       .WithInitializer (
                           SyntaxFactory.EqualsValueClause (
-                              SyntaxFactory.ObjectCreationExpression (
-                                      SyntaxFactory.IdentifierName ("MockSequence")
-                                          .WithLeadingTrivia (SyntaxFactory.Space))
-                                  .WithLeadingTrivia (SyntaxFactory.Space)
-                                  .WithArgumentList (
-                                      SyntaxFactory.ArgumentList()))))));
+                              MoqSyntaxFactory.ObjectCreationExpression (
+                                      MoqSyntaxFactory.MockSequenceIdentifierName
+                                          .WithLeadingTrivia (SyntaxFactory.Space),
+                                      MoqSyntaxFactory.ArgumentList())
+                                  .WithLeadingTrivia (SyntaxFactory.Space))))));
     }
 
     public static InvocationExpressionSyntax InSequenceExpression (IdentifierNameSyntax identifierName, string number = "")
@@ -361,20 +363,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           SyntaxFactory.MemberAccessExpression (
               SyntaxKind.SimpleMemberAccessExpression,
               identifierName,
-              SyntaxFactory.IdentifierName ("InSequence")),
-          SyntaxFactory.ArgumentList (
-                  SyntaxFactory.SingletonSeparatedList (
-                      SyntaxFactory.Argument (
-                          SyntaxFactory.IdentifierName ($"sequence{number}"))))
+              MoqSyntaxFactory.InSequenceIdentifierName),
+          MoqSyntaxFactory.ArgumentList (
+                  MoqSyntaxFactory.Argument (
+                      SyntaxFactory.IdentifierName ($"sequence{number}")))
               .WithLeadingTrivia (SyntaxFactory.Space));
-    }
-
-    public static BinaryExpressionSyntax EqualOrSameBinaryExpression (ExpressionSyntax expression)
-    {
-      return MoqSyntaxFactory.BinaryExpression (
-          SyntaxKind.EqualsExpression,
-          MoqSyntaxFactory.LambdaParameterIdentifierName.WithTrailingTrivia (SyntaxFactory.Space),
-          expression.WithLeadingTrivia (SyntaxFactory.Space));
     }
 
     public static ExpressionSyntax GreaterThanBinaryExpression (ExpressionSyntax expression)
@@ -465,7 +458,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     public static LambdaExpressionSyntax SimpleLambdaExpression (ExpressionSyntax expressionBody)
     {
-      return LambdaExpression (MoqSyntaxFactory.LambdaParameterIdentifier, expressionBody.WithLeadingTrivia (SyntaxFactory.Space));
+      return MoqSyntaxFactory.LambdaExpression (MoqSyntaxFactory.LambdaParameterIdentifier, expressionBody.WithLeadingTrivia (SyntaxFactory.Space));
     }
 
     public static ArgumentListSyntax SimpleArgumentList (ArgumentSyntax argument)
@@ -528,11 +521,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               MoqSyntaxFactory.ArgumentList (argument)));
     }
 
-    public static MemberAccessExpressionSyntax SimpleMemberAccessExpression (ExpressionSyntax expression, SimpleNameSyntax name)
-    {
-      return MoqSyntaxFactory.MemberAccessExpression (expression, name);
-    }
-
     public static InvocationExpressionSyntax InvocationExpression (ExpressionSyntax expression, ArgumentListSyntax? argumentList = null)
     {
       return argumentList == null || argumentList.IsEmpty()
@@ -576,8 +564,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           MoqSyntaxFactory.MemberAccessExpression (
               MoqSyntaxFactory.MemberAccessExpression (
                   expression,
-                  SyntaxFactory.IdentifierName ("Repeat")),
-              SyntaxFactory.IdentifierName ("Any")));
+                  MoqSyntaxFactory.RepeatIdentifierName),
+              MoqSyntaxFactory.AnyIdentifierName));
     }
 
     public static TypeSyntax ArrayType (TypeSyntax type)
@@ -631,8 +619,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           SyntaxFactory.IdentifierName (propertyName.ToString().Replace ("\"", "")));
     }
 
-    public static TypeSyntax VarType => MoqSyntaxFactory.VarIdentifierName;
-
     #region Annotations
 
     public static SyntaxAnnotation VerifyAnnotation (SyntaxNode? currentNode = null, object? times = null)
@@ -643,8 +629,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     public static string VerifyAnnotationKind => "Verify";
 
     #endregion
-
-    #region Private MoqSyntaxFactory
 
     private static BinaryExpressionSyntax BinaryExpression (SyntaxKind kind, ExpressionSyntax left, ExpressionSyntax right)
     {
@@ -743,14 +727,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.ParenthesizedLambdaExpression (expression);
     }
 
-    public static IdentifierNameSyntax ExpectIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ExpectIdentifier);
-
-    private static LiteralExpressionSyntax NullLiteralExpression => SyntaxFactory.LiteralExpression (SyntaxKind.NullLiteralExpression);
-
-    private static LiteralExpressionSyntax TrueLiteralExpression => SyntaxFactory.LiteralExpression (SyntaxKind.TrueLiteralExpression);
-
-    private static PredefinedTypeSyntax ObjectKeyword => SyntaxFactory.PredefinedType (SyntaxFactory.Token (SyntaxKind.ObjectKeyword));
-
     private static LiteralExpressionSyntax NumericLiteralExpression (int times)
     {
       return SyntaxFactory.LiteralExpression (
@@ -758,113 +734,90 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           SyntaxFactory.Literal (times));
     }
 
-    public static IdentifierNameSyntax LambdaParameterIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.LambdaParameterIdentifier);
+    #region Properties
+    public static TypeSyntax VarType => MoqSyntaxFactory.VarIdentifierName;
 
-    public static IdentifierNameSyntax SetupIdentifierName => SyntaxFactory.IdentifierName ("Setup");
+    public static IdentifierNameSyntax ExpectIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.ExpectIdentifier);
+    public static IdentifierNameSyntax LambdaParameterIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.LambdaParameterIdentifier);
+    public static IdentifierNameSyntax SetupIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.SetupIdentifier);
+    public static IdentifierNameSyntax ReturnsIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.ReturnsIdentifier);
+    public static IdentifierNameSyntax CallbackIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.CallbackIdentifier);
+    public static IdentifierNameSyntax ThrowsIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.ThrowsIdentifier);
+    public static IdentifierNameSyntax ContainsIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.ContainsIdentifier);
+    public static IdentifierNameSyntax VerifiableIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.VerifiableIdentifier);
+    public static IdentifierNameSyntax AllIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.AllIdentifier);
+    public static IdentifierNameSyntax MockBehaviorIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.MockBehaviorIdentifier);
+    public static IdentifierNameSyntax StrictIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.StrictIdentifier);
+    public static IdentifierNameSyntax CallBaseIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.CallBaseIdentifier);
+    public static IdentifierNameSyntax RhinoIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.RhinoIdentifier);
+    public static IdentifierNameSyntax MocksIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.MocksIdentifier);
+    public static IdentifierNameSyntax MatchesIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.MatchesIdentifier);
+    public static IdentifierNameSyntax CallIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.CallIdentifier);
+    public static IdentifierNameSyntax TimesIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.TimesIdentifier);
+    public static IdentifierNameSyntax NeverIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.NeverIdentifier);
+    public static IdentifierNameSyntax OnceIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.OnceIdentifier);
+    public static IdentifierNameSyntax ExactlyIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.ExactlyIdentifier);
+    public static IdentifierNameSyntax AtLeastOnceIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.AtLeastOnceIdentifier);
+    public static IdentifierNameSyntax BetweenIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.BetweenIdentifier);
+    public static IdentifierNameSyntax VerifyIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.VerifyIdentifier);
+    public static IdentifierNameSyntax ObjectIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.ObjectIdentifier);
+    public static IdentifierNameSyntax ItIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.ItIdentifier);
+    public static IdentifierNameSyntax IsIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.IsIdentifier);
+    public static IdentifierNameSyntax EqualsIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.EqualsIdentifier);
+    public static IdentifierNameSyntax ReferenceEqualsIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.ReferenceEqualsIdentifier);
+    public static IdentifierNameSyntax MoqIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.MoqIdentifier);
+    public static TypeSyntax VarIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.VarIdentifier);
+    public static IdentifierNameSyntax InSequenceIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.InSequenceIdentifier);
+    public static IdentifierNameSyntax MockSequenceIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.MockSequenceIdentifier);
+    public static IdentifierNameSyntax MockRepositoryIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.MockRepositoryIdentifier);
+    public static IdentifierNameSyntax RepeatIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.RepeatIdentifier);
+    public static IdentifierNameSyntax AnyIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.AnyIdentifier);
 
-    public static IdentifierNameSyntax ReturnsIdentifierName => SyntaxFactory.IdentifierName ("Returns");
+    private static LiteralExpressionSyntax NullLiteralExpression { get; } = SyntaxFactory.LiteralExpression (SyntaxKind.NullLiteralExpression);
+    private static LiteralExpressionSyntax TrueLiteralExpression { get; } = SyntaxFactory.LiteralExpression (SyntaxKind.TrueLiteralExpression);
 
-    public static IdentifierNameSyntax CallbackIdentifierName => SyntaxFactory.IdentifierName ("Callback");
-
-    public static IdentifierNameSyntax ThrowsIdentifierName => SyntaxFactory.IdentifierName ("Throws");
-
-    private static IdentifierNameSyntax ContainsIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ContainsIdentifier);
-
-    private static IdentifierNameSyntax VerifiableIdentifierName => SyntaxFactory.IdentifierName ("Verifiable");
-
-    private static IdentifierNameSyntax AllIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.AllIdentifier);
-
-    private static IdentifierNameSyntax MockBehaviorIdentifierName => SyntaxFactory.IdentifierName ("MockBehavior");
-
-    private static IdentifierNameSyntax StrictIdentifierName => SyntaxFactory.IdentifierName ("Strict");
-
-    private static IdentifierNameSyntax CallBaseIdentifierName => SyntaxFactory.IdentifierName ("CallBase");
-
-    private static IdentifierNameSyntax RhinoIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.RhinoIdentifier);
-
-    private static IdentifierNameSyntax MocksIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.MocksIdentifier);
-
-    private static IdentifierNameSyntax MatchesIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.MatchesIdentifier);
-
-    private static IdentifierNameSyntax CallIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.CallIdentifier);
-
-    private static IdentifierNameSyntax TimesIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.TimesIdentifier);
-
-    private static IdentifierNameSyntax NeverIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.NeverIdentifier);
-
-    private static IdentifierNameSyntax OnceIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.OnceIdentifier);
-
-    private static IdentifierNameSyntax ExactlyIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ExactlyIdentifier);
-
-    private static IdentifierNameSyntax AtLeastOnceIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.AtLeastOnceIdentifier);
-
-    private static SimpleNameSyntax BetweenIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.BetweenIdentifier);
-
-    private static IdentifierNameSyntax VerifyIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.VerifyIdentifier);
-
-    private static IdentifierNameSyntax ObjectIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ObjectIdentifier);
-
-    private static IdentifierNameSyntax ItIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ItIdentifier);
-
-    private static IdentifierNameSyntax IsIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.IsIdentifier);
-
-    private static SimpleNameSyntax EqualsIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.EqualsIdentifier);
-
-    private static SimpleNameSyntax ReferenceEqualsIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.ReferenceEqualsIdentifier);
-
-    private static TypeSyntax VarIdentifierName => SyntaxFactory.IdentifierName (MoqSyntaxFactory.VarIdentifier);
+    private static PredefinedTypeSyntax ObjectKeyword { get; } = SyntaxFactory.PredefinedType (SyntaxFactory.Token (SyntaxKind.ObjectKeyword));
 
     private static SyntaxToken DotToken => SyntaxFactory.Token (SyntaxKind.DotToken);
-
     private static SyntaxToken LambdaParameterIdentifier => SyntaxFactory.Identifier ("_");
-
     private static SyntaxToken MockIdentifier => SyntaxFactory.Identifier ("Mock");
-
     private static SyntaxToken CallIdentifier => SyntaxFactory.Identifier ("Call");
-
     private static SyntaxToken ArgIdentifier => SyntaxFactory.Identifier ("Arg");
-
     private static SyntaxToken MatchesIdentifier => SyntaxFactory.Identifier ("Matches");
-
     private static SyntaxToken RhinoIdentifier => SyntaxFactory.Identifier ("Rhino");
-
     private static SyntaxToken MocksIdentifier => SyntaxFactory.Identifier ("Mocks");
-
     private static SyntaxToken TimesIdentifier => SyntaxFactory.Identifier ("Times");
-
     private static SyntaxToken NeverIdentifier => SyntaxFactory.Identifier ("Never");
-
     private static SyntaxToken OnceIdentifier => SyntaxFactory.Identifier ("Once");
-
     private static SyntaxToken ExactlyIdentifier => SyntaxFactory.Identifier ("Exactly");
-
     private static SyntaxToken BetweenIdentifier => SyntaxFactory.Identifier ("Between");
-
     private static SyntaxToken AtLeastOnceIdentifier => SyntaxFactory.Identifier ("AtLeastOnce");
-
     private static SyntaxToken VerifyIdentifier => SyntaxFactory.Identifier ("Verify");
-
     private static SyntaxToken ExpectIdentifier => SyntaxFactory.Identifier ("Expect");
-
     private static SyntaxToken ItIdentifier => SyntaxFactory.Identifier ("It");
-
     private static SyntaxToken IsIdentifier => SyntaxFactory.Identifier ("Is");
-
     private static SyntaxToken IsAnyIdentifier => SyntaxFactory.Identifier ("IsAny");
-
     private static SyntaxToken IsNotNullIdentifier => SyntaxFactory.Identifier ("IsNotNull");
-
     private static SyntaxToken ContainsIdentifier => SyntaxFactory.Identifier ("Contains");
-
     private static SyntaxToken AllIdentifier => SyntaxFactory.Identifier ("All");
-
     private static SyntaxToken EqualsIdentifier => SyntaxFactory.Identifier ("Equals");
-
     private static SyntaxToken ReferenceEqualsIdentifier => SyntaxFactory.Identifier ("ReferenceEquals");
-
     private static SyntaxToken ObjectIdentifier => SyntaxFactory.Identifier ("Object");
-
     private static SyntaxToken VarIdentifier => SyntaxFactory.Identifier (SyntaxFactory.TriviaList(), SyntaxKind.VarKeyword, "var", "var", SyntaxFactory.TriviaList());
+    private static SyntaxToken MoqIdentifier => SyntaxFactory.Identifier ("Moq");
+    private static SyntaxToken CallBaseIdentifier => SyntaxFactory.Identifier ("CallBase");
+    private static SyntaxToken StrictIdentifier => SyntaxFactory.Identifier ("Strict");
+    private static SyntaxToken MockBehaviorIdentifier => SyntaxFactory.Identifier ("MockBehavior");
+    private static SyntaxToken VerifiableIdentifier => SyntaxFactory.Identifier ("Verifiable");
+    private static SyntaxToken ThrowsIdentifier => SyntaxFactory.Identifier ("Throws");
+    private static SyntaxToken CallbackIdentifier => SyntaxFactory.Identifier ("Callback");
+    private static SyntaxToken ReturnsIdentifier => SyntaxFactory.Identifier ("Returns");
+    private static SyntaxToken SetupIdentifier => SyntaxFactory.Identifier ("Setup");
+    private static SyntaxToken InSequenceIdentifier => SyntaxFactory.Identifier ("InSequence");
+    private static SyntaxToken MockSequenceIdentifier => SyntaxFactory.Identifier ("MockSequence");
+    private static SyntaxToken MockRepositoryIdentifier => SyntaxFactory.Identifier ("MockRepository");
+    private static SyntaxToken RepeatIdentifier => SyntaxFactory.Identifier ("Repeat");
+    private static SyntaxToken AnyIdentifier => SyntaxFactory.Identifier ("Any");
 
     #endregion
   }
