@@ -25,6 +25,7 @@ namespace TestProject
     private MockRepository _mockRepository;
     private ITestInterface _mock1;
     private ITestInterface _mock2;
+    private ITestInterface _sut = new TestClass();
 
     [SetUp]
     public void Setup ()
@@ -98,13 +99,14 @@ namespace TestProject
       Assert.Pass();
     }
 
-    [Test]
     public void Rewrite_RepeatOnce ()
     {
       _mock1.Expect (m => m.Read (null)).Repeat.Once();
-
+      
+      _sut.Read();
+      
       _mock1.VerifyAllExpectations();
-
+      
       Assert.Pass();
     }
 
@@ -205,6 +207,25 @@ namespace TestProject
       _mock1.Expect (_ => _.Read()).Return (true);
       _mock1.Expect (_ => _.InitRecursive (Arg<IControl>.Is.Same (control), Arg<Page>.Is.NotNull));
       _mock1.Expect (_ => _.Read()).Return (true);
+
+      Assert.Pass();
+    }
+
+
+    [Test]
+    public void Rewrite_StrictMockWithoutVerify ()
+    {
+      var strictMock = MockRepository.GenerateStrictMock<ITestInterface>();
+      strictMock.Expect (m => m.Read (null)).Return (true).Repeat.Once();
+
+      Assert.Pass();
+    }
+
+    [Test]
+    public void Rewrite_StubWithRepeat ()
+    {
+      var stub = MockRepository.GenerateStub<ITestInterface>();
+      stub.Stub (m => m.Read (null)).Return (true).Repeat.Twice();
 
       Assert.Pass();
     }

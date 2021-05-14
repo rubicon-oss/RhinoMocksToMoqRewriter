@@ -26,6 +26,7 @@ namespace TestProject
   {
     private Mock<ITestInterface> _mock1;
     private Mock<ITestInterface> _mock2;
+    private ITestInterface _sut = new TestClass();
 
     [SetUp]
     public void Setup ()
@@ -35,7 +36,6 @@ namespace TestProject
     [Test]
     public void Rewrite_MockInstantiation ()
     {
-
       _ = new Mock<ITestInterface>();
       _ = new Mock<ITestInterface>();
       _ = new Mock<ITestInterface> (MockBehavior.Strict);
@@ -59,7 +59,6 @@ namespace TestProject
       _mock2 = new Mock<ITestInterface>();
 
       _mock1.Verify();
-
       _mock2.Verify();
 
       Assert.Pass();
@@ -99,10 +98,11 @@ namespace TestProject
       Assert.Pass();
     }
 
-    [Test]
     public void Rewrite_RepeatOnce ()
     {
-      _mock1.Setup (m => m.Read (null)).Verifiable();
+      _mock1.Setup (m => m.Read (null)).Returns (true).Verifiable();
+
+      _sut.Read();
 
       _mock1.Verify (m => m.Read (null), Times.Once());
 
@@ -152,9 +152,9 @@ namespace TestProject
     [Test]
     public void Rewrite_Ordered ()
     {
-      var sequence1 = new MockSequence();
-      _mock1.InSequence (sequence1).Setup (_ => _.Read()).Returns (true).Verifiable();
-      _mock2.InSequence (sequence1).Setup (_ => _.Read()).Returns (false).Verifiable();
+      var sequence = new MockSequence();
+      _mock1.InSequence (sequence).Setup (_ => _.Read()).Returns (true).Verifiable();
+      _mock2.InSequence (sequence).Setup (_ => _.Read()).Returns (false).Verifiable();
 
       Assert.Pass();
     }
@@ -162,7 +162,6 @@ namespace TestProject
     [Test]
     public void Rewrite_MethodDeletion ()
     {
-
       Assert.Pass();
     }
 
@@ -176,7 +175,6 @@ namespace TestProject
     [Test]
     public void Rewrite_LastCall ()
     {
-
       _mock1.Setup (_ => _.Read (It.Is<ITestInterface> (_ => _ != null))).Verifiable();
 
       Assert.Pass();
@@ -198,6 +196,24 @@ namespace TestProject
       _mock1.Setup (_ => _.Read()).Returns (true).Verifiable();
       _mock1.Setup (_ => _.InitRecursive (control, It.IsNotNull<Page>())).Verifiable();
       _mock1.Setup (_ => _.Read()).Returns (true).Verifiable();
+
+      Assert.Pass();
+    }
+
+    [Test]
+    public void Rewrite_StrictMockWithoutVerify ()
+    {
+      var strictMock = new Mock<ITestInterface> (MockBehavior.Strict);
+      strictMock.Setup (m => m.Read (null)).Returns (true).Verifiable();
+
+      Assert.Pass();
+    }
+
+    [Test]
+    public void Rewrite_StubWithRepeat ()
+    {
+      var stub = new Mock<ITestInterface>();
+      stub.Setup (m => m.Read (null)).Returns (true);
 
       Assert.Pass();
     }
