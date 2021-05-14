@@ -21,20 +21,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
   {
     public override ArgumentSyntax Rewrite (ArgumentSyntax node)
     {
-      var typeArgumentList = node.GetTypeArgumentListOrDefault();
-      var argument = node.GetFirstArgumentOrDefault();
-      if (typeArgumentList == null)
-      {
-        throw new InvalidOperationException ("Node must contain a TypeArgumentList");
-      }
-
-      if (argument == null)
-      {
-        throw new InvalidOperationException ("Node must contain an Argument");
-      }
-
-      return Formatter.MarkWithFormatAnnotation (MoqSyntaxFactory.IsInArgument (typeArgumentList, argument.Expression)
-          .WithLeadingAndTrailingTriviaOfNode (node));
+      return Formatter.MarkWithFormatAnnotation (
+          MoqSyntaxFactory.IsInArgument (
+                  node.GetTypeArgumentList(),
+                  node.GetFirstArgument().Expression)
+              .WithLeadingAndTrailingTriviaOfNode (node));
     }
   }
 }
