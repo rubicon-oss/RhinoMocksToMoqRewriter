@@ -94,27 +94,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private IEnumerable<IFieldSymbol> GetFieldSymbols (SyntaxNode node)
     {
-      var mockRepositorySymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
-      if (mockRepositorySymbol == null)
-      {
-        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
-      }
-
-      var generateMockMethodSymbols = mockRepositorySymbol.GetMembers ("GenerateMock")
-          .Concat (mockRepositorySymbol.GetMembers ("GenerateStrictMock"))
-          .Concat (mockRepositorySymbol.GetMembers ("GeneratePartialMock"))
-          .Concat (mockRepositorySymbol.GetMembers ("GenerateStub"))
-          .Concat (mockRepositorySymbol.GetMembers ("StrictMock"))
-          .Concat (mockRepositorySymbol.GetMembers ("DynamicMock"))
-          .Concat (mockRepositorySymbol.GetMembers ("PartialMock"))
-          .Concat (mockRepositorySymbol.GetMembers ("PartialMultiMock"))
-          .ToList();
-
-      return GetFieldSymbolsFromMockAssignmentExpressions (node, generateMockMethodSymbols)
-          .Concat (GetFieldSymbolsFromMockFieldDeclarations (node, generateMockMethodSymbols));
+      return GetFieldSymbolsFromMockAssignmentExpressions (node)
+          .Concat (GetFieldSymbolsFromMockFieldDeclarations (node));
     }
 
-    private IEnumerable<IFieldSymbol> GetFieldSymbolsFromMockFieldDeclarations (SyntaxNode node, IReadOnlyCollection<ISymbol> generateMockMethodSymbols)
+    private IEnumerable<IFieldSymbol> GetFieldSymbolsFromMockFieldDeclarations (SyntaxNode node)
     {
       return node
           .SyntaxTree.GetRoot()
@@ -128,13 +112,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               s =>
                   s.Initializer != null &&
                   Model.GetSymbolInfo (s.Initializer.Value).Symbol is IMethodSymbol symbol &&
-                  generateMockMethodSymbols.Contains (
-                      symbol.OriginalDefinition,
-                      SymbolEqualityComparer.Default))
+                  RhinoMocksSymbols.AllMockRepositorySymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default))
           .Select (s => (IFieldSymbol) Model.GetDeclaredSymbol (s)!);
     }
 
-    private IEnumerable<IFieldSymbol> GetFieldSymbolsFromMockAssignmentExpressions (SyntaxNode node, IReadOnlyCollection<ISymbol> generateMockMethodSymbols)
+    private IEnumerable<IFieldSymbol> GetFieldSymbolsFromMockAssignmentExpressions (SyntaxNode node)
     {
       return node
           .SyntaxTree.GetRoot()
@@ -146,9 +128,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Where (
               s =>
                   Model.GetSymbolInfo (s.Right).Symbol is IMethodSymbol symbol &&
-                  generateMockMethodSymbols.Contains (
-                      symbol.OriginalDefinition,
-                      SymbolEqualityComparer.Default))
+                  RhinoMocksSymbols.AllMockRepositorySymbols.Contains (symbol.OriginalDefinition, SymbolEqualityComparer.Default))
           .Where (s => Model.GetSymbolInfo (s.Left).Symbol is IFieldSymbol)
           .Select (s => (IFieldSymbol) Model.GetSymbolInfo (s.Left).Symbol!);
     }

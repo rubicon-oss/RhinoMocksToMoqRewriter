@@ -13,6 +13,7 @@
 
 using System;
 using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters
@@ -98,6 +99,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -124,6 +126,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -141,6 +144,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -158,6 +162,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -190,6 +195,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -212,6 +218,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -234,6 +241,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -256,6 +264,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -273,6 +282,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -290,6 +300,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -307,6 +318,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -333,6 +345,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -359,6 +372,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -376,6 +390,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -398,6 +413,7 @@ mock.DoSomething (
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);

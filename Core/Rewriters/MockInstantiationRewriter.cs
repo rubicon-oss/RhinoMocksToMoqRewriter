@@ -12,7 +12,6 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -29,18 +28,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       _formatter = formatter;
     }
+
     public override SyntaxNode? VisitLocalDeclarationStatement (LocalDeclarationStatementSyntax node)
     {
-      var rhinoMocksMockRepositorySymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
-      if (rhinoMocksMockRepositorySymbol == null)
-      {
-        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
-      }
-
       var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.LocalDeclarationStatement) || s.IsKind (SyntaxKind.InvocationExpression)), CompilationId);
       var baseCallNode = (LocalDeclarationStatementSyntax) base.VisitLocalDeclarationStatement (trackedNodes)!;
 
-      if (IsRhinoMocksLocalDeclarationWithoutVarType (baseCallNode, rhinoMocksMockRepositorySymbol))
+      if (IsRhinoMocksLocalDeclarationWithoutVarType (baseCallNode))
       {
         return baseCallNode.WithDeclaration (
             baseCallNode.Declaration
@@ -53,30 +47,20 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return baseCallNode;
     }
 
-    private bool IsRhinoMocksLocalDeclarationWithoutVarType (LocalDeclarationStatementSyntax node, INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    private bool IsRhinoMocksLocalDeclarationWithoutVarType (LocalDeclarationStatementSyntax node)
     {
       return node.GetOriginalNode (node, CompilationId)!.Declaration.Variables
                  .Any (
                      s => s.Initializer is { } initializer
                           && Model.GetSymbolInfo (initializer.Value).Symbol?.ContainingType is { } symbol
-                          && rhinoMocksMockRepositorySymbol.Equals (symbol, SymbolEqualityComparer.Default))
+                          && RhinoMocksSymbols.RhinoMocksMockRepositorySymbol.Equals (symbol, SymbolEqualityComparer.Default))
              && !node.Declaration.Type.IsEquivalentTo (MoqSyntaxFactory.VarType, false);
     }
 
     public override SyntaxNode? VisitInvocationExpression (InvocationExpressionSyntax node)
     {
-      var rhinoMocksMockRepositorySymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
-      if (rhinoMocksMockRepositorySymbol == null)
-      {
-        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
-      }
-
       var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.LocalDeclarationStatement) || s.IsKind (SyntaxKind.InvocationExpression)), CompilationId);
       var baseCallNode = (InvocationExpressionSyntax) base.VisitInvocationExpression (trackedNodes)!;
-
-      var mockOrStubSymbols = GetAllMockOrStubSymbols (rhinoMocksMockRepositorySymbol);
-      var strictMockSymbols = GetAllStrictMockSymbols (rhinoMocksMockRepositorySymbol);
-      var partialMockSymbols = GetAllPartialMockSymbols (rhinoMocksMockRepositorySymbol);
 
       var originalNode = baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!;
       var methodSymbol = (Model.GetSymbolInfo (originalNode).Symbol as IMethodSymbol)?.OriginalDefinition;
@@ -97,13 +81,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       return methodSymbol switch
       {
-          _ when mockOrStubSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default)
+          _ when RhinoMocksSymbols.AllGenerateMockAndStubSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default)
               => _formatter.Format (MoqSyntaxFactory.MockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList))
                   .WithLeadingAndTrailingTriviaOfNode (baseCallNode),
-          _ when partialMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default)
+          _ when RhinoMocksSymbols.AllPartialMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default)
               => _formatter.Format (MoqSyntaxFactory.PartialMockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList))
                   .WithLeadingAndTrailingTriviaOfNode (baseCallNode),
-          _ when strictMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default)
+          _ when RhinoMocksSymbols.AllStrictMockSymbols.Contains (methodSymbol, SymbolEqualityComparer.Default)
               => _formatter.Format (MoqSyntaxFactory.StrictMockCreationExpression (moqMockTypeArgumentList, moqMockArgumentSyntaxList))
                   .WithLeadingAndTrailingTriviaOfNode (baseCallNode),
           _ => baseCallNode
@@ -137,29 +121,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var argumentList = baseCallNode.ArgumentList.WithArguments (SyntaxFactory.SeparatedList (baseCallNode.ArgumentList.Arguments.Skip (1)));
 
       return (typeArgumentList, argumentList);
-    }
-
-    private static IEnumerable<ISymbol> GetAllPartialMockSymbols (INamedTypeSymbol rhinoMocksMockRepositorySymbol)
-    {
-      return rhinoMocksMockRepositorySymbol.GetMembers ("PartialMock")
-          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("PartialMultiMock"))
-          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("GeneratePartialMock"));
-    }
-
-    private static IEnumerable<ISymbol> GetAllStrictMockSymbols (INamedTypeSymbol rhinoMocksMockRepositorySymbol)
-    {
-      return rhinoMocksMockRepositorySymbol.GetMembers ("StrictMock")
-          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("StrictMultiMock"))
-          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("GenerateStrictMock"));
-    }
-
-    private static IEnumerable<ISymbol> GetAllMockOrStubSymbols (INamedTypeSymbol rhinoMocksMockRepositorySymbol)
-    {
-      return rhinoMocksMockRepositorySymbol.GetMembers ("GenerateMock")
-          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("DynamicMock"))
-          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("DynamicMultiMock"))
-          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("Stub"))
-          .Concat (rhinoMocksMockRepositorySymbol.GetMembers ("GenerateStub"));
     }
   }
 }

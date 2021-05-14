@@ -26,23 +26,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     public override SyntaxNode? VisitArgument (ArgumentSyntax node)
     {
       var baseCallNode = (ArgumentSyntax) base.VisitArgument (node)!;
-
-      var rhinoMocksConstraintsIsSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.Is");
-      var rhinoMocksArgSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Arg`1");
-      if (rhinoMocksConstraintsIsSymbol == null)
-      {
-        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
-      }
-
-      var rhinoMocksArgMatchesSymbol = rhinoMocksArgSymbol!.GetMembers ("Matches");
-
       if (node.Expression is not InvocationExpressionSyntax invocationExpression)
       {
         return baseCallNode;
       }
 
       var symbol = Model.GetSymbolInfo (invocationExpression).Symbol?.OriginalDefinition;
-      if (!rhinoMocksArgMatchesSymbol.Contains (symbol, SymbolEqualityComparer.Default))
+      if (!RhinoMocksSymbols.ArgMatchesSymbols.Contains (symbol, SymbolEqualityComparer.Default))
       {
         return baseCallNode;
       }
@@ -77,7 +67,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return expression;
       }
 
-      var strategy = ConstraintRewriteStrategyFactory.GetRewriteStrategy (invocationExpression, Model);
+      var strategy = ConstraintRewriteStrategyFactory.GetRewriteStrategy (invocationExpression, Model, RhinoMocksSymbols);
       return strategy.Rewrite (invocationExpression);
     }
   }

@@ -13,6 +13,7 @@
 
 using System;
 using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters
@@ -191,6 +192,7 @@ localMock2.Verify();")]
       var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context, true);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);
@@ -292,6 +294,7 @@ Console.WriteLine (1);",
       var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContextAndAdditionalAnnotations (source, _context, annotationData, true);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context, true);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);

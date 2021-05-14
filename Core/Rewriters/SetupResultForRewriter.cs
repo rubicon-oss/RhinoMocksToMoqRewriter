@@ -27,14 +27,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression)), CompilationId);
       var baseCallNode = (ExpressionStatementSyntax) base.VisitExpressionStatement (trackedNodes)!;
 
-      var setupResultSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.SetupResult");
-      if (setupResultSymbol == null)
-      {
-        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
-      }
-
-      var setupResultForSymbol = setupResultSymbol.GetMembers ("For").Single();
-      var setupResultForMemberAccessExpression = GetSetupResultForExpressionOrDefault (baseCallNode, setupResultForSymbol);
+      var setupResultForMemberAccessExpression = GetSetupResultForExpressionOrDefault (baseCallNode);
 
       if (setupResultForMemberAccessExpression == null)
       {
@@ -50,14 +43,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .WithLeadingAndTrailingTriviaOfNode (node);
     }
 
-    private SyntaxNode? GetSetupResultForExpressionOrDefault (ExpressionStatementSyntax baseCallNode, ISymbol setupResultForSymbol)
+    private SyntaxNode? GetSetupResultForExpressionOrDefault (ExpressionStatementSyntax baseCallNode)
     {
       return baseCallNode.DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression))
           .SingleOrDefault (
               s => baseCallNode.GetOriginalNode (s, CompilationId) is { } originalNode
                    && Model.GetSymbolInfo (originalNode).Symbol?.OriginalDefinition is { } symbol
-                   && setupResultForSymbol.Equals (symbol, SymbolEqualityComparer.Default));
+                   && RhinoMocksSymbols.SetupResultForSymbols.Contains (symbol, SymbolEqualityComparer.Default));
     }
   }
 }

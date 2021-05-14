@@ -16,6 +16,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters
@@ -177,6 +178,8 @@ _mock2.InSequence (sequence2).Setup (mock => mock.End());")]
       var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context, true);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context, true);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
+      _rewriter.MoqSymbols = new MoqSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       var expectedExpressionStatements = expectedNode.DescendantNodes().Where (s => s.IsKind (SyntaxKind.ExpressionStatement)).ToList();

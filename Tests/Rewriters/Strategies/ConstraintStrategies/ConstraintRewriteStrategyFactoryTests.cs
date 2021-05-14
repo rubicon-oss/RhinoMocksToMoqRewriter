@@ -13,8 +13,10 @@
 
 using System;
 using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core;
 using RhinoMocksToMoqRewriter.Core.Extensions;
 using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ConstraintStrategies;
+
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ConstraintStrategies
 {
   [TestFixture]
@@ -101,7 +103,8 @@ private ITestInterface _mock = MockRepository.GenerateMock<ITestInterface>();"
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var expression = node.GetFirstArgument().Expression.GetFirstArgument().Expression;
-      var rewriteStrategy = ConstraintRewriteStrategyFactory.GetRewriteStrategy (expression!, model);
+      var rhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
+      var rewriteStrategy = ConstraintRewriteStrategyFactory.GetRewriteStrategy (expression!, model, rhinoMocksSymbols);
       var actualType = rewriteStrategy.GetType();
 
       Assert.AreEqual (expectedType, actualType);

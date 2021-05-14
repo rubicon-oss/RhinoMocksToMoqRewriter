@@ -13,6 +13,7 @@
 
 using System;
 using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core;
 using RhinoMocksToMoqRewriter.Core.Extensions;
 using RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies;
 
@@ -111,7 +112,8 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters.Strategies.ArgumentStrategies
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var argumentNode = node.GetFirstArgumentOrDefault();
-      var rewriteStrategy = ArgumentRewriteStrategyFactory.GetRewriteStrategy (argumentNode!, model);
+      var rhinoMocksSymbols = new RhinoMocksSymbols(model.Compilation);
+      var rewriteStrategy = ArgumentRewriteStrategyFactory.GetRewriteStrategy (argumentNode!, model, rhinoMocksSymbols);
       var actualType = rewriteStrategy.GetType();
 
       Assert.AreEqual (expectedType, actualType);

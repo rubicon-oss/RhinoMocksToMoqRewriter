@@ -13,6 +13,7 @@
 
 using System;
 using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters
@@ -101,6 +102,8 @@ var sequence = new MockSequence();"
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context, true);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
+      _rewriter.MoqSymbols = new MoqSymbols (model.Compilation);
       var actualNode = _rewriter.Visit (node);
 
       Assert.NotNull (actualNode);
@@ -138,6 +141,8 @@ var sequence = new MockSequence();"
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context, true);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
+      _rewriter.MoqSymbols = new MoqSymbols (model.Compilation);
       var actualNode = _rewriter.Visit (node);
 
       Assert.NotNull (actualNode);
@@ -170,6 +175,8 @@ var sequence = new MockSequence();"
       var (model, node) = CompiledSourceFileProvider.CompileReturnStatementWithContext (source, _context, true);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileReturnStatementWithContext (expected, _context, true);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
+      _rewriter.MoqSymbols = new MoqSymbols (model.Compilation);
       var actualNode = _rewriter.Visit (node);
 
       Assert.NotNull (actualNode);
@@ -222,6 +229,8 @@ var sequence = new MockSequence();"
       var (model, node) = CompiledSourceFileProvider.CompileLocalDeclarationStatementWithContext (source, _context, true);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatementWithContext (expected, _context);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
+      _rewriter.MoqSymbols = new MoqSymbols (model.Compilation);
       var actualNode = _rewriter.Visit (node);
 
       Assert.NotNull (actualNode);

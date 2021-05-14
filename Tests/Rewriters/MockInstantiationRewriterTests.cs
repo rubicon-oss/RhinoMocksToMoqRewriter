@@ -15,6 +15,7 @@ using System;
 using Microsoft.CodeAnalysis;
 using Moq;
 using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters
@@ -203,6 +204,7 @@ _mock = new Mock<ITestInterface> (
       var (model, actualNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context, true);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var newNode = actualNode.Accept (_rewriter);
 
       Assert.NotNull (newNode);
@@ -270,6 +272,7 @@ var anotherMock = new Mock<ITestInterface>(
       var (model, actualNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileLocalDeclarationStatementWithContext (expected, _context, true);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var newNode = actualNode.Accept (_rewriter);
 
       Assert.NotNull (newNode);
@@ -305,6 +308,7 @@ public ITestInterface Mock = new Mock<ITestInterface> (
       var (model, actualNode) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (expected, _context, true);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var newNode = actualNode.Accept (_rewriter);
 
       Assert.NotNull (newNode);
@@ -345,6 +349,7 @@ DoSomething (delegate
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context, true);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = node.Accept (_rewriter);
 
       Assert.NotNull (actualNode);

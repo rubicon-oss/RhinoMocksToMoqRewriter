@@ -12,6 +12,7 @@
 //
 
 using System;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -19,7 +20,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
 {
   public static class ArgumentRewriteStrategyFactory
   {
-    public static IArgumentRewriteStrategy GetRewriteStrategy (ArgumentSyntax node, SemanticModel model)
+    public static IArgumentRewriteStrategy GetRewriteStrategy (ArgumentSyntax node, SemanticModel model, RhinoMocksSymbols rhinoMocksSymbols)
     {
       var symbol = model.GetSymbolInfo (node.Expression).Symbol?.OriginalDefinition;
       if (symbol == null)
@@ -27,36 +28,25 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters.Strategies.ArgumentStrategies
         return new DefaultArgumentRewriteStrategy();
       }
 
-      var rhinoMocksArgSymbol = model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Arg");
-      var rhinoMocksConstraintsListArgSymbol = model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.ListArg`1");
-      var rhinoMocksGenericArg = model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Arg`1");
-      var rhinoMocksConstraintsIsArgSymbol = model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.IsArg`1");
-      var rhinoMocksArgTextSymbol = model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.Constraints.TextArg");
-      if (rhinoMocksArgSymbol == null || rhinoMocksConstraintsListArgSymbol == null || rhinoMocksGenericArg == null || rhinoMocksConstraintsIsArgSymbol == null
-          || rhinoMocksArgTextSymbol == null)
-      {
-        throw new InvalidOperationException ("Rhino.Mocks cannot be found!");
-      }
-
       return symbol switch
       {
-          var s when rhinoMocksArgSymbol.GetMembers ("Is").Contains (s) => ArgIsArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsListArgSymbol.GetMembers ("Equal").Contains (s) => ArgListEqualArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsListArgSymbol.GetMembers ("IsIn").Contains (s) => ArgListIsInArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsListArgSymbol.GetMembers ("ContainsAll").Contains (s) => ArgListContainsAllArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksGenericArg.GetMembers ("Matches").Contains (s) => ArgMatchesArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("Anything").Contains (s) => ArgIsAnythingArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("Equal").Contains (s) => ArgIsArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("NotEqual").Contains (s) => ArgIsNotEqualArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("Same").Contains (s) => ArgIsArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("NotSame").Contains (s) => ArgIsNotSameArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("Null").Contains (s) => ArgIsNullArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("NotNull").Contains (s) => ArgIsNotNullArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("GreaterThan").Contains (s) => ArgIsGreaterThanArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("GreaterThanOrEqual").Contains (s) => ArgIsGreaterThanOrEqualArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("LessThan").Contains (s) => ArgIsLessThanArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksConstraintsIsArgSymbol.GetMembers ("LessThanOrEqual").Contains (s) => ArgIsLessThanOrEqualArgumentRewriteStrategy.Instance,
-          var s when rhinoMocksArgTextSymbol.GetMembers ("Like").Contains (s) => ArgIsArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgIsSymbols.Contains (s) => ArgIsArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgListEqualSymbols.Contains (s) => ArgListEqualArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgListIsInSymbols.Contains (s) => ArgListIsInArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgListContainsAll.Contains (s) => ArgListContainsAllArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgMatchesSymbols.Contains (s) => ArgMatchesArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgIsAnythingSymbols.Contains (s) => ArgIsAnythingArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgIsEqualSymbols.Contains (s) => ArgIsArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgIsNotEqualSymbols.Contains (s) => ArgIsNotEqualArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgIsSameSymbols.Contains (s) => ArgIsArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgIsNotSameSymbols.Contains (s) => ArgIsNotSameArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgIsNullSymbols.Contains (s) => ArgIsNullArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgIsNotNullSymbols.Contains (s) => ArgIsNotNullArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgIsGreaterThanSymbols.Contains (s) => ArgIsGreaterThanArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgIsGreaterThanOrEqualSymbols.Contains (s) => ArgIsGreaterThanOrEqualArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgIsLessThanSymbols.Contains (s) => ArgIsLessThanArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgIsLessThaOrEqualSymbols.Contains (s) => ArgIsLessThanOrEqualArgumentRewriteStrategy.Instance,
+          var s when rhinoMocksSymbols.ArgTextLikeSymbols.Contains (s) => ArgIsArgumentRewriteStrategy.Instance,
           _ => DefaultArgumentRewriteStrategy.Instance
       };
     }

@@ -15,6 +15,7 @@ using System;
 using Microsoft.CodeAnalysis;
 using Moq;
 using NUnit.Framework;
+using RhinoMocksToMoqRewriter.Core;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
 
 namespace RhinoMocksToMoqRewriter.Tests.Rewriters
@@ -87,6 +88,7 @@ _mockD = MockRepository.GenerateMock<ITestInterface>();"
       var (model, node) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (source, _context, true);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileFieldDeclarationWithContext (expected, _context, true);
       _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
       var actualNode = _rewriter.Visit (node);
 
       Assert.NotNull (actualNode);

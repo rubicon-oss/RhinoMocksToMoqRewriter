@@ -24,29 +24,17 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitMemberAccessExpression (MemberAccessExpressionSyntax node)
     {
-      var genericMoqCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.Mock`1");
-      var moqCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.Mock");
-      var moqSequenceCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.MockSequenceHelper");
-      if (genericMoqCompilationSymbol == null || moqCompilationSymbol == null || moqSequenceCompilationSymbol == null)
-      {
-        throw new InvalidOperationException ("Moq cannot be found.");
-      }
-
-      var mockMembers = genericMoqCompilationSymbol.GetMembers()
-          .Concat (moqCompilationSymbol.GetMembers())
-          .Concat (moqSequenceCompilationSymbol.GetMembers());
-
       var trackedNodes = TrackNodes (node);
       var baseCallNode = (MemberAccessExpressionSyntax) base.VisitMemberAccessExpression (trackedNodes)!;
 
       var nameSymbol = Model.GetSymbolInfo (baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!.Name).GetFirstOverloadOrDefault();
       var typeSymbol = Model.GetTypeInfo (baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!.Expression).Type?.OriginalDefinition;
-      if (!genericMoqCompilationSymbol.Equals (typeSymbol, SymbolEqualityComparer.Default))
+      if (!MoqSymbols.GenericMoqSymbol.Equals (typeSymbol, SymbolEqualityComparer.Default))
       {
         return baseCallNode;
       }
 
-      if (mockMembers.Contains ((nameSymbol as IMethodSymbol)?.ReducedFrom ?? nameSymbol?.OriginalDefinition, SymbolEqualityComparer.Default))
+      if (MoqSymbols.AllMockSequenceSymbols.Contains ((nameSymbol as IMethodSymbol)?.ReducedFrom ?? nameSymbol?.OriginalDefinition, SymbolEqualityComparer.Default))
       {
         return baseCallNode;
       }
@@ -82,12 +70,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     public override SyntaxNode? VisitArgument (ArgumentSyntax node)
     {
-      var genericMoqCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.Mock`1");
-      if (genericMoqCompilationSymbol == null)
-      {
-        throw new InvalidOperationException ("Moq cannot be found.");
-      }
-
       var trackedNodes = TrackNodes (node);
 
       var baseCallNode = (ArgumentSyntax) base.VisitArgument (trackedNodes)!;
@@ -97,7 +79,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       }
 
       var typeSymbol = Model.GetTypeInfo (baseCallNode.GetOriginalNode (identifierName, CompilationId)!).Type?.OriginalDefinition;
-      if (!genericMoqCompilationSymbol.Equals (typeSymbol, SymbolEqualityComparer.Default))
+      if (!MoqSymbols.GenericMoqSymbol.Equals (typeSymbol, SymbolEqualityComparer.Default))
       {
         return baseCallNode;
       }
@@ -107,12 +89,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     public override SyntaxNode? VisitReturnStatement (ReturnStatementSyntax node)
     {
-      var genericMoqCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.Mock`1");
-      if (genericMoqCompilationSymbol == null)
-      {
-        throw new InvalidOperationException ("Moq cannot be found.");
-      }
-
       var trackedNodes = TrackNodes (node);
       var baseCallNode = (ReturnStatementSyntax) base.VisitReturnStatement (trackedNodes)!;
       if (baseCallNode.Expression is not IdentifierNameSyntax identifierName)
@@ -121,7 +97,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       }
 
       var typeSymbol = Model.GetTypeInfo (baseCallNode.GetOriginalNode (identifierName, CompilationId)!).Type?.OriginalDefinition;
-      if (!genericMoqCompilationSymbol.Equals (typeSymbol, SymbolEqualityComparer.Default))
+      if (!MoqSymbols.GenericMoqSymbol.Equals (typeSymbol, SymbolEqualityComparer.Default))
       {
         return baseCallNode;
       }
@@ -131,12 +107,6 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     public override SyntaxNode? VisitInitializerExpression (InitializerExpressionSyntax node)
     {
-      var genericMoqCompilationSymbol = Model.Compilation.GetTypeByMetadataName ("Moq.Mock`1");
-      if (genericMoqCompilationSymbol == null)
-      {
-        throw new InvalidOperationException ("Moq cannot be found.");
-      }
-
       var trackedNodes = TrackNodes (node);
 
       var baseCallNode = (InitializerExpressionSyntax) base.VisitInitializerExpression (trackedNodes)!;
@@ -150,7 +120,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         }
 
         var typeSymbol = Model.GetTypeInfo (baseCallNode.GetOriginalNode (identifierName, CompilationId)!).Type?.OriginalDefinition;
-        if (!genericMoqCompilationSymbol.Equals (typeSymbol, SymbolEqualityComparer.Default))
+        if (!MoqSymbols.GenericMoqSymbol.Equals (typeSymbol, SymbolEqualityComparer.Default))
         {
           continue;
         }

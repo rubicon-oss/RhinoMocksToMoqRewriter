@@ -47,14 +47,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       var baseCallNode = (BlockSyntax) base.VisitBlock (trackedNodes)!;
 
-      var rhinoMocksLastCallSymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.LastCall");
-      var rhinoMocksMockRepositorySymbol = Model.Compilation.GetTypeByMetadataName ("Rhino.Mocks.MockRepository");
-      if (rhinoMocksLastCallSymbol == null || rhinoMocksMockRepositorySymbol == null)
-      {
-        throw new InvalidOperationException ("Rhino.Mocks cannot be found.");
-      }
-
-      var lastCallExpressionStatementsInBlock = GetLastCallExpressionStatementsInBlock (baseCallNode, rhinoMocksLastCallSymbol).ToList();
+      var lastCallExpressionStatementsInBlock = GetLastCallExpressionStatementsInBlock (baseCallNode).ToList();
       if (lastCallExpressionStatementsInBlock.Count == 0)
       {
         return baseCallNode;
@@ -64,7 +57,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       foreach (var lastCallExpressionStatement in lastCallExpressionStatementsInBlock)
       {
         var currentNode = baseCallNode.GetCurrentNode (lastCallExpressionStatement.Node, CompilationId)!;
-        var lastCalledMock = GetLastCalledMockExpressionStatement (baseCallNode, lastCallExpressionStatement, rhinoMocksMockRepositorySymbol);
+        var lastCalledMock = GetLastCalledMockExpressionStatement (baseCallNode, lastCallExpressionStatement);
         if (lastCalledMock == null)
         {
           Console.Error.WriteLine (
@@ -84,7 +77,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return baseCallNode;
     }
 
-    private IEnumerable<(ExpressionStatementSyntax Node, int Index)> GetLastCallExpressionStatementsInBlock (BlockSyntax node, INamedTypeSymbol rhinoMocksLastCallSymbol)
+    private IEnumerable<(ExpressionStatementSyntax Node, int Index)> GetLastCallExpressionStatementsInBlock (BlockSyntax node)
     {
       return node.Statements
           .Where (s => s.IsKind (SyntaxKind.ExpressionStatement))
@@ -92,16 +85,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Select ((syntaxNode, index) => new { node = syntaxNode, index })
           .Where (
               s => Model.GetSymbolInfo (node.GetOriginalNode (s.node, CompilationId)!.Expression).Symbol is { } symbol
-                   && rhinoMocksLastCallSymbol.Equals (symbol.OriginalDefinition.ContainingSymbol, SymbolEqualityComparer.Default))
+                   && RhinoMocksSymbols.RhinoMocksLastCallSymbol.Equals (symbol.OriginalDefinition.ContainingSymbol, SymbolEqualityComparer.Default))
           .Select (s => (s.node, s.index));
     }
 
-    private ExpressionStatementSyntax? GetLastCalledMockExpressionStatement (
-        BlockSyntax node,
-        (ExpressionStatementSyntax Node, int Index) lastCallExpressionStatement,
-        INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    private ExpressionStatementSyntax? GetLastCalledMockExpressionStatement (BlockSyntax node, (ExpressionStatementSyntax Node, int Index) lastCallExpressionStatement)
     {
-      var reachableAndContainedMockSymbols = GetReachableAndContainedMockSymbols (node, rhinoMocksMockRepositorySymbol);
+      var reachableAndContainedMockSymbols = GetReachableAndContainedMockSymbols (node);
       var lastCalledExpressions = node.Statements.Where (s => s is ExpressionStatementSyntax { Expression: InvocationExpressionSyntax }).ToList();
 
       return lastCalledExpressions
@@ -112,39 +102,37 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                    && e.index < lastCallExpressionStatement.Index)?.node as ExpressionStatementSyntax;
     }
 
-    private IEnumerable<ISymbol> GetReachableAndContainedMockSymbols (BlockSyntax node, INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    private IEnumerable<ISymbol> GetReachableAndContainedMockSymbols (BlockSyntax node)
     {
-      return GetMockFieldSymbols (node, rhinoMocksMockRepositorySymbol)
-          .Concat (GetLocalMockSymbolsInAncestorsAndSelf (node, rhinoMocksMockRepositorySymbol));
+      return GetMockFieldSymbols (node).Concat (GetLocalMockSymbolsInAncestorsAndSelf (node));
     }
 
-    private IEnumerable<ISymbol> GetLocalMockSymbolsInAncestorsAndSelf (BlockSyntax node, INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    private IEnumerable<ISymbol> GetLocalMockSymbolsInAncestorsAndSelf (BlockSyntax node)
     {
       return node.GetOriginalNode (node.Statements.First(), CompilationId)!.AncestorsAndSelf()
           .Where (s => s.IsKind (SyntaxKind.Block))
           .Select (s => (BlockSyntax) s)
-          .SelectMany (s => GetLocalMockSymbols (s, rhinoMocksMockRepositorySymbol));
+          .SelectMany (GetLocalMockSymbols);
     }
 
-    private IEnumerable<ISymbol> GetLocalMockSymbols (BlockSyntax node, INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    private IEnumerable<ISymbol> GetLocalMockSymbols (BlockSyntax node)
     {
       return node.Statements
           .Where (s => s.IsKind (SyntaxKind.LocalDeclarationStatement))
           .Select (s => (LocalDeclarationStatementSyntax) s)
           .Select (s => s.Declaration.Variables)
-          .Where (s => IsRhinoMocksMock (s, rhinoMocksMockRepositorySymbol))
+          .Where (s => IsRhinoMocksMock (s))
           .SelectMany (s => s)
           .Select (s => Model.GetDeclaredSymbol (s))
           .Where (s => s is not null)!;
     }
 
-    private IEnumerable<ISymbol> GetMockFieldSymbols (BlockSyntax node, INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    private IEnumerable<ISymbol> GetMockFieldSymbols (BlockSyntax node)
     {
-      return GetAllMockFieldDeclarations (node, rhinoMocksMockRepositorySymbol)
-          .Concat (GetAllMockFieldAssignmentExpressions (node, rhinoMocksMockRepositorySymbol));
+      return GetAllMockFieldDeclarations (node).Concat (GetAllMockFieldAssignmentExpressions (node));
     }
 
-    private IEnumerable<ISymbol> GetAllMockFieldAssignmentExpressions (BlockSyntax node, INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    private IEnumerable<ISymbol> GetAllMockFieldAssignmentExpressions (BlockSyntax node)
     {
       return node.GetOriginalNode (node.Statements.First(), CompilationId)!.SyntaxTree.GetRoot().DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.ExpressionStatement))
@@ -153,29 +141,29 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           .Select (s => (AssignmentExpressionSyntax) s.Expression)
           .Where (
               s => Model.GetSymbolInfo (s.Right).Symbol is { } symbol
-                   && rhinoMocksMockRepositorySymbol.Equals (symbol.OriginalDefinition.ContainingSymbol, SymbolEqualityComparer.Default))
+                   && RhinoMocksSymbols.RhinoMocksMockRepositorySymbol.Equals (symbol.OriginalDefinition.ContainingSymbol, SymbolEqualityComparer.Default))
           .Select (s => Model.GetSymbolInfo (s.Left).Symbol)
           .Where (s => s is not null)!;
     }
 
-    private IEnumerable<ISymbol> GetAllMockFieldDeclarations (BlockSyntax node, INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    private IEnumerable<ISymbol> GetAllMockFieldDeclarations (BlockSyntax node)
     {
       return node.GetOriginalNode (node.Statements.First(), CompilationId)!.SyntaxTree.GetRoot().DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.FieldDeclaration))
           .Select (s => (FieldDeclarationSyntax) s)
           .Select (s => s.Declaration.Variables)
-          .Where (s => IsRhinoMocksMock (s, rhinoMocksMockRepositorySymbol))
+          .Where (s => IsRhinoMocksMock (s))
           .SelectMany (s => s)
           .Select (s => Model.GetDeclaredSymbol (s))
           .Where (s => s is not null)!;
     }
 
-    private bool IsRhinoMocksMock (IReadOnlyList<VariableDeclaratorSyntax> variables, INamedTypeSymbol rhinoMocksMockRepositorySymbol)
+    private bool IsRhinoMocksMock (IReadOnlyList<VariableDeclaratorSyntax> variables)
     {
       return variables.Any (
           s => s.Initializer is { } initializer
                && Model.GetSymbolInfo (initializer.Value).Symbol is { } symbol
-               && rhinoMocksMockRepositorySymbol.Equals (
+               && RhinoMocksSymbols.RhinoMocksMockRepositorySymbol.Equals (
                    symbol.OriginalDefinition.ContainingSymbol,
                    SymbolEqualityComparer.Default));
     }
