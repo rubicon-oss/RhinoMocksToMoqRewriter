@@ -25,14 +25,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitMethodDeclaration (MethodDeclarationSyntax node)
     {
-     var usingStatements = GetRhinoMocksOrderedUsingStatements (node).ToList();
+      var usingStatements = GetRhinoMocksOrderedUsingStatements (node).ToList();
 
       var treeWithTrackedNodes = node.TrackNodes (usingStatements, CompilationId);
       for (var i = 0; i < usingStatements.Count; i++)
       {
         var usingStatement = usingStatements[i];
         var trackedUsingStatement = treeWithTrackedNodes.GetCurrentNode (usingStatement, CompilationId);
-        var statements = ReplaceExpressionStatements (((BlockSyntax) usingStatement.Statement).Statements, i + 1);
+        int? index = usingStatements.Count == 1 ? null : i + 1;
+        var statements = ReplaceExpressionStatements (((BlockSyntax) usingStatement.Statement).Statements, index);
 
         treeWithTrackedNodes = treeWithTrackedNodes.ReplaceNode (trackedUsingStatement!, statements);
       }
@@ -40,10 +41,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return treeWithTrackedNodes;
     }
 
-    private IEnumerable<SyntaxNode> ReplaceExpressionStatements (SyntaxList<StatementSyntax> statements, int current)
+    private IEnumerable<SyntaxNode> ReplaceExpressionStatements (SyntaxList<StatementSyntax> statements, int? index)
     {
       var nodesToBeReplaced = GetAllMoqExpressionStatements (statements).ToList();
-      var parentTrivia = statements.First().Parent?.GetLeadingTrivia();
+      var parentTrivia = statements.First().Parent?.Parent?.GetLeadingTrivia();
       for (var i = 0; i < statements.Count; i++)
       {
         var statement = statements[i];
@@ -54,16 +55,20 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         }
 
         var firstIdentifierName = statement.GetFirstIdentifierName();
-        var newExpressionStatement = statement.ReplaceNode (
+        var newExpressionStatement = (ExpressionStatementSyntax) statement.ReplaceNode (
             firstIdentifierName,
-            MoqSyntaxFactory.InSequenceExpression (firstIdentifierName, current.ToString()));
+            MoqSyntaxFactory.InSequenceExpression (firstIdentifierName, index));
 
-        statements = statements.Replace (statement, newExpressionStatement.WithLeadingTrivia (parentTrivia));
+        statements = statements.Replace (
+            statement,
+            newExpressionStatement
+                .WithLeadingTrivia (SyntaxFactory.Whitespace(parentTrivia.ToString()!.Replace(Environment.NewLine, "")))
+                .WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine)));
       }
 
       statements = statements.Insert (
           0,
-          MoqSyntaxFactory.MockSequenceLocalDeclarationStatement (current.ToString())
+          MoqSyntaxFactory.MockSequenceLocalDeclarationStatement (index)
               .WithLeadingTrivia (parentTrivia)
               .WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine)));
 

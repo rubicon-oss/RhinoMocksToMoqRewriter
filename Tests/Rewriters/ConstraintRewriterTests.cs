@@ -181,6 +181,11 @@ _mock.DoSomething (
         @"_mock.DoSomething (Arg<ITestInterface>.Matches (Rhino.Mocks.Constraints.Is.NotNull() | Rhino.Mocks.Constraints.Property.Value (""B"", 1337)));",
         //language=C#
         @"_mock.DoSomething (Arg<ITestInterface>.Matches (_ => Rhino.Mocks.Constraints.Is.NotNull() || Rhino.Mocks.Constraints.Property.Value (""B"", 1337)));")]
+    [TestCase (
+        //language=C#
+        @"_mock.DoSomething (Arg<int>.Matches (_ => _ == 3));",
+        //language=C#
+        @"_mock.DoSomething (Arg<int>.Matches (_ => _ == 3));")]
     public void Rewrite_ConstraintsExpression (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);

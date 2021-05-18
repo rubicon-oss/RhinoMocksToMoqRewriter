@@ -69,10 +69,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         nodesToBeRemoved.Add (lastCalledMock);
 
         var newExpressionStatement = RewriteLastCallExpression (currentNode, lastCalledMock);
-        baseCallNode = baseCallNode.ReplaceNode (currentNode, newExpressionStatement.WithLeadingTrivia (currentNode.GetLeadingTrivia()));
+        baseCallNode = baseCallNode.ReplaceNode (currentNode, newExpressionStatement.WithLeadingAndTrailingTriviaOfNode (currentNode));
       }
 
-      baseCallNode = baseCallNode.RemoveNodes (nodesToBeRemoved.Select (s => baseCallNode.GetCurrentNode (s, CompilationId)!), SyntaxRemoveOptions.KeepEndOfLine);
+      baseCallNode = baseCallNode.RemoveNodes (nodesToBeRemoved.Select (s => baseCallNode.GetCurrentNode (s, CompilationId)!), SyntaxRemoveOptions.KeepNoTrivia);
 
       return baseCallNode;
     }

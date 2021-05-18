@@ -187,12 +187,26 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       var rootNode = node.SyntaxTree.GetRoot();
       var mockRepositoryIdentifierName = node.GetFirstIdentifierName();
-      var mockIdentifierNames = GetAllMockIdentifierNames (node, rootNode, mockRepositoryIdentifierName);
+      var mockIdentifierNames = GetAllMockIdentifierNames (node, rootNode, mockRepositoryIdentifierName).ToList();
 
-      return mockIdentifierNames.Select (
-          identifierName => MoqSyntaxFactory.VerifyExpressionStatement (identifierName.WithoutTrivia())
-              .WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine))
-              .WithLeadingTrivia (node.GetLeadingTrivia()));
+      var verifyStatements = new List<ExpressionStatementSyntax>();
+      for (var i = 0; i < mockIdentifierNames.Count; i++)
+      {
+        var currentIdentifierName = mockIdentifierNames[i];
+        if (i == mockIdentifierNames.Count - 1)
+        {
+          verifyStatements.Add (
+              MoqSyntaxFactory.VerifyExpressionStatement (currentIdentifierName.WithoutTrivia())
+                  .WithLeadingAndTrailingTriviaOfNode (node));
+          continue;
+        }
+
+        verifyStatements.Add (
+            MoqSyntaxFactory.VerifyExpressionStatement (currentIdentifierName.WithoutTrivia())
+                .WithLeadingTrivia (node.GetLeadingTrivia()));
+      }
+
+      return verifyStatements;
     }
 
     private static ExpressionStatementSyntax RewriteVerifyAllExpectationsExpression (ExpressionStatementSyntax node)

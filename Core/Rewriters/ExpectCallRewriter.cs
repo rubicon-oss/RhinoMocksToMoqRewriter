@@ -28,7 +28,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf(), CompilationId);
       var baseCallNode = (ExpressionStatementSyntax) base.VisitExpressionStatement (trackedNodes)!;
 
-      return RewriteExpectCall (baseCallNode).WithLeadingTrivia (node.GetLeadingTrivia());
+      return RewriteExpectCall (baseCallNode).WithLeadingAndTrailingTriviaOfNode (node);
     }
 
     private SyntaxNode RewriteExpectCall (SyntaxNode node)

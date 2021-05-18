@@ -17,6 +17,7 @@ using Rhino.Mocks;
 using TestProject.TestClasses;
 using TestProject.TestInterfaces;
 using Moq;
+using Moq.Protected;
 using MockRepository = Rhino.Mocks.MockRepository;
 
 namespace TestProject
@@ -52,7 +53,7 @@ namespace TestProject
       Page namingContainer = new Page();
       var parentControlMock = new Mock<IControl>() { CallBase = true };
       var childControlMock = new Mock<IControl>() { CallBase = true };
-      
+
       var sequence = new MockSequence();
       childControlMock.InSequence (sequence).Protected().Setup ("OnInit", true, EventArgs.Empty).Verifiable();
       parentControlMock.InSequence (sequence).Protected().Setup ("OnInit", true, EventArgs.Empty).Verifiable();
@@ -86,7 +87,7 @@ namespace TestProject
           extensionMock.Setup (_ => _.Committing (It.IsAny<ITestInterface>(), It.IsAny<Order>(), It.IsAny<ClientTransaction>())).Verifiable();
           extensionMock.Setup (_ => _.CommitValidate (It.IsAny<ITestInterface>(), It.IsAny<ClientTransaction>())).Verifiable();
           extensionMock.Setup (_ => _.Committed (It.IsAny<ITestInterface>(), It.IsAny<ClientTransaction>())).Verifiable();
-          
+
           _subTransaction.Commit();
           extensionMock.Verify();
         }

@@ -40,7 +40,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       try
       {
         var expressionsWithModifiedArgumentLists = rhinoMocksExpressions.Select (s => (s.Name, ConvertArgumentList (s.ArgumentList))).ToList();
-        return SyntaxFactory.ExpressionStatement (MoqSyntaxFactory.NestedMemberAccessExpression (mockIdentifierName, expressionsWithModifiedArgumentLists));
+        return MoqSyntaxFactory.ExpressionStatement (MoqSyntaxFactory.NestedMemberAccessExpression (mockIdentifierName, expressionsWithModifiedArgumentLists))
+            .WithLeadingAndTrailingTriviaOfNode (node);
       }
       catch (Exception ex)
       {

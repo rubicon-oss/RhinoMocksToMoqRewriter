@@ -40,8 +40,8 @@ void End();",
             ClassContext =
                 @"
 private static MockRepository _mockRepository = new MockRepository();
-private Mock<ITestInterface> _mock1 = _mockRepository.StrictMock<ITestInterface>();
-private Mock<ITestInterface> _mock2 = _mockRepository.StrictMock<ITestInterface>();"
+private Mock<ITestInterface> _mock1 = new Mock<ITestInterface>();
+private Mock<ITestInterface> _mock2 = new Mock<ITestInterface>();"
         };
 
     [SetUp]
@@ -65,13 +65,13 @@ using (_mockRepository.Ordered())
 }",
         //language=C#
         @"
-var sequence1 = new MockSequence();
-_mock1.InSequence (sequence1).Setup (mock => mock.Begin());
-_mock2.InSequence (sequence1).Setup (mock => mock.Begin());
-_mock1.InSequence (sequence1).Setup (mock => mock.Perform());
-_mock2.InSequence (sequence1).Setup (mock => mock.Perform());
-_mock1.InSequence (sequence1).Setup (mock => mock.End());
-_mock2.InSequence (sequence1).Setup (mock => mock.End());")]
+var sequence = new MockSequence();
+_mock1.InSequence (sequence).Setup (mock => mock.Begin());
+_mock2.InSequence (sequence).Setup (mock => mock.Begin());
+_mock1.InSequence (sequence).Setup (mock => mock.Perform());
+_mock2.InSequence (sequence).Setup (mock => mock.Perform());
+_mock1.InSequence (sequence).Setup (mock => mock.End());
+_mock2.InSequence (sequence).Setup (mock => mock.End());")]
     [TestCase (
         //language=C#
         @"
@@ -83,10 +83,10 @@ using (_mockRepository.Ordered())
 }",
         //language=C#
         @"
-var sequence1 = new MockSequence();
-_mock1.InSequence (sequence1).Setup (mock => mock.Begin()).Callback (null);
-_mock1.InSequence (sequence1).Setup (mock => mock.Perform (1)).Returns (2);
-_mock1.InSequence (sequence1).Setup (mock => mock.End());")]
+var sequence = new MockSequence();
+_mock1.InSequence (sequence).Setup (mock => mock.Begin()).Callback (null);
+_mock1.InSequence (sequence).Setup (mock => mock.Perform (1)).Returns (2);
+_mock1.InSequence (sequence).Setup (mock => mock.End());")]
     [TestCase (
         //language=C#
         @"
@@ -99,10 +99,10 @@ using (_mock1.GetMockRepository().Ordered())
 }",
         //language=C#
         @"
-var sequence1 = new MockSequence();
-_mock1.InSequence (sequence1).Setup (mock => mock.Begin()).Callback (null);
-_mock1.InSequence (sequence1).Setup (mock => mock.Perform());
-_mock1.InSequence (sequence1).Setup (mock => mock.End());
+var sequence = new MockSequence();
+_mock1.InSequence (sequence).Setup (mock => mock.Begin()).Callback (null);
+_mock1.InSequence (sequence).Setup (mock => mock.Perform());
+_mock1.InSequence (sequence).Setup (mock => mock.End());
 Console.WriteLine (1);")]
     [TestCase (
         //language=C#
@@ -139,10 +139,10 @@ using (null)
         @"
 using (null)
 {
-  var sequence1 = new MockSequence();
-  _mock1.InSequence (sequence1).Setup (mock => mock.Begin()).Callback (null);
-  _mock1.InSequence (sequence1).Setup (mock => mock.Perform());
-  _mock1.InSequence (sequence1).Setup (mock => mock.End());
+  var sequence = new MockSequence();
+  _mock1.InSequence (sequence).Setup (mock => mock.Begin()).Callback (null);
+  _mock1.InSequence (sequence).Setup (mock => mock.Perform());
+  _mock1.InSequence (sequence).Setup (mock => mock.End());
   
   Console.WriteLine (1);
 }")]
@@ -173,9 +173,20 @@ var sequence2 = new MockSequence();
 _mock2.InSequence (sequence2).Setup (mock => mock.Begin());
 _mock2.InSequence (sequence2).Setup (mock => mock.Perform());
 _mock2.InSequence (sequence2).Setup (mock => mock.End());")]
+    [TestCase (
+        //language=C#
+        @"
+using (_mockRepository.Ordered())
+{
+  _mock1.Protected().Setup (""OnInit"", true, EventArgs.Empty);
+}",
+        //language=C#
+        @"
+var sequence = new MockSequence();
+_mock1.InSequence (sequence).Protected().Setup (""OnInit"", true, EventArgs.Empty);")]
     public void Rewrite_UsingStatement (string source, string expected)
     {
-      var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context, true);
+      var (model, node) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (source, _context);
       var (_, expectedNode) = CompiledSourceFileProvider.CompileMethodDeclarationWithContext (expected, _context, true);
       _rewriter.Model = model;
       _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);

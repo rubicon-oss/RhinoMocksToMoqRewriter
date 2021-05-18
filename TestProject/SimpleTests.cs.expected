@@ -17,6 +17,7 @@ using Rhino.Mocks;
 using TestProject.TestClasses;
 using TestProject.TestInterfaces;
 using Moq;
+using Moq.Protected;
 using MockRepository = Rhino.Mocks.MockRepository;
 
 namespace TestProject
@@ -100,7 +101,7 @@ namespace TestProject
 
     public void Rewrite_RepeatOnce ()
     {
-      _mock1.Setup (m => m.Read (null)).Returns (true).Verifiable();
+      _mock1.Setup (m => m.Read (null)).Verifiable();
 
       _sut.Read();
 
@@ -169,6 +170,7 @@ namespace TestProject
     public void Rewrite_IgnoreArguments ()
     {
       _mock1.Setup (m => m.Read (It.IsAny<ITestInterface>())).Verifiable();
+
       Assert.Pass();
     }
 

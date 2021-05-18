@@ -35,15 +35,18 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
         //language=C#
         @"
 using Moq;
+using Moq.Protected;
 using MockRepository = Rhino.Mocks.MockRepository;")]
     [TestCase (
         //language=C#
         @"
 using Moq;
+using Moq.Protected;
 using MockRepository = Rhino.Mocks.MockRepository;",
         //language=C#
         @"
 using Moq;
+using Moq.Protected;
 using MockRepository = Rhino.Mocks.MockRepository;")]
     [TestCase (
         //language=C#
@@ -52,14 +55,17 @@ using Moq;",
         //language=C#
         @"
 using Moq;
+using Moq.Protected;
 using MockRepository = Rhino.Mocks.MockRepository;")]
     [TestCase (
         //language=C#
         @"
-using MockRepository = Rhino.Mocks.MockRepository;",
+using MockRepository = Rhino.Mocks.MockRepository;
+using Moq.Protected;",
         //language=C#
         @"
 using MockRepository = Rhino.Mocks.MockRepository;
+using Moq.Protected;
 using Moq;")]
     public void Rewrite_UsingDirectives (string source, string expected)
     {

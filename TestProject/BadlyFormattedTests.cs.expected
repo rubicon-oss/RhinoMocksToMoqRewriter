@@ -17,6 +17,7 @@ using TestProject.TestClasses;
 using TestProject.TestInterfaces;
 using Rhino.Mocks;
 using Moq;
+using Moq.Protected;
 using MockRepository = Rhino.Mocks.MockRepository;
 
 namespace TestProject
@@ -40,7 +41,7 @@ public class BadlyFormattedTests
 Page namingContainer = new Page();
             var parentControlMock = new Mock<IControl>() { CallBase = true };
             var childControlMock    =    new Mock<IControl>() { CallBase = true };
-            
+
             var sequence = new MockSequence();
             childControlMock.InSequence (sequence).Protected().Setup ("OnInit", true, EventArgs.Empty).Verifiable();
             parentControlMock.InSequence (sequence).Protected().Setup ("OnInit", true, EventArgs.Empty).Verifiable();

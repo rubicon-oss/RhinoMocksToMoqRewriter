@@ -22,10 +22,18 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 {
   public class ObsoleteMethodRewriter : RewriterBase
   {
+    private readonly IFormatter _formatter;
+
+    public ObsoleteMethodRewriter (IFormatter formatter)
+    {
+      _formatter = formatter;
+    }
+
     public override SyntaxNode? VisitMethodDeclaration (MethodDeclarationSyntax node)
     {
       var nodesToBeReplaced = GetNodesToBeReplaced (node);
-      return node.RemoveNodes (nodesToBeReplaced, SyntaxRemoveOptions.KeepNoTrivia);
+      var newNode = node.RemoveNodes (nodesToBeReplaced, SyntaxRemoveOptions.KeepEndOfLine)!;
+      return _formatter.Format (newNode);
     }
 
     public override SyntaxNode? VisitFieldDeclaration (FieldDeclarationSyntax node)

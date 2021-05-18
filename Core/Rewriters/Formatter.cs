@@ -74,6 +74,52 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return baseCallNode.WithExpression (FormatInvocationExpression ((InvocationExpressionSyntax) node.Expression));
     }
 
+    public override SyntaxNode? VisitMethodDeclaration (MethodDeclarationSyntax node)
+    {
+      var nodeAsString = node.ToFullString();
+      nodeAsString = DeleteObsoleteNewLinesAfterCurlyBrackets (nodeAsString);
+      nodeAsString = DeleteObsoleteNewLinesBeforeCurlyBrackets (nodeAsString);
+      nodeAsString = DeleteObsoleteNewLinesBetweenStatements (nodeAsString);
+      return ParseMethodDeclaration (nodeAsString) ?? node;
+    }
+
+    private static string DeleteObsoleteNewLinesBetweenStatements (string nodeAsString)
+    {
+      const string? pattern = "[^{](\n|\r\n){3,}[^}]";
+      var matches = Regex.Matches (nodeAsString, pattern).Select (m => m.ToString());
+      return matches.Aggregate (nodeAsString, (current, match) => current.Replace (match, $"{match.First()}{Environment.NewLine}{Environment.NewLine}{match.Last()}"));
+    }
+
+    private static string DeleteObsoleteNewLinesBeforeCurlyBrackets (string nodeAsString)
+    {
+      const string? pattern = "(\n|\r\n){2,}}";
+      var matches = Regex.Matches (nodeAsString, pattern).Select (m => m.ToString());
+      return matches.Aggregate (nodeAsString, (current, match) => current.Replace (match, $"{Environment.NewLine}{match.Last()}"));
+    }
+
+    private static string DeleteObsoleteNewLinesAfterCurlyBrackets (string nodeAsString)
+    {
+      const string? pattern = "{(\n|\r\n){2,}";
+      var matches = Regex.Matches (nodeAsString, pattern).Select (m => m.ToString());
+      return matches.Aggregate (nodeAsString, (current, match) => current.Replace (match, $"{match.First()}{Environment.NewLine}"));
+    }
+
+    private static MethodDeclarationSyntax? ParseMethodDeclaration (string nodeAsString)
+    {
+      var tree = CSharpSyntaxTree.ParseText (
+          "using System;"
+          + "namespace HelloWorld"
+          + "{"
+          + "class Program"
+          + "{"
+          + $"{nodeAsString}"
+          + "}"
+          + "}");
+
+      var methodDeclaration = tree.GetRoot().DescendantNodes().SingleOrDefault(s => s.IsKind (SyntaxKind.MethodDeclaration)) as MethodDeclarationSyntax;
+      return methodDeclaration?.WithLeadingTrivia (SyntaxFactory.Whitespace (Environment.NewLine + methodDeclaration.GetLeadingTrivia()));
+    }
+
     private static ExpressionStatementSyntax RemoveRedundantWhitespaces (ExpressionStatementSyntax baseCallNode)
     {
       var nodeAsString = baseCallNode.ToFullString();

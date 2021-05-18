@@ -102,11 +102,11 @@ namespace TestProject
     public void Rewrite_RepeatOnce ()
     {
       _mock1.Expect (m => m.Read (null)).Repeat.Once();
-      
+
       _sut.Read();
-      
+
       _mock1.VerifyAllExpectations();
-      
+
       Assert.Pass();
     }
 
@@ -210,7 +210,6 @@ namespace TestProject
 
       Assert.Pass();
     }
-
 
     [Test]
     public void Rewrite_StrictMockWithoutVerify ()

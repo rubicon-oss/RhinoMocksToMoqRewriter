@@ -43,7 +43,7 @@ namespace RhinoMocksToMoqRewriter.Core
             new MockInstantiationRewriter (Formatter),
             new OrderedMockRewriter(),
             new ArgumentRewriter(),
-            new ObsoleteMethodRewriter(),
+            new ObsoleteMethodRewriter (Formatter),
             new ObjectRewriter(),
         };
 

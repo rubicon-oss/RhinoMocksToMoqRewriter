@@ -116,6 +116,16 @@ namespace RhinoMocksToMoqRewriter.Tests
       return (semanticModel, expression);
     }
 
+    public static (SemanticModel, MethodDeclarationSyntax) CompileMethodDeclaration (string source, bool ignoreErrors = false)
+    {
+      var (semanticModel, syntaxNode) = CompileInNameSpace ("Test", source, ignoreErrors);
+      var methodDeclaration = syntaxNode.DescendantNodes()
+          .OfType<MethodDeclarationSyntax>()
+          .FirstOrDefault();
+
+      return (semanticModel, methodDeclaration);
+    }
+
     public static (SemanticModel, MethodDeclarationSyntax) CompileMethodDeclarationWithContextAndAdditionalAnnotations (
         string source,
         Context context,
@@ -257,6 +267,7 @@ namespace RhinoMocksToMoqRewriter.Tests
           "using System.Collections.Generic;\r\n" +
           "using Rhino.Mocks;\r\n" +
           "using Moq;\r\n" +
+          "using Moq.Protected;\r\n" +
           "using MockRepository = Rhino.Mocks.MockRepository;\r\n" +
           $"namespace {nameSpaceName} {{\r\n" +
           $"{nameSpaceContent}\r\n" +
@@ -271,6 +282,7 @@ namespace RhinoMocksToMoqRewriter.Tests
       {
         context.UsingContext =
             "using Moq;\r\n" +
+            "using Moq.Protected;\r\n" +
             "using MockRepository = Rhino.Mocks.MockRepository;\r\n";
       }
 
