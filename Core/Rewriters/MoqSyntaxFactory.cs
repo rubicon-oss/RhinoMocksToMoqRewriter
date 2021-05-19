@@ -636,6 +636,24 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           SyntaxFactory.IdentifierName (propertyName.ToString().Replace ("\"", "")));
     }
 
+    public static ParameterListSyntax ParameterList (IReadOnlyList<(TypeSyntax type, IdentifierNameSyntax identifierName)>? parameterTypesAndNames = null)
+    {
+      return parameterTypesAndNames is null
+          ? SyntaxFactory.ParameterList()
+          : SyntaxFactory.ParameterList (
+                  SyntaxFactory.SeparatedList (
+                      parameterTypesAndNames.Select (s => MoqSyntaxFactory.Parameter (s.type, s.identifierName.Identifier)),
+                      parameterTypesAndNames.Skip (1).Select (
+                          _ => SyntaxFactory.Token (SyntaxKind.CommaToken)
+                              .WithTrailingTrivia (SyntaxFactory.Space))))
+              .WithTrailingTrivia (SyntaxFactory.Space);
+    }
+
+    public static ParenthesizedLambdaExpressionSyntax ParenthesizedLambdaExpression (ParameterListSyntax parameterList, CSharpSyntaxNode expression)
+    {
+      return SyntaxFactory.ParenthesizedLambdaExpression (parameterList, expression);
+    }
+
     #region Annotations
 
     public static SyntaxAnnotation VerifyAnnotation (SyntaxNode? currentNode = null, object? times = null)
@@ -749,6 +767,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.LiteralExpression (
           SyntaxKind.NumericLiteralExpression,
           SyntaxFactory.Literal (times));
+    }
+
+    private static ParameterSyntax Parameter (TypeSyntax type, SyntaxToken identifier)
+    {
+      return SyntaxFactory.Parameter (identifier)
+          .WithLeadingTrivia (SyntaxFactory.Space)
+          .WithType (type);
     }
 
     #region Properties

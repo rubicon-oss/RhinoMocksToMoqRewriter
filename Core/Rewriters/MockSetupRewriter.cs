@@ -12,6 +12,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -97,8 +98,81 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               => RewriteStaticExpression (baseCallNode).WithLeadingAndTrailingTriviaOfNode (baseCallNode),
           _ when RhinoMocksSymbols.StubSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
               => RewriteStaticExpression (baseCallNode).WithLeadingAndTrailingTriviaOfNode (baseCallNode),
+          _ when RhinoMocksSymbols.AllCallbackSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+              => RewriteCallback (baseCallNode).WithLeadingAndTrailingTriviaOfNode (baseCallNode),
           _ => baseCallNode
       };
+    }
+
+    private InvocationExpressionSyntax RewriteCallback (InvocationExpressionSyntax node)
+    {
+      var originalNode = node.GetOriginalNode (node, CompilationId)!;
+      var argument = GetFirstArgumentFromExpectOrStubMethod (originalNode);
+      List<(TypeSyntax type, IdentifierNameSyntax identifierName)>? parameterTypesAndNames =
+          argument.Expression is not LambdaExpressionSyntax { Body: InvocationExpressionSyntax mockedExpression }
+              ? null
+              : GetParameterTypesAndNames (mockedExpression)?.ToList();
+
+      var parameterList = MoqSyntaxFactory.ParameterList (parameterTypesAndNames);
+      var callbackArgument = originalNode.ArgumentList.GetFirstArgumentOrDefault();
+      if (callbackArgument?.Expression is not LambdaExpressionSyntax callbackLambdaExpression)
+      {
+        return node;
+      }
+
+      var parameter = callbackArgument.DescendantNodes().Single (s => s.IsKind (SyntaxKind.Parameter));
+      if (callbackLambdaExpression.Body is not AssignmentExpressionSyntax assignmentExpression || parameterTypesAndNames is null)
+      {
+        return node.WithArgumentList (
+            MoqSyntaxFactory.SimpleArgumentList (
+                    MoqSyntaxFactory.ParenthesizedLambdaExpression (
+                        parameterList.WithLeadingTrivia (parameter.GetLeadingTrivia()),
+                        callbackLambdaExpression.Body.WithLeadingTrivia (SyntaxFactory.Space)))
+                .WithOpenParenToken (node.ArgumentList.OpenParenToken)
+                .WithCloseParenToken (node.ArgumentList.CloseParenToken)
+                .WithLeadingAndTrailingTriviaOfNode (node.ArgumentList));
+      }
+
+      if (assignmentExpression.Right.DescendantNodesAndSelf().SingleOrDefault (s => s.IsKind (SyntaxKind.CastExpression)) is not CastExpressionSyntax castExpression)
+      {
+        return node;
+      }
+
+      var index = (int) ((LiteralExpressionSyntax) castExpression.Expression.GetFirstArgument().Expression).Token.Value!;
+      var newAssignmentExpression = assignmentExpression.ReplaceNode (
+          assignmentExpression.IsEquivalentTo (castExpression.Parent!, false)
+              ? castExpression
+              : castExpression.Parent!,
+          parameterTypesAndNames.ToList()[index].identifierName);
+
+      return node.WithArgumentList (
+          MoqSyntaxFactory.SimpleArgumentList (
+                  SyntaxFactory.ParenthesizedLambdaExpression (
+                      parameterList.WithLeadingTrivia (parameter.GetLeadingTrivia()),
+                      newAssignmentExpression.WithLeadingTrivia (SyntaxFactory.Space))).WithOpenParenToken (node.ArgumentList.OpenParenToken)
+              .WithOpenParenToken (node.ArgumentList.OpenParenToken)
+              .WithCloseParenToken (node.ArgumentList.CloseParenToken)
+              .WithLeadingAndTrailingTriviaOfNode (node.ArgumentList));
+    }
+
+    private ArgumentSyntax GetFirstArgumentFromExpectOrStubMethod (InvocationExpressionSyntax node)
+    {
+      return node.DescendantNodes()
+          .Where (s => s.IsKind (SyntaxKind.InvocationExpression))
+          .Select (s => (InvocationExpressionSyntax) s)
+          .Single (
+              s => Model.GetSymbolInfo (s).Symbol is IMethodSymbol symbol
+                   && (RhinoMocksSymbols.ExpectSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)
+                       || RhinoMocksSymbols.StubSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)))
+          .ArgumentList
+          .GetFirstArgument();
+    }
+
+    private IEnumerable<(TypeSyntax, IdentifierNameSyntax)>? GetParameterTypesAndNames (InvocationExpressionSyntax node)
+    {
+      return Model.GetSymbolInfo (node).Symbol is not IMethodSymbol symbol
+          ? null
+          : symbol.Parameters.Select (s => (TypeSymbolToTypeSyntaxConverter.ConvertTypeSyntaxNodes (s.Type, Generator), SyntaxFactory.IdentifierName (s.Name)));
     }
 
     private SyntaxNode? ConvertMemberAccessExpression (MemberAccessExpressionSyntax node)
@@ -117,9 +191,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               => node.WithName (MoqSyntaxFactory.SetupIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
           _ when RhinoMocksSymbols.StubSymbols.Contains (methodSymbol?.ReducedFrom, SymbolEqualityComparer.Default)
               => node.WithName (MoqSyntaxFactory.SetupIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
-          _ when RhinoMocksSymbols.WhenCalledSymbols.Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
-              => node.WithName (MoqSyntaxFactory.CallbackIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
-          _ when RhinoMocksSymbols.DoSymbols.Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+          _ when RhinoMocksSymbols.AllCallbackSymbols.Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
               => node.WithName (MoqSyntaxFactory.CallbackIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
           _ when RhinoMocksSymbols.ReturnSymbols.Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
               => node.WithName (MoqSyntaxFactory.ReturnsIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),

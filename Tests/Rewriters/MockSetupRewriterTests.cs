@@ -15,6 +15,7 @@ using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Editing;
 using Moq;
 using NUnit.Framework;
 using RhinoMocksToMoqRewriter.Core;
@@ -40,22 +41,37 @@ static partial class PrivateInvoke
   {
     return null;
   }
+}
+
+public interface IDataStore<TKey, TValue>
+      where TKey : notnull
+{
+  void Add (TKey key, TValue value);
+  void Clear();
 }",
             //language=C#
             InterfaceContext =
                 @"
 void DoSomething();
 int DoSomething (int b);
-T DoSomething<T> (Func<T> func);",
+T DoSomething<T> (Func<T> func);
+ITestInterface DoSomething (bool a);",
             //language=C#
             ClassContext =
                 @"
-private ITestInterface _mock;",
+private ITestInterface _mock;
+private IDataStore<string, int> _dataStoreMock;
+private IDataStore<string, ITestInterface> _anotherDataStore;
+
+public void DoSomething() => throw new NotImplementedException();",
             //language=C#
             MethodContext = @"
 var stub = MockRepository.GenerateStub<ITestInterface>();
 var mock = MockRepository.GenerateMock<ITestInterface>();
-var strictMock = MockRepository.GenerateStrictMock<ITestInterface>();"
+var strictMock = MockRepository.GenerateStrictMock<ITestInterface>();
+int anyInt;
+string anyString;
+ITestInterface anyITestInterface;"
         };
 
     [SetUp]
@@ -64,6 +80,7 @@ var strictMock = MockRepository.GenerateStrictMock<ITestInterface>();"
       _formatter = new Mock<IFormatter>();
       _formatter.Setup (f => f.Format (It.IsAny<SyntaxNode>())).Returns<SyntaxNode> (s => s);
       _rewriter = new MockSetupRewriter (_formatter.Object);
+      _rewriter.Generator = SyntaxGenerator.GetGenerator (new AdhocWorkspace(), "C#");
     }
 
     [Test]
@@ -256,6 +273,68 @@ mock
         @"_mock.Expect (mock => PrivateInvoke.InvokeNonPublicMethod (mock, ""OnInit"", EventArgs.Empty));",
         //language=C#
         @"_mock.Protected().Setup (""OnInit"", true, EventArgs.Empty).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"
+_dataStoreMock
+    .Expect (store => store.Add (Arg.Is (""key""), Arg.Is (1)))
+    .WhenCalled (mi => DoSomething());",
+        //language=C#
+        @"
+_dataStoreMock
+    .Setup (store => store.Add (Arg.Is (""key""), Arg.Is (1)))
+    .Callback ((string key, int value) => DoSomething())
+    .Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"
+_dataStoreMock
+    .Expect (store => store.Add (Arg.Is (""key""), Arg.Is (1)))
+    .WhenCalled (mi => anyString = (string) mi.Arguments[0]);",
+        //language=C#
+        @"
+_dataStoreMock
+    .Setup (store => store.Add (Arg.Is (""key""), Arg.Is (1)))
+    .Callback ((string key, int value) => anyString = key)
+    .Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"
+_dataStoreMock
+    .Expect (store => store.Add (Arg.Is (""key""), Arg.Is (1)))
+    .WhenCalled (mi => anyInt = (int) mi.Arguments[1]);",
+        //language=C#
+        @"
+_dataStoreMock
+    .Setup (store => store.Add (Arg.Is (""key""), Arg.Is (1)))
+    .Callback ((string key, int value) => anyInt = value)
+    .Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"
+_anotherDataStore
+    .Expect (store => store.Add (Arg.Is (""key""), Arg<ITestInterface>.Is.NotNull))
+    .WhenCalled (mi => anyITestInterface = ((ITestInterface) mi.Arguments[1]).DoSomething (true));",
+        //language=C#
+        @"
+_anotherDataStore
+    .Setup (store => store.Add (Arg.Is (""key""), Arg<ITestInterface>.Is.NotNull))
+    .Callback ((string key, ITestInterface value) => anyITestInterface = value.DoSomething (true))
+    .Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"
+_anotherDataStore
+    .Expect (store => store.Clear())
+    .WhenCalled (
+      mi => DoSomething());",
+        //language=C#
+        @"
+_anotherDataStore
+    .Setup (store => store.Clear())
+    .Callback (
+      () => DoSomething())
+    .Verifiable();")]
     public void Rewrite_MockSetup (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);

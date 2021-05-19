@@ -34,6 +34,7 @@ namespace TestProject
     private ITypeInformation _typeInformationForResourceResolutionStub;
     private ITypeInformation _typeInformationStub;
     private IPropertyInformation _propertyInformationStub;
+    private IDataStore<string, Lazy<Page>> _innerDataStoreMock;
 
     [SetUp]
     public void SetUp ()
@@ -176,6 +177,43 @@ namespace TestProject
       var result = _serviceStub.GetPropertyDisplayName (_propertyInformationStub, _typeInformationForResourceResolutionStub);
 
       Assert.That (result, Is.EqualTo ("PropertyName"));
+    }
+
+    [Test]
+    public void Add ()
+    {
+      var value = new object ();
+      _innerDataStoreMock
+          .Expect (store => store.Add (Arg.Is ("key"), Arg<Lazy<Page>>.Matches (c => c.Value == value)))
+          .WhenCalled (mi => CheckInnerDataStoreIsProtected ());
+
+      _innerDataStoreMock.VerifyAllExpectations ();
+    }
+
+    [Test]
+    public void Remove ()
+    {
+      _innerDataStoreMock
+          .Expect (mock => mock.Remove ("key"))
+          .Return (true)
+          .WhenCalled (mi => CheckInnerDataStoreIsProtected());
+
+      _innerDataStoreMock.VerifyAllExpectations ();
+      Assert.That (true, Is.EqualTo (true));
+    }
+
+    [Test]
+    public void Clear ()
+    {
+      _innerDataStoreMock
+          .Expect (store => store.Clear())
+          .WhenCalled (mi => CheckInnerDataStoreIsProtected ());
+
+      _innerDataStoreMock.VerifyAllExpectations ();
+    }
+
+    private void CheckInnerDataStoreIsProtected ()
+    {
     }
   }
 }
