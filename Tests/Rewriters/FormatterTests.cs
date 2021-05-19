@@ -198,5 +198,87 @@ MockBehavior.Strict,    42,
 
       Assert.AreEqual (expected, formattedNode.ToString());
     }
+
+    [Test]
+    [TestCase (
+        //language=C#
+        @"[Test]
+private void Test()
+{
+
+  Assert.Pass();
+
+}",
+        //language=C#
+        @"[Test]
+private void Test()
+{
+  Assert.Pass();
+}")]
+    [TestCase (
+        //language=C#
+        @"[Test]
+private void Test()
+{
+}",
+        //language=C#
+        @"[Test]
+private void Test()
+{
+}")]
+    [TestCase (
+        //language=C#
+        @"[Test]
+private void Test()
+{
+  Console.WriteLine(""abc"");
+  Console.WriteLine(""abc"");
+
+  Console.WriteLine(""abc"");
+  Console.WriteLine(""abc"");
+
+
+  Console.WriteLine(""abc"");
+
+
+
+  Console.WriteLine(""abc"");
+  Assert.Pass();
+}",
+        //language=C#
+        @"[Test]
+private void Test()
+{
+  Console.WriteLine(""abc"");
+  Console.WriteLine(""abc"");
+
+  Console.WriteLine(""abc"");
+  Console.WriteLine(""abc"");
+
+  Console.WriteLine(""abc"");
+
+  Console.WriteLine(""abc"");
+  Assert.Pass();
+}")]
+    [TestCase (
+        //language=C#
+        @"[Test]
+private void Test()
+{
+
+
+}",
+        //language=C#
+        @"[Test]
+private void Test()
+{
+}")]
+    public void Format_MethodDeclarationStatement (string source, string expected)
+    {
+      var (_, node) = CompiledSourceFileProvider.CompileMethodDeclaration (source, true);
+      var formattedNode = _formatter.Format (node);
+
+      Assert.AreEqual (expected, formattedNode.ToString());
+    }
   }
 }

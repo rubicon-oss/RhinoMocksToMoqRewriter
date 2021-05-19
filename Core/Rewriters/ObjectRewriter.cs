@@ -34,6 +34,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return baseCallNode;
       }
 
+      if (MoqSymbols.AllProtectedMockSymbols.Contains ((nameSymbol as IMethodSymbol)?.ReducedFrom ?? nameSymbol?.OriginalDefinition, SymbolEqualityComparer.Default))
+      {
+        return baseCallNode;
+      }
+
       if (MoqSymbols.AllMockSequenceSymbols.Contains ((nameSymbol as IMethodSymbol)?.ReducedFrom ?? nameSymbol?.OriginalDefinition, SymbolEqualityComparer.Default))
       {
         return baseCallNode;

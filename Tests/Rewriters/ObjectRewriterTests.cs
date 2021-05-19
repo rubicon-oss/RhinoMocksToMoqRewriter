@@ -97,6 +97,11 @@ var sequence = new MockSequence();"
         @"_mock.InSequence (sequence).Setup (m => m.DoSomething (1)).Returns (new[] {1});",
         //language=C#
         @"_mock.InSequence (sequence).Setup (m => m.DoSomething (1)).Returns (new[] {1});")]
+    [TestCase (
+        //language=C#
+        @"_mock.Protected().Setup (""OnInit"", true, EventArgs.Empty).Verifiable();",
+        //language=C#
+        @"_mock.Protected().Setup (""OnInit"", true, EventArgs.Empty).Verifiable();")]
     public void Rewrite_MemberAccessExpression (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context, true);

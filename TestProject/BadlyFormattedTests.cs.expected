@@ -17,6 +17,7 @@ using TestProject.TestClasses;
 using TestProject.TestInterfaces;
 using Rhino.Mocks;
 using Moq;
+using Moq.Protected;
 using MockRepository = Rhino.Mocks.MockRepository;
 
 namespace TestProject
@@ -40,16 +41,16 @@ public class BadlyFormattedTests
 Page namingContainer = new Page();
             var parentControlMock = new Mock<IControl>() { CallBase = true };
             var childControlMock    =    new Mock<IControl>() { CallBase = true };
-            var sequence1 = new MockSequence();
-            childControlMock.InSequence (sequence1).Setup (mock => PrivateInvoke.InvokeNonPublicMethod (mock, "OnInit", EventArgs.Empty)).Verifiable();
-            parentControlMock.InSequence (sequence1).Setup (mock => PrivateInvoke.InvokeNonPublicMethod (mock, "OnInit", EventArgs.Empty)).Verifiable();
+
+            var sequence = new MockSequence();
+            childControlMock.InSequence (sequence).Protected().Setup ("OnInit", true, EventArgs.Empty).Verifiable();
+            parentControlMock.InSequence (sequence).Protected().Setup ("OnInit", true, EventArgs.Empty).Verifiable();
 
          namingContainer.  Controls.  Add (parentControlMock.Object);
       parentControlMock.Object.Controls.      Add (childControlMock.Object);
   _memberCaller.InitRecursive       (parentControlMock.Object, namingContainer);
 
 parentControlMock.Verify();
-
 childControlMock.Verify();
 }
 

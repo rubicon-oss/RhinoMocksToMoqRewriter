@@ -24,11 +24,17 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       var moqUsing = MoqSyntaxFactory.MoqUsingDirective();
       var mockRepositoryAlias = MoqSyntaxFactory.RhinoMocksRepositoryAlias();
+      var moqProtectedUsing = MoqSyntaxFactory.MoqProtectedUsingDirective();
       var currentUsings = node.Usings;
 
       if (!currentUsings.Any (u => u.IsEquivalentTo (moqUsing, false)))
       {
         currentUsings = currentUsings.Add (Formatter.MarkWithFormatAnnotation (moqUsing));
+      }
+
+      if (!currentUsings.Any (u => u.IsEquivalentTo (moqProtectedUsing, false)))
+      {
+        currentUsings = currentUsings.Add (Formatter.MarkWithFormatAnnotation (moqProtectedUsing));
       }
 
       if (!currentUsings.Any (u => u.IsEquivalentTo (mockRepositoryAlias, false)))

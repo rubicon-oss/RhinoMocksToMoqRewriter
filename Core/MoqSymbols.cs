@@ -26,6 +26,8 @@ namespace RhinoMocksToMoqRewriter.Core
       MoqReturnsSymbol = compilation.GetTypeByMetadataName ("Moq.Language.IReturns`2")!;
       MoqVerifiableSymbol = compilation.GetTypeByMetadataName ("Moq.Language.IVerifies")!;
       MoqSequenceHelperSymbol = compilation.GetTypeByMetadataName ("Moq.MockSequenceHelper")!;
+      MoqProtectedSymbol = compilation.GetTypeByMetadataName ("Moq.Protected.IProtectedMock`1")!;
+      MoqProtectedExtensionSymbol = compilation.GetTypeByMetadataName ("Moq.Protected.ProtectedExtension")!;
     }
 
     #region TypeSymbols
@@ -36,6 +38,8 @@ namespace RhinoMocksToMoqRewriter.Core
     public INamedTypeSymbol MoqReturnsSymbol { get; }
     public INamedTypeSymbol MoqVerifiableSymbol { get; }
     public INamedTypeSymbol MoqSequenceHelperSymbol { get; }
+    public INamedTypeSymbol MoqProtectedSymbol { get; }
+    public INamedTypeSymbol MoqProtectedExtensionSymbol { get; }
 
     #endregion
 
@@ -51,6 +55,7 @@ namespace RhinoMocksToMoqRewriter.Core
             .Concat (MoqCallbackSymbol.GetMembers())
             .Concat (MoqReturnsSymbol.GetMembers())
             .Concat (MoqVerifiableSymbol.GetMembers())
+            .Concat (MoqProtectedSymbol.GetMembers())
             .ToList()
             .AsReadOnly();
       }
@@ -66,6 +71,17 @@ namespace RhinoMocksToMoqRewriter.Core
             .Concat (MoqSequenceHelperSymbol.GetMembers())
             .ToList()
             .AsReadOnly();
+      }
+    }
+
+    private IReadOnlyList<ISymbol>? _allProtectedMockSymbols;
+    public IReadOnlyList<ISymbol> AllProtectedMockSymbols
+    {
+      get
+      {
+        return _allProtectedMockSymbols ??= MoqProtectedSymbol.GetMembers()
+            .Concat (MoqProtectedExtensionSymbol.GetMembers())
+            .ToList().AsReadOnly();
       }
     }
 

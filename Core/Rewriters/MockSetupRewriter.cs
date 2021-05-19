@@ -35,6 +35,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var baseCallNode = (ExpressionStatementSyntax) base.VisitExpressionStatement (trackedNodes)!;
 
       var originalNode = baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!;
+      if (NeedsProtectedExpression (originalNode))
+      {
+        baseCallNode = baseCallNode.WithExpression (TransformSetupExpression ((InvocationExpressionSyntax) baseCallNode.Expression));
+      }
+
       if (NeedsVerifiableExpression (originalNode))
       {
         baseCallNode = _formatter.Format (baseCallNode.WithExpression (MoqSyntaxFactory.VerifiableMock (baseCallNode.Expression)));
@@ -45,7 +50,24 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         baseCallNode = baseCallNode.WithAdditionalAnnotations (CreateAnnotation (originalNode, baseCallNode));
       }
 
-      return baseCallNode.WithLeadingAndTrailingTriviaOfNode (node);
+      return baseCallNode.WithLeadingTrivia (node.GetLeadingTrivia()).WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine));
+    }
+
+    private InvocationExpressionSyntax TransformSetupExpression (InvocationExpressionSyntax invocationExpression)
+    {
+      var identifierName = invocationExpression.GetFirstIdentifierName();
+      invocationExpression = invocationExpression.ReplaceNode (
+          identifierName,
+          MoqSyntaxFactory.ProtectedMock (identifierName));
+
+      var argumentlist = ((InvocationExpressionSyntax) invocationExpression.GetLambdaExpression().Body).ArgumentList.Arguments.Skip (1).ToList();
+      argumentlist.Insert (1, MoqSyntaxFactory.SimpleArgument (MoqSyntaxFactory.TrueLiteralExpression));
+
+      invocationExpression = invocationExpression.GetCurrentNode (invocationExpression, CompilationId)!.ReplaceNode (
+          invocationExpression.GetLambdaExpression().Parent?.Parent!,
+          _formatter.Format (MoqSyntaxFactory.SimpleArgumentList (argumentlist)));
+
+      return invocationExpression;
     }
 
     public override SyntaxNode? VisitMemberAccessExpression (MemberAccessExpressionSyntax node)
@@ -177,6 +199,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           node.DescendantNodesAndSelf().Where (
               s => s.IsKind (SyntaxKind.InvocationExpression) || s.IsKind (SyntaxKind.ExpressionStatement) || s.IsKind (SyntaxKind.SimpleMemberAccessExpression)),
           CompilationId);
+    }
+
+    private static bool NeedsProtectedExpression (SyntaxNode originalNode)
+    {
+      var argument = originalNode.GetFirstArgumentOrDefault();
+      return argument is not null && argument.ToString().Contains ("PrivateInvoke.InvokeNonPublicMethod");
     }
   }
 }

@@ -37,6 +37,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return baseCallNode;
       }
 
+      if (invocationExpression.ArgumentList.Arguments.First().Expression is LambdaExpressionSyntax)
+      {
+        return baseCallNode;
+      }
+
       return MoqSyntaxFactory.SimpleArgument (
           invocationExpression.WithArgumentList (
               MoqSyntaxFactory.SimpleArgumentList (

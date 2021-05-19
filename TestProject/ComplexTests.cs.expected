@@ -17,6 +17,7 @@ using Rhino.Mocks;
 using TestProject.TestClasses;
 using TestProject.TestInterfaces;
 using Moq;
+using Moq.Protected;
 using MockRepository = Rhino.Mocks.MockRepository;
 
 namespace TestProject
@@ -52,16 +53,16 @@ namespace TestProject
       Page namingContainer = new Page();
       var parentControlMock = new Mock<IControl>() { CallBase = true };
       var childControlMock = new Mock<IControl>() { CallBase = true };
-      var sequence1 = new MockSequence();
-      childControlMock.InSequence (sequence1).Setup (mock => PrivateInvoke.InvokeNonPublicMethod (mock, "OnInit", EventArgs.Empty)).Verifiable();
-      parentControlMock.InSequence (sequence1).Setup (mock => PrivateInvoke.InvokeNonPublicMethod (mock, "OnInit", EventArgs.Empty)).Verifiable();
+
+      var sequence = new MockSequence();
+      childControlMock.InSequence (sequence).Protected().Setup ("OnInit", true, EventArgs.Empty).Verifiable();
+      parentControlMock.InSequence (sequence).Protected().Setup ("OnInit", true, EventArgs.Empty).Verifiable();
 
       namingContainer.Controls.Add (parentControlMock.Object);
       parentControlMock.Object.Controls.Add (childControlMock.Object);
       _memberCaller.InitRecursive (parentControlMock.Object, namingContainer);
 
       parentControlMock.Verify();
-
       childControlMock.Verify();
     }
 
@@ -77,15 +78,16 @@ namespace TestProject
         _subTransaction.Extensions.Add (extensionMock.ToString());
         try
         {
-
           extensionMock.Object.ObjectDeleting (_subTransaction, domainObject);
           extensionMock.Object.ObjectDeleted (_subTransaction, domainObject);
+
           domainObject.Delete();
           extensionMock.Verify();
 
           extensionMock.Setup (_ => _.Committing (It.IsAny<ITestInterface>(), It.IsAny<Order>(), It.IsAny<ClientTransaction>())).Verifiable();
           extensionMock.Setup (_ => _.CommitValidate (It.IsAny<ITestInterface>(), It.IsAny<ClientTransaction>())).Verifiable();
           extensionMock.Setup (_ => _.Committed (It.IsAny<ITestInterface>(), It.IsAny<ClientTransaction>())).Verifiable();
+
           _subTransaction.Commit();
           extensionMock.Verify();
         }
@@ -99,7 +101,6 @@ namespace TestProject
     [Test]
     public void Test_SetupResultFor ()
     {
-
       var mock = new Mock<ITestInterface>();
       mock.Setup (_ => _.A).Returns (42).Verifiable();
 

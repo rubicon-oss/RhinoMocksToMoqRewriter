@@ -32,6 +32,16 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
         new Context
         {
             //language=C#
+            NamespaceContext =
+                @"
+static partial class PrivateInvoke
+{
+  public static object? InvokeNonPublicMethod (object target, string methodName, params object?[]? arguments)
+  {
+    return null;
+  }
+}",
+            //language=C#
             InterfaceContext =
                 @"
 void DoSomething();
@@ -241,6 +251,11 @@ mock
         @"_mock.Expect (m => m.DoSomething()).Do (null);",
         //language=C#
         @"_mock.Setup (m => m.DoSomething()).Callback (null).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (mock => PrivateInvoke.InvokeNonPublicMethod (mock, ""OnInit"", EventArgs.Empty));",
+        //language=C#
+        @"_mock.Protected().Setup (""OnInit"", true, EventArgs.Empty).Verifiable();")]
     public void Rewrite_MockSetup (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);

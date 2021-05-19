@@ -13,6 +13,8 @@
 
 using System;
 using JetBrains.Annotations;
+using Microsoft.CodeAnalysis;
+using Moq;
 using NUnit.Framework;
 using RhinoMocksToMoqRewriter.Core;
 using RhinoMocksToMoqRewriter.Core.Rewriters;
@@ -23,6 +25,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
   public class ObsoleteMethodRewriterTests
   {
     private ObsoleteMethodRewriter _rewriter;
+    private Mock<IFormatter> _formatter;
 
     private readonly Context _context =
         new Context
@@ -43,7 +46,9 @@ private MockRepository _fieldMockRepository;"
     [SetUp]
     public void SetUp ()
     {
-      _rewriter = new ObsoleteMethodRewriter();
+      _formatter = new Mock<IFormatter>();
+      _formatter.Setup (f => f.Format (It.IsAny<SyntaxNode>())).Returns<SyntaxNode> (s => s);
+      _rewriter = new ObsoleteMethodRewriter (_formatter.Object);
     }
 
     [TestCase (

@@ -304,6 +304,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               MoqSyntaxFactory.VerifiableIdentifierName));
     }
 
+    public static InvocationExpressionSyntax ProtectedMock (IdentifierNameSyntax identifierName)
+    {
+      return MoqSyntaxFactory.InvocationExpression (
+          MoqSyntaxFactory.MemberAccessExpression (
+              identifierName,
+              MoqSyntaxFactory.ProtectedIdentifierName));
+    }
+
     public static InvocationExpressionSyntax SetupExpression (IdentifierNameSyntax mockIdentifierName, LambdaExpressionSyntax lambdaExpression)
     {
       return MoqSyntaxFactory.InvocationExpression (
@@ -319,6 +327,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       return SyntaxFactory.UsingDirective (
           MoqSyntaxFactory.MoqIdentifierName
+              .WithLeadingTrivia (SyntaxFactory.Space));
+    }
+
+    public static UsingDirectiveSyntax MoqProtectedUsingDirective ()
+    {
+      return SyntaxFactory.UsingDirective (
+          SyntaxFactory.QualifiedName (
+                  MoqSyntaxFactory.MoqIdentifierName,
+                  MoqSyntaxFactory.ProtectedIdentifierName)
               .WithLeadingTrivia (SyntaxFactory.Space));
     }
 
@@ -338,7 +355,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                       .WithTrailingTrivia (SyntaxFactory.Space)));
     }
 
-    public static LocalDeclarationStatementSyntax MockSequenceLocalDeclarationStatement (string number = "")
+    public static LocalDeclarationStatementSyntax MockSequenceLocalDeclarationStatement (int? number)
     {
       return SyntaxFactory.LocalDeclarationStatement (
           SyntaxFactory.VariableDeclaration (
@@ -357,7 +374,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                                   .WithLeadingTrivia (SyntaxFactory.Space))))));
     }
 
-    public static InvocationExpressionSyntax InSequenceExpression (IdentifierNameSyntax identifierName, string number = "")
+    public static InvocationExpressionSyntax InSequenceExpression (IdentifierNameSyntax identifierName, int? number)
     {
       return SyntaxFactory.InvocationExpression (
           SyntaxFactory.MemberAccessExpression (
@@ -694,7 +711,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return MoqSyntaxFactory.Argument (MoqSyntaxFactory.MemberAccessExpression (MoqSyntaxFactory.MockBehaviorIdentifierName, MoqSyntaxFactory.StrictIdentifierName));
     }
 
-    private static ExpressionStatementSyntax ExpressionStatement (ExpressionSyntax expression)
+    public static ExpressionStatementSyntax ExpressionStatement (ExpressionSyntax expression)
     {
       return SyntaxFactory.ExpressionStatement (expression);
     }
@@ -735,6 +752,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     }
 
     #region Properties
+
     public static TypeSyntax VarType => MoqSyntaxFactory.VarIdentifierName;
 
     public static IdentifierNameSyntax ExpectIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.ExpectIdentifier);
@@ -772,9 +790,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     public static IdentifierNameSyntax MockRepositoryIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.MockRepositoryIdentifier);
     public static IdentifierNameSyntax RepeatIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.RepeatIdentifier);
     public static IdentifierNameSyntax AnyIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.AnyIdentifier);
+    public static IdentifierNameSyntax ProtectedIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.ProtectedIdentifier);
 
     private static LiteralExpressionSyntax NullLiteralExpression { get; } = SyntaxFactory.LiteralExpression (SyntaxKind.NullLiteralExpression);
-    private static LiteralExpressionSyntax TrueLiteralExpression { get; } = SyntaxFactory.LiteralExpression (SyntaxKind.TrueLiteralExpression);
+    public static LiteralExpressionSyntax TrueLiteralExpression { get; } = SyntaxFactory.LiteralExpression (SyntaxKind.TrueLiteralExpression);
 
     private static PredefinedTypeSyntax ObjectKeyword { get; } = SyntaxFactory.PredefinedType (SyntaxFactory.Token (SyntaxKind.ObjectKeyword));
 
@@ -818,6 +837,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static SyntaxToken MockRepositoryIdentifier => SyntaxFactory.Identifier ("MockRepository");
     private static SyntaxToken RepeatIdentifier => SyntaxFactory.Identifier ("Repeat");
     private static SyntaxToken AnyIdentifier => SyntaxFactory.Identifier ("Any");
+    private static SyntaxToken ProtectedIdentifier => SyntaxFactory.Identifier ("Protected");
 
     #endregion
   }
