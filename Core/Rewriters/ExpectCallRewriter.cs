@@ -118,30 +118,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private ArgumentListSyntax ConvertConstraints (ArgumentListSyntax originalArgumentList, IReadOnlyList<ITypeSymbol> parameterTypes)
     {
-      var convertedArguments = parameterTypes.Select ((s, i) => MoqSyntaxFactory.MatchesArgument (ConvertTypeSyntaxNodes (s), originalArgumentList.Arguments[i]));
+      var convertedArguments = parameterTypes.Select ((s, i) => MoqSyntaxFactory.MatchesArgument (TypeSymbolToTypeSyntaxConverter.ConvertTypeSyntaxNodes (s, Generator), originalArgumentList.Arguments[i]));
       return MoqSyntaxFactory.SimpleArgumentList (convertedArguments);
-    }
-
-    private TypeSyntax ConvertTypeSyntaxNodes (ITypeSymbol typeSymbol)
-    {
-      if (typeSymbol.NullableAnnotation == NullableAnnotation.Annotated)
-      {
-        return (TypeSyntax) Generator.NullableTypeExpression (ConvertTypeSyntaxNodes (((INamedTypeSymbol) typeSymbol).TypeArguments.First()));
-      }
-
-      if (typeSymbol.SpecialType != SpecialType.None)
-      {
-        return (PredefinedTypeSyntax) Generator.TypeExpression (typeSymbol.SpecialType);
-      }
-
-      if (((INamedTypeSymbol) typeSymbol).TypeArguments.IsEmpty)
-      {
-        return SyntaxFactory.IdentifierName (typeSymbol.Name);
-      }
-
-      return MoqSyntaxFactory.GenericName (
-          SyntaxFactory.Identifier (typeSymbol.Name),
-          MoqSyntaxFactory.SimpleTypeArgumentList (((INamedTypeSymbol) typeSymbol).TypeArguments.Select (ConvertTypeSyntaxNodes)));
     }
 
     private IEnumerable<ISymbol> GetAllSimpleRhinoMocksSymbols ()

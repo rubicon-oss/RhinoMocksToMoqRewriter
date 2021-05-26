@@ -121,33 +121,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var methodParameterTypeSymbols = methodSymbol.Parameters.Select (p => p.Type).ToArray();
       var isInArguments = methodParameterTypeSymbols.Select (
           typeSymbol => MoqSyntaxFactory.IsAnyArgument (
-              MoqSyntaxFactory.SimpleTypeArgumentList (ConvertTypeSyntaxNodes (typeSymbol))));
+              MoqSyntaxFactory.SimpleTypeArgumentList (TypeSymbolToTypeSyntaxConverter.ConvertTypeSyntaxNodes (typeSymbol, Generator))));
 
       return MoqSyntaxFactory.SimpleArgumentList (
           MoqSyntaxFactory.SimpleArgument (
               lambdaExpression.WithBody (invocationExpression.WithArgumentList (MoqSyntaxFactory.SimpleArgumentList (isInArguments)))));
-    }
-
-    private TypeSyntax ConvertTypeSyntaxNodes (ITypeSymbol typeSymbol)
-    {
-      if (typeSymbol.NullableAnnotation == NullableAnnotation.Annotated)
-      {
-        return (TypeSyntax) Generator.NullableTypeExpression (ConvertTypeSyntaxNodes (((INamedTypeSymbol) typeSymbol).TypeArguments.First()));
-      }
-
-      if (typeSymbol.SpecialType != SpecialType.None)
-      {
-        return (PredefinedTypeSyntax) Generator.TypeExpression (typeSymbol.SpecialType);
-      }
-
-      return typeSymbol switch
-      {
-          INamedTypeSymbol { TypeArguments: { IsEmpty: true } } => SyntaxFactory.IdentifierName (typeSymbol.Name),
-          IArrayTypeSymbol arrayTypeSymbol => MoqSyntaxFactory.ArrayType (ConvertTypeSyntaxNodes (arrayTypeSymbol.ElementType)),
-          _ => MoqSyntaxFactory.GenericName (
-              SyntaxFactory.Identifier (typeSymbol.Name),
-              MoqSyntaxFactory.SimpleTypeArgumentList (((INamedTypeSymbol) typeSymbol).TypeArguments.Select (ConvertTypeSyntaxNodes)))
-      };
     }
   }
 }

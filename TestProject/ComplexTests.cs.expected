@@ -36,6 +36,7 @@ namespace TestProject
     private Mock<ITypeInformation> _typeInformationForResourceResolutionStub;
     private Mock<ITypeInformation> _typeInformationStub;
     private Mock<IPropertyInformation> _propertyInformationStub;
+    private IDataStore<string, Lazy<Page>> _innerDataStoreMock;
 
     [SetUp]
     public void SetUp ()
@@ -161,6 +162,46 @@ namespace TestProject
       var result = _serviceStub.Object.GetPropertyDisplayName (_propertyInformationStub.Object, _typeInformationForResourceResolutionStub.Object);
 
       Assert.That (result, Is.EqualTo ("PropertyName"));
+    }
+
+    [Test]
+    public void Add ()
+    {
+      var value = new object ();
+      _innerDataStoreMock
+          .Setup (store => store.Add ("key", It.Is<Lazy<Page>> (c => c.Value == value)))
+          .Callback ((string key, Lazy<Page> value) => CheckInnerDataStoreIsProtected ())
+          .Verifiable();
+
+      _innerDataStoreMock.Verify();
+    }
+
+    [Test]
+    public void Remove ()
+    {
+      _innerDataStoreMock
+          .Setup (mock => mock.Remove ("key"))
+          .Returns (true)
+          .Callback ((string key) => CheckInnerDataStoreIsProtected())
+          .Verifiable();
+
+      _innerDataStoreMock.Verify();
+      Assert.That (true, Is.EqualTo (true));
+    }
+
+    [Test]
+    public void Clear ()
+    {
+      _innerDataStoreMock
+          .Setup (store => store.Clear())
+          .Callback (() => CheckInnerDataStoreIsProtected ())
+          .Verifiable();
+
+      _innerDataStoreMock.Verify();
+    }
+
+    private void CheckInnerDataStoreIsProtected ()
+    {
     }
   }
 }

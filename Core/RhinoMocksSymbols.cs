@@ -429,6 +429,20 @@ namespace RhinoMocksToMoqRewriter.Core
       }
     }
 
+    private IReadOnlyList<ISymbol>? _allCallbackSymbols;
+    public IReadOnlyList<ISymbol> AllCallbackSymbols
+    {
+      get
+      {
+        return _allCallbackSymbols ??= WhenCalledSymbols
+            .Concat (WhenCalledSymbols)
+            .Concat (CallbackSymbols)
+            .Concat (DoSymbols)
+            .ToList()
+            .AsReadOnly();
+      }
+    }
+
     #endregion
   }
 }
