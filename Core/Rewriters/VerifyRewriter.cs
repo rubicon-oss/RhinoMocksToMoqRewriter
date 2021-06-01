@@ -203,7 +203,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
         verifyStatements.Add (
             MoqSyntaxFactory.VerifyExpressionStatement (currentIdentifierName.WithoutTrivia())
-                .WithLeadingTrivia (node.GetLeadingTrivia()));
+                .WithLeadingTrivia (node.GetLeadingTrivia())
+                .WithTrailingTrivia (
+                    SyntaxFactory.Whitespace (
+                        node.GetLeadingTrivia().ToFullString().Contains (Environment.NewLine)
+                            ? string.Empty
+                            : Environment.NewLine)));
       }
 
       return verifyStatements;

@@ -137,7 +137,17 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
         try
         {
-          newExpressions = newExpressions.Replace (expression, MoqSyntaxFactory.MockObjectExpression (identifierName));
+          if (i == baseCallNode.Expressions.Count - 1)
+          {
+            newExpressions = newExpressions.Replace (
+                expression,
+                MoqSyntaxFactory.MockObjectExpression (identifierName.WithoutTrailingTrivia())
+                    .WithTrailingTrivia (SyntaxFactory.Space));
+          }
+          else
+          {
+            newExpressions = newExpressions.Replace (expression, MoqSyntaxFactory.MockObjectExpression (identifierName));
+          }
         }
         catch (Exception ex)
         {

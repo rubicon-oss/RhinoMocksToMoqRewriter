@@ -696,7 +696,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static TypeArgumentListSyntax TypeArgumentList (IEnumerable<TypeSyntax> typeArguments)
     {
-      return SyntaxFactory.TypeArgumentList (SyntaxFactory.SeparatedList (typeArguments));
+      return SyntaxFactory.TypeArgumentList (
+          SyntaxFactory.SeparatedList (
+              typeArguments,
+              typeArguments.Skip (1).Select (
+                  _ => SyntaxFactory.Token (SyntaxKind.CommaToken)
+                      .WithTrailingTrivia (SyntaxFactory.Space))));
     }
 
     private static InitializerExpressionSyntax ObjectInitializerExpression (ExpressionSyntax expression)

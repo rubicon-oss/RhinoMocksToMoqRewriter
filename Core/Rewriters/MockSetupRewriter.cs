@@ -43,7 +43,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       if (NeedsVerifiableExpression (originalNode))
       {
-        baseCallNode = _formatter.Format (baseCallNode.WithExpression (MoqSyntaxFactory.VerifiableMock (baseCallNode.Expression)));
+        baseCallNode = baseCallNode.WithExpression (MoqSyntaxFactory.VerifiableMock (baseCallNode.Expression));
       }
 
       if (NeedsAdditionalAnnotations (originalNode))
@@ -51,7 +51,19 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         baseCallNode = baseCallNode.WithAdditionalAnnotations (CreateAnnotation (originalNode, baseCallNode));
       }
 
-      return baseCallNode.WithLeadingTrivia (node.GetLeadingTrivia()).WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine));
+      if (node.IsEquivalentTo (baseCallNode, false))
+      {
+        return baseCallNode.WithLeadingTrivia (node.GetLeadingTrivia()).WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine));
+      }
+
+      return _formatter.Format (
+              baseCallNode.WithExpression (
+                  baseCallNode
+                      .WithLeadingTrivia (node.GetLeadingTrivia())
+                      .WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine))
+                      .Expression))
+          .WithAdditionalAnnotations (
+              baseCallNode.GetAnnotations (new[] { "Id", MoqSyntaxFactory.VerifyAnnotationKind }));
     }
 
     private InvocationExpressionSyntax TransformSetupExpression (InvocationExpressionSyntax invocationExpression)
