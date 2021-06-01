@@ -403,9 +403,7 @@ namespace RhinoMocksToMoqRewriter.Core
     {
       get
       {
-        return _obsoleteRhinoMocksSymbols ??= BackToRecordSymbols
-            .Concat (BackToRecordAllSymbols)
-            .Concat (ReplaySymbols)
+        return _obsoleteRhinoMocksSymbols ??= ReplaySymbols
             .Concat (ReplayAllSymbols)
             .ToList()
             .AsReadOnly();
@@ -438,6 +436,18 @@ namespace RhinoMocksToMoqRewriter.Core
             .Concat (WhenCalledSymbols)
             .Concat (CallbackSymbols)
             .Concat (DoSymbols)
+            .ToList()
+            .AsReadOnly();
+      }
+    }
+
+    private IReadOnlyList<ISymbol>? _allBackToRecordSymbols;
+    public IReadOnlyList<ISymbol> AllBackToRecordSymbols
+    {
+      get
+      {
+        return _allBackToRecordSymbols ??= BackToRecordSymbols
+            .Concat (BackToRecordAllSymbols)
             .ToList()
             .AsReadOnly();
       }

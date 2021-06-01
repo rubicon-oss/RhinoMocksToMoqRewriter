@@ -31,9 +31,34 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     public override SyntaxNode? VisitMethodDeclaration (MethodDeclarationSyntax node)
     {
-      var nodesToBeReplaced = GetNodesToBeReplaced (node);
-      var newNode = node.RemoveNodes (nodesToBeReplaced, SyntaxRemoveOptions.KeepEndOfLine)!;
-      return _formatter.Format (newNode);
+      MethodDeclarationSyntax trackedNodes = null!;
+      try
+      {
+        trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf(), CompilationId);
+      }
+      catch (Exception ex)
+      {
+        Console.Error.WriteLine (
+            $"WARNING: Unable to delete obsolete methods"
+            + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}"
+            + $"\r\n{ex}");
+
+        return node;
+      }
+
+      List<SyntaxNode> nodesToBeReplaced = GetNodesToBeReplaced (trackedNodes).ToList();
+
+      foreach (var nodeToBeReplaced in nodesToBeReplaced)
+      {
+        var currentNode = trackedNodes!.GetCurrentNode (nodeToBeReplaced!, CompilationId)!;
+        trackedNodes = trackedNodes!.RemoveNode (
+            currentNode,
+            nodeToBeReplaced.GetLeadingTrivia().ToFullString().Contains (Environment.NewLine)
+                ? SyntaxRemoveOptions.KeepEndOfLine
+                : SyntaxRemoveOptions.KeepNoTrivia)!;
+      }
+
+      return _formatter.Format (trackedNodes!);
     }
 
     public override SyntaxNode? VisitFieldDeclaration (FieldDeclarationSyntax node)
@@ -54,6 +79,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private IEnumerable<ExpressionStatementSyntax> GetObsoleteAssignmentExpressions (MethodDeclarationSyntax node)
     {
       return node.DescendantNodes()
+          .Select (s => node.GetOriginalNode (s, CompilationId)!)
           .Where (s => s.IsKind (SyntaxKind.ExpressionStatement))
           .Select (s => (ExpressionStatementSyntax) s)
           .Where (s => s.Expression.IsKind (SyntaxKind.SimpleAssignmentExpression))
@@ -65,6 +91,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private IEnumerable<SyntaxNode> GetObsoleteLocalDeclarationStatements (MethodDeclarationSyntax node)
     {
       return node.DescendantNodes()
+          .Select (s => node.GetOriginalNode (s, CompilationId)!)
           .Where (s => s.IsKind (SyntaxKind.LocalDeclarationStatement))
           .Select (s => (LocalDeclarationStatementSyntax) s)
           .Where (s => RhinoMocksSymbols.RhinoMocksMockRepositorySymbol.Equals (Model.GetSymbolInfo (s.Declaration.Type).Symbol, SymbolEqualityComparer.Default));
@@ -73,6 +100,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private IEnumerable<SyntaxNode> GetObsoleteExpressionStatements (MethodDeclarationSyntax node)
     {
       return node.DescendantNodes()
+          .Select (s => node.GetOriginalNode (s, CompilationId)!)
           .Where (s => s.IsKind (SyntaxKind.ExpressionStatement))
           .Select (s => (ExpressionStatementSyntax) s)
           .Where (

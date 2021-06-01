@@ -13,9 +13,12 @@
 
 using System;
 using NUnit.Framework;
-using TestProject.TestClasses;
-using TestProject.TestInterfaces;
+using static System.Activator;
 using Rhino.Mocks;
+using static System.Array;
+using TestProject.TestClasses;
+using static System.Console;
+using TestProject.TestInterfaces;
 
 namespace TestProject
 {

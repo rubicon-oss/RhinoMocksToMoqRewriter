@@ -12,12 +12,15 @@
 //
 
 using System;
-using NUnit.Framework;
-using TestProject.TestClasses;
-using TestProject.TestInterfaces;
-using Rhino.Mocks;
 using Moq;
 using Moq.Protected;
+using NUnit.Framework;
+using Rhino.Mocks;
+using TestProject.TestClasses;
+using TestProject.TestInterfaces;
+using static System.Activator;
+using static System.Array;
+using static System.Console;
 using MockRepository = Rhino.Mocks.MockRepository;
 
 namespace TestProject

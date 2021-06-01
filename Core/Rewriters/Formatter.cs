@@ -116,7 +116,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           + "}"
           + "}");
 
-      var methodDeclaration = tree.GetRoot().DescendantNodes().SingleOrDefault(s => s.IsKind (SyntaxKind.MethodDeclaration)) as MethodDeclarationSyntax;
+      var methodDeclaration = tree.GetRoot().DescendantNodes().SingleOrDefault (s => s.IsKind (SyntaxKind.MethodDeclaration)) as MethodDeclarationSyntax;
       return methodDeclaration?.WithLeadingTrivia (SyntaxFactory.Whitespace (Environment.NewLine + methodDeclaration.GetLeadingTrivia()));
     }
 
@@ -136,14 +136,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static InvocationExpressionSyntax FormatInvocationExpression (InvocationExpressionSyntax node)
     {
-      var indentation = node.Expression.GetIndentation();
       return node.Expression is not MemberAccessExpressionSyntax memberAccessExpression
           ? node
-          : node.WithExpression (FormatMemberAccessExpression (memberAccessExpression, indentation)).WithoutTrailingTrivia();
+          : node.WithExpression (FormatMemberAccessExpression (memberAccessExpression)).WithoutTrailingTrivia();
     }
 
-    private static MemberAccessExpressionSyntax FormatMemberAccessExpression (MemberAccessExpressionSyntax node, string indentation)
+    private static MemberAccessExpressionSyntax FormatMemberAccessExpression (MemberAccessExpressionSyntax node)
     {
+      var indentation = ((MemberAccessExpressionSyntax) node.DescendantNodes().First (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression))).OperatorToken.LeadingTrivia.ToString();
       return MoqSyntaxFactory.MemberAccessExpression (
           node.Expression.WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine + indentation)),
           node.Name);
@@ -151,17 +151,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static bool IsMultiLineStatement (SyntaxNode node)
     {
-      var nodes = node.DescendantNodes().Where (
-          s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression)
-               && !s.Ancestors().Any (s => s.IsKind (SyntaxKind.Argument))).Select (s => (MemberAccessExpressionSyntax) s);
-
-      return nodes.Any (
-          s => s.Expression.GetTrailingTrivia().ToFullString().Contains (Environment.NewLine)
-               || s.Expression.GetLeadingTrivia().ToFullString().Contains (Environment.NewLine)
-               || s.Name.GetTrailingTrivia().ToFullString().Contains (Environment.NewLine)
-               || s.Name.GetLeadingTrivia().ToFullString().Contains (Environment.NewLine)
-               || s.OperatorToken.TrailingTrivia.ToFullString().Contains (Environment.NewLine)
-               || s.OperatorToken.LeadingTrivia.ToFullString().Contains (Environment.NewLine));
+      return node.GetFirstIdentifierName().GetTrailingTrivia().ToFullString().Contains (Environment.NewLine) ||
+             (node.GetFirstIdentifierName().Parent!.Parent! as InvocationExpressionSyntax)?.ArgumentList.GetTrailingTrivia().ToFullString().Contains (Environment.NewLine) == true;
     }
 
     private static VariableDeclarationSyntax FormatVariableDeclaration (VariableDeclarationSyntax node)

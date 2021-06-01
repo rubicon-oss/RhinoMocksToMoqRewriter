@@ -60,13 +60,25 @@ using MockRepository = Rhino.Mocks.MockRepository;")]
     [TestCase (
         //language=C#
         @"
-using MockRepository = Rhino.Mocks.MockRepository;
-using Moq.Protected;",
+using Moq.Protected;
+using MockRepository = Rhino.Mocks.MockRepository;",
         //language=C#
         @"
-using MockRepository = Rhino.Mocks.MockRepository;
+using Moq;
 using Moq.Protected;
-using Moq;")]
+using MockRepository = Rhino.Mocks.MockRepository;")]
+    [TestCase (
+        //language=C#
+        @"
+using static Rhino.Mocks.MockRepository;
+using Moq.Protected;
+using MockRepository = Rhino.Mocks.MockRepository;",
+        //language=C#
+        @"
+using Moq;
+using Moq.Protected;
+using static Rhino.Mocks.MockRepository;
+using MockRepository = Rhino.Mocks.MockRepository;")]
     public void Rewrite_UsingDirectives (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileCompilationUnitWithContext (source, _context);

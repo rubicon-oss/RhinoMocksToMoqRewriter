@@ -12,12 +12,12 @@
 //
 
 using System;
+using Moq;
+using Moq.Protected;
 using NUnit.Framework;
 using Rhino.Mocks;
 using TestProject.TestClasses;
 using TestProject.TestInterfaces;
-using Moq;
-using Moq.Protected;
 using MockRepository = Rhino.Mocks.MockRepository;
 
 namespace TestProject
@@ -163,6 +163,10 @@ namespace TestProject
     [Test]
     public void Rewrite_MethodDeletion ()
     {
+      _mockRepository.BackToRecordAll();
+
+      _mock2.BackToRecord();
+
       Assert.Pass();
     }
 

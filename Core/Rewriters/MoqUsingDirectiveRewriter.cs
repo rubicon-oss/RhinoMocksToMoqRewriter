@@ -42,7 +42,32 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         currentUsings = currentUsings.Add (Formatter.MarkWithFormatAnnotation (mockRepositoryAlias));
       }
 
-      return node.WithUsings (currentUsings);
+      var systemUsings = currentUsings.Where (u => IsSystemUsingDirective (u) && !HasAlias (u) && !IsStaticUsingDirective (u)).OrderBy (u => u.ToString());
+      var otherUsings = currentUsings.Where (u => !IsSystemUsingDirective (u) && !HasAlias (u) && !IsStaticUsingDirective (u)).OrderBy (u => u.ToString());
+      var aliasUsings = currentUsings.Where (HasAlias).OrderBy (u => u.ToString());
+      var staticUsings = currentUsings.Where (u => !HasAlias (u) && IsStaticUsingDirective (u)).OrderBy (u => u.ToString());
+
+      return node.WithUsings (
+          new SyntaxList<UsingDirectiveSyntax> (
+              systemUsings
+                  .Concat (otherUsings)
+                  .Concat (staticUsings)
+                  .Concat (aliasUsings)));
+    }
+
+    private static bool IsStaticUsingDirective (UsingDirectiveSyntax usingDirective)
+    {
+      return usingDirective.StaticKeyword.Value?.Equals ("static") == true;
+    }
+
+    private static bool IsSystemUsingDirective (UsingDirectiveSyntax usingDirective)
+    {
+      return usingDirective.DescendantNodes().Any (u => u.IsEquivalentTo (MoqSyntaxFactory.SystemIdentifierName, false));
+    }
+
+    private static bool HasAlias (UsingDirectiveSyntax usingDirective)
+    {
+      return usingDirective.Alias is not null;
     }
   }
 }
