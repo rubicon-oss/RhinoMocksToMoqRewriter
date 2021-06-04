@@ -142,7 +142,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
             newExpressions = newExpressions.Replace (
                 expression,
                 MoqSyntaxFactory.MockObjectExpression (identifierName.WithoutTrailingTrivia())
-                    .WithTrailingTrivia (SyntaxFactory.Space));
+                    .WithTrailingTrivia (identifierName.GetTrailingTrivia()));
           }
           else
           {

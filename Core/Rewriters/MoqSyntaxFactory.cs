@@ -374,17 +374,18 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                                   .WithLeadingTrivia (SyntaxFactory.Space))))));
     }
 
-    public static InvocationExpressionSyntax InSequenceExpression (IdentifierNameSyntax identifierName, int? number)
+    public static InvocationExpressionSyntax InSequenceExpression (IdentifierNameSyntax identifierName, int? number, SyntaxTriviaList indentation)
     {
       return SyntaxFactory.InvocationExpression (
           SyntaxFactory.MemberAccessExpression (
               SyntaxKind.SimpleMemberAccessExpression,
-              identifierName,
+              identifierName.WithTrailingTrivia (indentation),
               MoqSyntaxFactory.InSequenceIdentifierName),
           MoqSyntaxFactory.ArgumentList (
                   MoqSyntaxFactory.Argument (
                       SyntaxFactory.IdentifierName ($"sequence{number}")))
-              .WithLeadingTrivia (SyntaxFactory.Space));
+              .WithLeadingTrivia (SyntaxFactory.Space)
+              .WithTrailingTrivia (identifierName.GetTrailingTrivia()));
     }
 
     public static ExpressionSyntax GreaterThanBinaryExpression (ExpressionSyntax expression)

@@ -53,7 +53,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       if (node.IsEquivalentTo (baseCallNode, false))
       {
-        return baseCallNode.WithLeadingTrivia (node.GetLeadingTrivia()).WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine));
+        return baseCallNode.WithLeadingAndTrailingTriviaOfNode(node);
       }
 
       return _formatter.Format (

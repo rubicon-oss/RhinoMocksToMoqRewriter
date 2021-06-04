@@ -143,10 +143,27 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static MemberAccessExpressionSyntax FormatMemberAccessExpression (MemberAccessExpressionSyntax node)
     {
-      var indentation = ((MemberAccessExpressionSyntax) node.DescendantNodes().First (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression))).OperatorToken.LeadingTrivia.ToString();
+      var indentation = GetIndentation (node);
       return MoqSyntaxFactory.MemberAccessExpression (
           node.Expression.WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine + indentation)),
           node.Name);
+    }
+    private static string GetIndentation (MemberAccessExpressionSyntax node)
+    {
+      var firstMemberAccessExpressionTrivia = ((MemberAccessExpressionSyntax) node.GetFirstIdentifierName().Parent!).OperatorToken.LeadingTrivia.ToFullString();
+      if (!string.IsNullOrEmpty (firstMemberAccessExpressionTrivia))
+      {
+        return firstMemberAccessExpressionTrivia;
+      }
+
+      var secondMemberAccessExpressionTrivia = (node.GetFirstIdentifierName().Ancestors().Where (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression))
+          .Skip (1).FirstOrDefault() as MemberAccessExpressionSyntax)?.OperatorToken.LeadingTrivia.ToFullString();
+      if (!string.IsNullOrEmpty (secondMemberAccessExpressionTrivia))
+      {
+        return secondMemberAccessExpressionTrivia;
+      }
+
+      return string.Empty;
     }
 
     private static bool IsMultiLineStatement (SyntaxNode node)
