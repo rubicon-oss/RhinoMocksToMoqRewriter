@@ -266,7 +266,8 @@ namespace RhinoMocksToMoqRewriter.Tests
           "using System;\r\n" +
           "using System.Collections.Generic;\r\n" +
           "using Rhino.Mocks;\r\n" +
-          "using Moq;\r\n" +
+          "using Rhino.Mocks;\r\n" +
+          "using Rhino.Mocks.Interfaces;\r\n" +
           "using Moq.Protected;\r\n" +
           "using MockRepository = Rhino.Mocks.MockRepository;\r\n" +
           $"namespace {nameSpaceName} {{\r\n" +
@@ -286,12 +287,15 @@ namespace RhinoMocksToMoqRewriter.Tests
             "using MockRepository = Rhino.Mocks.MockRepository;\r\n";
       }
 
+      var usingContext = context.UsingContext.Split (Environment.NewLine).Where (s => s != string.Empty).ToArray();
       var nameSpaceTemplate =
           "using System;\r\n" +
           "using System.Collections.Generic;\r\n" +
           "using System.Linq;\r\n" +
+          $"{string.Join (Environment.NewLine, usingContext.SkipLast (usingContext.Length == 4 ? 2 : 1))}\r\n" +
           "using Rhino.Mocks;\r\n" +
-          $"{context.UsingContext}\r\n" +
+          "using Rhino.Mocks.Interfaces;\r\n" +
+          $"{string.Join (Environment.NewLine, usingContext.Skip (2))}\r\n" +
           $"namespace {nameSpaceName} {{\r\n" +
           $"{context.NamespaceContext} \r\n" +
           $"public interface ITestInterface {{{context.InterfaceContext}}} \r\n" +

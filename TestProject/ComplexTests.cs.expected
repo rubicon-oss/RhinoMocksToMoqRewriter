@@ -12,12 +12,12 @@
 //
 
 using System;
+using Moq;
+using Moq.Protected;
 using NUnit.Framework;
 using Rhino.Mocks;
 using TestProject.TestClasses;
 using TestProject.TestInterfaces;
-using Moq;
-using Moq.Protected;
 using MockRepository = Rhino.Mocks.MockRepository;
 
 namespace TestProject
@@ -79,12 +79,15 @@ namespace TestProject
         _subTransaction.Extensions.Add (extensionMock.ToString());
         try
         {
+          extensionMock.BackToRecord();
+
           extensionMock.Object.ObjectDeleting (_subTransaction, domainObject);
           extensionMock.Object.ObjectDeleted (_subTransaction, domainObject);
 
           domainObject.Delete();
           extensionMock.Verify();
 
+          repository.BackToRecordAll();
           extensionMock.Setup (_ => _.Committing (It.IsAny<ITestInterface>(), It.IsAny<Order>(), It.IsAny<ClientTransaction>())).Verifiable();
           extensionMock.Setup (_ => _.CommitValidate (It.IsAny<ITestInterface>(), It.IsAny<ClientTransaction>())).Verifiable();
           extensionMock.Setup (_ => _.Committed (It.IsAny<ITestInterface>(), It.IsAny<ClientTransaction>())).Verifiable();

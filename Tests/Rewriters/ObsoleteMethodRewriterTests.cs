@@ -177,15 +177,17 @@ _fieldMock.Replay();",
     [TestCase (
         //language=C#
         @"_fieldMockRepository.BackToRecordAll();",
-        null)]
+        //language=C#
+        @"_fieldMockRepository.BackToRecordAll();")]
     [TestCase (
         //language=C#
         @"_fieldMock.BackToRecord();",
-        null)]
+        //language=C#
+        @"_fieldMock.BackToRecord();")]
     [TestCase (
         //language=C#
-        @"Rhino.Mocks.RhinoMocksExtensions.BackToRecord(_fieldMock);",
-        null)]
+        @"Rhino.Mocks.RhinoMocksExtensions.BackToRecord (_fieldMock);",
+        @"Rhino.Mocks.RhinoMocksExtensions.BackToRecord(_fieldMock);")]
     [Test]
     public void Rewrite_MethodDeclaration (string source, string expected)
     {

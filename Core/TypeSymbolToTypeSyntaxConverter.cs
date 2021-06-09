@@ -25,7 +25,14 @@ namespace RhinoMocksToMoqRewriter.Core
     {
       if (typeSymbol.NullableAnnotation == NullableAnnotation.Annotated)
       {
-        return (TypeSyntax) generator.NullableTypeExpression (ConvertTypeSyntaxNodes (((INamedTypeSymbol) typeSymbol).TypeArguments.First(), generator));
+        return typeSymbol switch
+        {
+            IArrayTypeSymbol arrayTypeSymbol => (TypeSyntax) MoqSyntaxFactory.ArrayType (
+                (TypeSyntax) generator.NullableTypeExpression (
+                    ConvertTypeSyntaxNodes ((arrayTypeSymbol).ElementType, generator))),
+            _ => (TypeSyntax) generator.NullableTypeExpression (ConvertTypeSyntaxNodes (((INamedTypeSymbol) typeSymbol).TypeArguments.FirstOrDefault()
+                                                                                        ?? (INamedTypeSymbol) typeSymbol.OriginalDefinition, generator))
+        };
       }
 
       if (typeSymbol.SpecialType != SpecialType.None)

@@ -335,6 +335,18 @@ _anotherDataStore
     .Callback (
       () => DoSomething())
     .Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"
+_anotherDataStore
+    .Expect (store => store.Clear())
+    .CallOriginalMethod (OriginalCallOptions.CreateExpectation);",
+        //language=C#
+        @"
+_anotherDataStore
+    .Setup (store => store.Clear())
+    .CallOriginalMethod (OriginalCallOptions.CreateExpectation)
+    .Verifiable();")]
     public void Rewrite_MockSetup (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
