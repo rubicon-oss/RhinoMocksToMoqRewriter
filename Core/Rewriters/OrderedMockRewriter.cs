@@ -45,6 +45,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       var nodesToBeReplaced = GetAllMoqExpressionStatements (statements).ToList();
       var parentTrivia = statements.First().Parent?.Parent?.GetLeadingTrivia();
+      var parentTriviaWithoutNewLine = parentTrivia.ToString()!.Replace (Environment.NewLine, "");
+      var memberAccessExpressionTriviaWithoutNewLine = ((MemberAccessExpressionSyntax) statements.First()
+              .DescendantNodes()
+              .First (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression)))
+          .Expression
+          .GetTrailingTrivia();
       for (var i = 0; i < statements.Count; i++)
       {
         var statement = statements[i];
@@ -57,12 +63,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         var firstIdentifierName = statement.GetFirstIdentifierName();
         var newExpressionStatement = (ExpressionStatementSyntax) statement.ReplaceNode (
             firstIdentifierName,
-            MoqSyntaxFactory.InSequenceExpression (firstIdentifierName, index));
+            MoqSyntaxFactory.InSequenceExpression (
+                firstIdentifierName,
+                index,
+                memberAccessExpressionTriviaWithoutNewLine));
 
         statements = statements.Replace (
             statement,
             newExpressionStatement
-                .WithLeadingTrivia (SyntaxFactory.Whitespace(parentTrivia.ToString()!.Replace(Environment.NewLine, "")))
+                .WithLeadingTrivia (SyntaxFactory.Whitespace (parentTriviaWithoutNewLine))
                 .WithTrailingTrivia (SyntaxFactory.Whitespace (Environment.NewLine)));
       }
 
