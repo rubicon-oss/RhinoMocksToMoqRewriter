@@ -241,5 +241,39 @@ var sequence = new MockSequence();"
       Assert.NotNull (actualNode);
       Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
     }
+
+    [Test]
+    [TestCase (
+        //language=C#
+        @"var maybeMock = _mock;",
+        //language=C#
+        @"var maybeMock = _mock;")]
+    [TestCase (
+        //language=C#
+        @"Mock<ITestInterface> aMock = _mock;",
+        //language=C#
+        @"Mock<ITestInterface> aMock = _mock;")]
+    [TestCase (
+        //language=C#
+        @"ITestInterface noMock = _mock;",
+        //language=C#
+        @"ITestInterface noMock = _mock.Object;")]
+    [TestCase (
+        //language=C#
+        @"ITestInterface noMock = _noMock;",
+        //language=C#
+        @"ITestInterface noMock = _noMock;")]
+    public void Rewrite_AssignmentExpression (string source, string expected)
+    {
+      var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context, true);
+      var (_, expectedNode) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (expected, _context);
+      _rewriter.Model = model;
+      _rewriter.RhinoMocksSymbols = new RhinoMocksSymbols (model.Compilation);
+      _rewriter.MoqSymbols = new MoqSymbols (model.Compilation);
+      var actualNode = _rewriter.Visit (node);
+
+      Assert.NotNull (actualNode);
+      Assert.That (expectedNode.IsEquivalentTo (actualNode, false));
+    }
   }
 }
