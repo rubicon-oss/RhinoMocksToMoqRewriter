@@ -54,6 +54,7 @@ public interface IDataStore<TKey, TValue>
                 @"
 void DoSomething();
 int DoSomething (int b);
+string DoSomething (bool b, int i);
 T DoSomething<T> (Func<T> func);
 ITestInterface DoSomething (bool a);
 int A { get; set; }",
@@ -353,6 +354,16 @@ _anotherDataStore
         @"_mock.Expect (_ => _.A = 42);",
         //language=C#
         @"_mock.SetupSet (_ => _.A = 42).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (m => m.DoSomething (true, 1)).Return (null);",
+        //language=C#
+        @"_mock.Setup (m => m.DoSomething (true, 1)).Returns ((string) null).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (m => m.DoSomething (true, 1)).Return (default);",
+        //language=C#
+        @"_mock.Setup (m => m.DoSomething (true, 1)).Returns ((string) default).Verifiable();")]
     public void Rewrite_MockSetup (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);

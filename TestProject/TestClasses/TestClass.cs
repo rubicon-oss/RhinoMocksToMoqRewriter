@@ -70,5 +70,9 @@ namespace TestProject.TestClasses
     {
       return string.Empty;
     }
+    public string GetKey (int i)
+    {
+      return string.Empty;
+    }
   }
 }

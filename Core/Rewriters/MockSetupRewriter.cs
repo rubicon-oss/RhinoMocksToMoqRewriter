@@ -112,6 +112,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               => RewriteStaticExpression (baseCallNode).WithLeadingAndTrailingTriviaOfNode (baseCallNode),
           _ when RhinoMocksSymbols.AllCallbackSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
               => RewriteCallback (baseCallNode).WithLeadingAndTrailingTriviaOfNode (baseCallNode),
+          _ when RhinoMocksSymbols.ReturnSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default) && ContainsSingleNullOrDefaultArgument (baseCallNode.ArgumentList)
+              => baseCallNode.WithArgumentList (RewriteArgumentList (symbol!, baseCallNode.ArgumentList)).WithLeadingAndTrailingTriviaOfNode (baseCallNode),
           _ => baseCallNode
       };
     }
@@ -123,6 +125,22 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return setupInvocationExpression.ArgumentList.GetLambdaExpression().Body is AssignmentExpressionSyntax
           ? MoqSyntaxFactory.SetupSetIdentifierName
           : MoqSyntaxFactory.SetupIdentifierName;
+    }
+
+    private static bool ContainsSingleNullOrDefaultArgument (ArgumentListSyntax argumentList)
+    {
+      var argument = argumentList.Arguments.Single();
+      return argument.IsEquivalentTo (MoqSyntaxFactory.NullArgument(), false)
+             || argument.IsEquivalentTo (MoqSyntaxFactory.DefaultArgument(), false);
+    }
+
+    private ArgumentListSyntax RewriteArgumentList (ISymbol methodSymbol, ArgumentListSyntax argumentList)
+    {
+      var argument = argumentList.Arguments.Single();
+      var returnType = methodSymbol.ContainingType.TypeArguments.Single();
+      var type = TypeSymbolToTypeSyntaxConverter.ConvertTypeSyntaxNodes (returnType, Generator);
+      return MoqSyntaxFactory.SimpleArgumentList (
+          argument.WithExpression (MoqSyntaxFactory.CastExpression (type, argument.Expression)).WithLeadingAndTrailingTriviaOfNode(argument));
     }
 
     private InvocationExpressionSyntax RewriteCallback (InvocationExpressionSyntax node)
