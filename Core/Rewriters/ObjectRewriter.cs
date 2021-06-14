@@ -163,6 +163,30 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return baseCallNode.WithExpressions (newExpressions);
     }
 
+    public override SyntaxNode? VisitAssignmentExpression (AssignmentExpressionSyntax node)
+    {
+      var trackedNodes = TrackNodes (node);
+      var baseCallNode = (AssignmentExpressionSyntax) base.VisitAssignmentExpression (trackedNodes)!;
+      if (baseCallNode.Right is not IdentifierNameSyntax rightIdentifierName)
+      {
+        return baseCallNode;
+      }
+
+      var rightType = Model.GetTypeInfo (baseCallNode.GetOriginalNode (rightIdentifierName, CompilationId)!).Type?.BaseType;
+      if (!MoqSymbols.MoqSymbol.Equals (rightType, SymbolEqualityComparer.Default))
+      {
+        return baseCallNode;
+      }
+
+      var leftType = Model.GetTypeInfo (baseCallNode.GetOriginalNode (baseCallNode.Left, CompilationId)!).Type?.BaseType;
+      if (MoqSymbols.MoqSymbol.Equals (leftType, SymbolEqualityComparer.Default))
+      {
+        return baseCallNode;
+      }
+
+      return baseCallNode.WithRight (MoqSyntaxFactory.MockObjectExpression (rightIdentifierName));
+    }
+
     private T TrackNodes<T> (T node)
         where T : SyntaxNode
     {
