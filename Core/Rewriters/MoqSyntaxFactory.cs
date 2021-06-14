@@ -71,7 +71,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     public static ArgumentSyntax NullArgument ()
     {
-      return SyntaxFactory.Argument (MoqSyntaxFactory.NullLiteralExpression);
+      return MoqSyntaxFactory.Argument (MoqSyntaxFactory.NullLiteralExpression);
+    }
+
+    public static ArgumentSyntax DefaultArgument ()
+    {
+      return MoqSyntaxFactory.Argument (MoqSyntaxFactory.DefaultLiteralExpression);
     }
 
     public static ArgumentSyntax IsNotNullArgument (TypeArgumentListSyntax typeArgumentList)
@@ -827,6 +832,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     public static IdentifierNameSyntax SetupSetIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.SetupSetIdentifier);
 
     private static LiteralExpressionSyntax NullLiteralExpression { get; } = SyntaxFactory.LiteralExpression (SyntaxKind.NullLiteralExpression);
+    private static LiteralExpressionSyntax DefaultLiteralExpression { get; } = SyntaxFactory.LiteralExpression (
+        SyntaxKind.DefaultLiteralExpression,
+        SyntaxFactory.Token (SyntaxKind.DefaultKeyword));
     public static LiteralExpressionSyntax TrueLiteralExpression { get; } = SyntaxFactory.LiteralExpression (SyntaxKind.TrueLiteralExpression);
 
     private static PredefinedTypeSyntax ObjectKeyword { get; } = SyntaxFactory.PredefinedType (SyntaxFactory.Token (SyntaxKind.ObjectKeyword));
@@ -877,5 +885,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static SyntaxToken SetupSetIdentifier => SyntaxFactory.Identifier ("SetupSet");
 
     #endregion
+    public static ExpressionSyntax CastExpression (TypeSyntax type, ExpressionSyntax expression)
+    {
+      return SyntaxFactory.CastExpression (type, expression.WithLeadingTrivia (SyntaxFactory.Space));
+    }
   }
 }

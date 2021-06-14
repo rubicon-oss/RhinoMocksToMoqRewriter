@@ -46,6 +46,8 @@ namespace TestProject
       _typeInformationStub = new Mock<ITypeInformation>();
       _typeInformationForResourceResolutionStub = new Mock<ITypeInformation>();
       _propertyInformationStub = new Mock<IPropertyInformation>();
+
+      _serviceStub.Setup (_ => _.GetKey (1)).Returns ((string) null);
     }
 
     [Test]

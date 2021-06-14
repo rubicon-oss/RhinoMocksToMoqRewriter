@@ -26,5 +26,6 @@ namespace TestProject.TestInterfaces
     bool TryGetPropertyDisplayName (IPropertyInformation @is, ITypeInformation typeInformation, out string dummy);
     bool ContainsPropertyDisplayName (IPropertyInformation propertyInformationStub, ITypeInformation typeInformationForResourceResolutionStub);
     string GetPropertyDisplayName (IPropertyInformation propertyInformationStub, ITypeInformation typeInformationForResourceResolutionStub);
+    string GetKey (int i);
   }
 }
