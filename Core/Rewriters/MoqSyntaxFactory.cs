@@ -824,6 +824,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     public static IdentifierNameSyntax ProtectedIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.ProtectedIdentifier);
     public static IdentifierNameSyntax SystemIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.SystemIdentifier);
     public static IdentifierNameSyntax StaticIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.StaticIdentifier);
+    public static IdentifierNameSyntax SetupSetIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.SetupSetIdentifier);
 
     private static LiteralExpressionSyntax NullLiteralExpression { get; } = SyntaxFactory.LiteralExpression (SyntaxKind.NullLiteralExpression);
     public static LiteralExpressionSyntax TrueLiteralExpression { get; } = SyntaxFactory.LiteralExpression (SyntaxKind.TrueLiteralExpression);
@@ -873,6 +874,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static SyntaxToken ProtectedIdentifier => SyntaxFactory.Identifier ("Protected");
     private static SyntaxToken SystemIdentifier => SyntaxFactory.Identifier ("System");
     private static SyntaxToken StaticIdentifier => SyntaxFactory.Identifier ("static");
+    private static SyntaxToken SetupSetIdentifier => SyntaxFactory.Identifier ("SetupSet");
 
     #endregion
   }

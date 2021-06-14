@@ -53,7 +53,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
       if (node.IsEquivalentTo (baseCallNode, false))
       {
-        return baseCallNode.WithLeadingAndTrailingTriviaOfNode(node);
+        return baseCallNode.WithLeadingAndTrailingTriviaOfNode (node);
       }
 
       return _formatter.Format (
@@ -114,6 +114,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               => RewriteCallback (baseCallNode).WithLeadingAndTrailingTriviaOfNode (baseCallNode),
           _ => baseCallNode
       };
+    }
+
+    private IdentifierNameSyntax RewriteSetup (MemberAccessExpressionSyntax node)
+    {
+      var originalNode = node.GetOriginalNode (node, CompilationId)!;
+      var setupInvocationExpression = (InvocationExpressionSyntax) originalNode.Ancestors().First (s => s.IsKind (SyntaxKind.InvocationExpression));
+      return setupInvocationExpression.ArgumentList.GetLambdaExpression().Body is AssignmentExpressionSyntax
+          ? MoqSyntaxFactory.SetupSetIdentifierName
+          : MoqSyntaxFactory.SetupIdentifierName;
     }
 
     private InvocationExpressionSyntax RewriteCallback (InvocationExpressionSyntax node)
@@ -200,9 +209,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return symbol switch
       {
           _ when RhinoMocksSymbols.ExpectSymbols.Contains (methodSymbol?.ReducedFrom, SymbolEqualityComparer.Default)
-              => node.WithName (MoqSyntaxFactory.SetupIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
+              => node.WithName (RewriteSetup (node)).WithLeadingAndTrailingTriviaOfNode (node.Name),
           _ when RhinoMocksSymbols.StubSymbols.Contains (methodSymbol?.ReducedFrom, SymbolEqualityComparer.Default)
-              => node.WithName (MoqSyntaxFactory.SetupIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
+              => node.WithName (RewriteSetup (node)).WithLeadingAndTrailingTriviaOfNode (node.Name),
           _ when RhinoMocksSymbols.AllCallbackSymbols.Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
               => node.WithName (MoqSyntaxFactory.CallbackIdentifierName).WithLeadingAndTrailingTriviaOfNode (node.Name),
           _ when RhinoMocksSymbols.ReturnSymbols.Contains (methodSymbol?.OriginalDefinition, SymbolEqualityComparer.Default)
