@@ -277,7 +277,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private bool IsMockFromCurrentMockRepository (IdentifierNameSyntax mockRepositoryIdentifierName, InvocationExpressionSyntax generateMockExpression)
     {
       return mockRepositoryIdentifierName.IsEquivalentTo (generateMockExpression.GetFirstIdentifierName(), false)
-             && RhinoMocksSymbols.AllMockRepositorySymbols.Contains (
+             && RhinoMocksSymbols.AllMockSymbols.Contains (
                  Model.GetSymbolInfo (generateMockExpression.Expression).Symbol!.OriginalDefinition,
                  SymbolEqualityComparer.Default);
     }

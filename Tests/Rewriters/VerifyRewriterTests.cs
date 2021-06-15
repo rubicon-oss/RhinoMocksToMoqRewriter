@@ -31,6 +31,7 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
             //language=C#
             ClassContext =
                 @"
+private ITestInterface _stub1; 
 private ITestInterface _mock1; 
 private ITestInterface _mock2;
 private ITestInterface _mock3;
@@ -55,10 +56,12 @@ _mock1 = _mockRepository1.StrictMock<ITestInterface>();
 _mock2 = _mockRepository1.PartialMock<ITestInterface>();
 _mock3 = _mockRepository1.PartialMultiMock<ITestInterface>();
 _mock4 = _mockRepository1.DynamicMock<ITestInterface>();
+_stub1 = _mockRepository3.Stub<ITestInterface>();
 _mock5 = _mockRepository2.DynamicMultiMock<ITestInterface>();
 _mock6 = _mockRepository2.StrictMock<ITestInterface>();
 _mock7 = _mockRepository3.StrictMock<ITestInterface>();
 _mock8 = _mockRepository3.StrictMock<ITestInterface>();
+var stub2 = _mockRepository3.Stub<ITestInterface>();
 var localMock1 = _mockRepository4.StrictMock<ITestInterface>();
 var localMock2 = _mockRepository4.StrictMock<ITestInterface>();
 ITestInterface noMock;"
