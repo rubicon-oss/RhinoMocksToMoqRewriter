@@ -159,7 +159,7 @@ namespace TestProject
       _serviceStub
           .Setup (
               _ => _.TryGetPropertyDisplayName (
-                  _propertyInformationStub.Object,
+                  new Mock<IPropertyInformation>().Object,
                   _typeInformationForResourceResolutionStub.Object,
                   out Arg<string>.Out (null).Dummy))
           .Returns (false);
@@ -209,6 +209,11 @@ namespace TestProject
 
     private void CheckInnerDataStoreIsProtected ()
     {
+      var stub = new Mock<IPropertyInformation>();
+      IPropertyInformation a = stub.Object;
+
+      var testClass = new TestClass();
+      testClass.RegisterSingle (() => stub.Object);
     }
   }
 }

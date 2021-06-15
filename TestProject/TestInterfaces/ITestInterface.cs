@@ -27,5 +27,6 @@ namespace TestProject.TestInterfaces
     bool ContainsPropertyDisplayName (IPropertyInformation propertyInformationStub, ITypeInformation typeInformationForResourceResolutionStub);
     string GetPropertyDisplayName (IPropertyInformation propertyInformationStub, ITypeInformation typeInformationForResourceResolutionStub);
     string GetKey (int i);
+    public void RegisterSingle<TService> (Func<TService> instanceFactory);
   }
 }
