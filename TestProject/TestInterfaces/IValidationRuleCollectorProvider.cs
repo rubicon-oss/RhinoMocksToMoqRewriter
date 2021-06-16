@@ -18,5 +18,6 @@ namespace TestProject.TestInterfaces
   public interface IValidationRuleCollectorProvider
   {
     IEnumerable<IEnumerable<ValidationRuleCollectorInfo>> GetValidationRuleCollectors (IEnumerable<Type> types);
+    void PropertyValueChanging (ClientTransaction o, IPropertyInformation o1, IControl o2, object o3, object o4);
   }
 }

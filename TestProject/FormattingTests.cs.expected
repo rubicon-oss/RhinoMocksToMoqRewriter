@@ -15,6 +15,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using Moq;
 using Moq.Protected;
 using NUnit.Framework;
@@ -145,6 +146,53 @@ namespace TestProject
 
       Assert.That (42, Is.GreaterThan (TimeSpan.FromMilliseconds (5.0))); // total
       Assert.That (21, Is.GreaterThan (TimeSpan.FromMilliseconds (5.0))); // since last checkpoint
+    }
+
+    [Test]
+    public void Rewrite_MethodDeletion ()
+    {
+    }
+
+    [Test]
+    public void Rewrite_MethodDeletion_123 ()
+    {
+      var typeGroup1 = new[] { typeof (ITestInterface), typeof (ICollection) };
+      _validationRuleCollectorProviderMock1.Setup (
+              mock => mock.GetValidationRuleCollectors (typeGroup1)).Returns (Enumerable.Empty<IEnumerable<ValidationRuleCollectorInfo>>());
+    }
+
+    [Test]
+    public void Rewrite_MethodDeletion_WhenCalled_formatting ()
+    {
+      var typeGroup1 = new[] { typeof (ITestInterface), typeof (ICollection) };
+      _validationRuleCollectorProviderMock1
+          .Setup (mock => mock.GetValidationRuleCollectors (typeGroup1))
+          .Returns (Enumerable.Empty<IEnumerable<ValidationRuleCollectorInfo>>())
+          .Callback (
+              (IEnumerable<Type> types) =>
+              {
+                var a = mi.Arguments[0];
+              })
+          .Verifiable();
+    }
+
+    [Test]
+    public void Rewrite_MethodDeletion_abc ()
+    {
+      var typeGroup1 = new[] { typeof (ITestInterface), typeof (ICollection) };
+    }
+
+    [Test]
+    public void d ()
+    {
+      var typeGroup1 = new[] { typeof (ITestInterface), typeof (ICollection) };
+
+      _validationRuleCollectorProviderMock1.Setup (_ => _.PropertyValueChanging (It.IsAny<ClientTransaction>(), It.IsAny<IPropertyInformation>(), It.IsAny<IControl>(), It.IsAny<object>(), It.IsAny<object>())).Callback (
+          (ClientTransaction o, IPropertyInformation o1, IControl o2, object o3, object o4) =>
+          {
+            var propertyDefinition = ((PropertyDefinition) mi.Arguments[2]);
+            var newValue = ((string) mi.Arguments[4]);
+          });
     }
   }
 }
