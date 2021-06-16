@@ -294,10 +294,10 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                       variableDeclarators)));
     }
 
-    public static MemberAccessExpressionSyntax MockObjectExpression (IdentifierNameSyntax identifierName)
+    public static MemberAccessExpressionSyntax MockObjectExpression (ExpressionSyntax expression)
     {
       return MoqSyntaxFactory.MemberAccessExpression (
-          identifierName,
+          expression,
           MoqSyntaxFactory.ObjectIdentifierName);
     }
 

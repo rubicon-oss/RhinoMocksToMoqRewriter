@@ -74,5 +74,8 @@ namespace TestProject.TestClasses
     {
       return string.Empty;
     }
+    public void RegisterSingle<TService> (Func<TService> instanceFactory)
+    {
+    }
   }
 }

@@ -86,7 +86,8 @@ namespace RhinoMocksToMoqRewriter.Tests
           {
               ClassContext = context.ClassContext + Environment.NewLine + source,
               InterfaceContext = context.InterfaceContext,
-              MethodContext = context.MethodContext
+              MethodContext = context.MethodContext,
+              NamespaceContext = context.NamespaceContext
           };
       var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", string.Empty, tempContext, ignoreErrors);
       var fieldDeclarationSyntax = syntaxNode.DescendantNodes()
@@ -94,6 +95,16 @@ namespace RhinoMocksToMoqRewriter.Tests
           .Last();
 
       return (semanticModel, fieldDeclarationSyntax);
+    }
+
+    public static (SemanticModel, StatementSyntax) CompileStatementWithContext (string source, Context context, bool ignoreErrors = false)
+    {
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
+      var statement = syntaxNode.DescendantNodes()
+          .OfType<StatementSyntax>()
+          .LastOrDefault();
+
+      return (semanticModel, statement);
     }
 
     public static (SemanticModel, ExpressionStatementSyntax) CompileExpressionStatement (string source, bool ignoreErrors = false)
