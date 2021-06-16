@@ -159,7 +159,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return node;
       }
 
-      var parameter = callbackArgument.DescendantNodes().Single (s => s.IsKind (SyntaxKind.Parameter));
+      var parameter = callbackArgument.DescendantNodes().First (s => s.IsKind (SyntaxKind.Parameter));
       if (callbackLambdaExpression.Body is not AssignmentExpressionSyntax assignmentExpression || parameterTypesAndNames is null)
       {
         return node.WithArgumentList (
@@ -199,7 +199,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return node.DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.InvocationExpression))
           .Select (s => (InvocationExpressionSyntax) s)
-          .Single (
+          .First (
               s => Model.GetSymbolInfo (s).Symbol is IMethodSymbol symbol
                    && (RhinoMocksSymbols.ExpectSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)
                        || RhinoMocksSymbols.StubSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)))

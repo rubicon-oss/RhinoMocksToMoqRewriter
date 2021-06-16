@@ -80,7 +80,18 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       nodeAsString = DeleteObsoleteNewLinesAfterCurlyBrackets (nodeAsString);
       nodeAsString = DeleteObsoleteNewLinesBeforeCurlyBrackets (nodeAsString);
       nodeAsString = DeleteObsoleteNewLinesBetweenStatements (nodeAsString);
-      return ParseMethodDeclaration (nodeAsString) ?? node;
+      var formattedNode = ParseMethodDeclaration (nodeAsString);
+      if (formattedNode is null)
+      {
+        return node;
+      }
+
+      if (formattedNode.GetLeadingTrivia().ToFullString().Contains ("#if"))
+      {
+        return formattedNode;
+      }
+
+      return formattedNode.WithLeadingAndTrailingTriviaOfNode (node);
     }
 
     private static string DeleteObsoleteNewLinesBetweenStatements (string nodeAsString)
