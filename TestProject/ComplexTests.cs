@@ -55,6 +55,8 @@ namespace TestProject
       Page namingContainer = new Page();
       IControl parentControlMock = mockRepository.PartialMock<IControl>();
       IControl childControlMock = mockRepository.PartialMock<IControl>();
+      IControl childControlStub = mockRepository.Stub<IControl>();
+      IControl anotherStub = MockRepository.GenerateStub<IControl>();
 
       using (mockRepository.Ordered())
       {

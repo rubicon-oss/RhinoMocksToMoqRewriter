@@ -381,6 +381,20 @@ namespace RhinoMocksToMoqRewriter.Core
       }
     }
 
+    private IReadOnlyList<ISymbol>? _allMockSymbols;
+    public IReadOnlyList<ISymbol> AllMockSymbols
+    {
+      get
+      {
+        return _allMockSymbols ??= AllStrictMockSymbols
+            .Concat (AllPartialMockSymbols)
+            .Concat (MockRepositoryDynamicMultiMockSymbols)
+            .Concat (MockRepositoryDynamicMockSymbols)
+            .ToList()
+            .AsReadOnly();
+      }
+    }
+
     private IReadOnlyList<ISymbol>? _allIRepeatSymbols;
     public IReadOnlyList<ISymbol> AllIRepeatSymbols => _allIRepeatSymbols ??= RhinoMocksIRepeatSymbol.GetMembers().ToList().AsReadOnly();
 
