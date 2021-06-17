@@ -52,7 +52,27 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     public override SyntaxNode? VisitArgumentList (ArgumentListSyntax node)
     {
       var baseCallNode = (ArgumentListSyntax) base.VisitArgumentList (node)!;
-      return FormatArgumentList (baseCallNode);
+      var formattedArgumentList = FormatArgumentList (baseCallNode);
+      formattedArgumentList = formattedArgumentList
+          .WithOpenParenToken (
+              node.OpenParenToken
+                  .WithLeadingTrivia (formattedArgumentList.IsEmpty() ? SyntaxFactory.Whitespace (string.Empty) : SyntaxFactory.Space))
+          .WithCloseParenToken (node.CloseParenToken);
+
+      return RemoveRedundantNewLines (formattedArgumentList.ToFullString());
+    }
+
+    private static ArgumentListSyntax RemoveRedundantNewLines (string nodeAsString)
+    {
+      const string redundantNewLinePattern = @"(?<!^)\((\n|\r\n){2,}";
+      var matches = Regex.Matches (nodeAsString, redundantNewLinePattern).Select (s => s.ToString());
+      foreach (var match in matches)
+      {
+        var nodeWithDeletedNewLine = $"{match.First()}{Environment.NewLine}";
+        nodeAsString = nodeAsString.Replace (match, nodeWithDeletedNewLine);
+      }
+
+      return SyntaxFactory.ParseArgumentList (nodeAsString);
     }
 
     public override SyntaxNode? VisitFieldDeclaration (FieldDeclarationSyntax node)
@@ -103,9 +123,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static string DeleteObsoleteNewLinesBeforeCurlyBrackets (string nodeAsString)
     {
-      const string? pattern = "(\n|\r\n){2,}}";
+      const string? pattern = "(\n|\r\n){2,} *}";
       var matches = Regex.Matches (nodeAsString, pattern).Select (m => m.ToString());
-      return matches.Aggregate (nodeAsString, (current, match) => current.Replace (match, $"{Environment.NewLine}{match.Last()}"));
+      return matches.Aggregate (
+          nodeAsString,
+          (current, match) => current
+              .Replace (match, $"{Environment.NewLine}{match.Replace (Environment.NewLine, string.Empty)}"));
     }
 
     private static string DeleteObsoleteNewLinesAfterCurlyBrackets (string nodeAsString)
@@ -134,7 +157,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static ExpressionStatementSyntax RemoveRedundantWhitespaces (ExpressionStatementSyntax baseCallNode)
     {
       var nodeAsString = baseCallNode.ToFullString();
-      const string? redundantSpaceBetweenParenthesesPattern = @"(?<!^).{1} {2,}\(";
+      const string? redundantSpaceBetweenParenthesesPattern = @"(?<!^)\w{1} {2,}\(";
       var matches = Regex.Matches (nodeAsString, redundantSpaceBetweenParenthesesPattern).Select (s => s.ToString());
       foreach (var match in matches)
       {
@@ -233,7 +256,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                       genericNameSyntax.TypeArgumentList
                           .WithoutTrivia())
                   .WithLeadingTrivia (SyntaxFactory.Space))
-          .WithArgumentList (node.ArgumentList)
+          .WithArgumentList (
+              node.ArgumentList!
+                  .WithTrailingTrivia (
+                      node.ArgumentList?.Arguments.HasMultiLineItems() == true
+                          ? SyntaxFactory.Whitespace (Environment.NewLine)
+                          : SyntaxFactory.Whitespace (string.Empty)))
           .WithInitializer (formattedObjectInitializer);
     }
 

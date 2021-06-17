@@ -140,7 +140,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var returnType = methodSymbol.ContainingType.TypeArguments.Single();
       var type = TypeSymbolToTypeSyntaxConverter.ConvertTypeSyntaxNodes (returnType, Generator);
       return MoqSyntaxFactory.SimpleArgumentList (
-          argument.WithExpression (MoqSyntaxFactory.CastExpression (type, argument.Expression)).WithLeadingAndTrailingTriviaOfNode(argument));
+          argument.WithExpression (MoqSyntaxFactory.CastExpression (type, argument.Expression)).WithLeadingAndTrailingTriviaOfNode (argument));
     }
 
     private InvocationExpressionSyntax RewriteCallback (InvocationExpressionSyntax node)
@@ -165,8 +165,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return node.WithArgumentList (
             MoqSyntaxFactory.SimpleArgumentList (
                     MoqSyntaxFactory.ParenthesizedLambdaExpression (
-                        parameterList.WithLeadingTrivia (parameter.GetLeadingTrivia()),
-                        callbackLambdaExpression.Body.WithLeadingTrivia (SyntaxFactory.Space)))
+                            parameterList.WithLeadingTrivia (parameter.GetLeadingTrivia()),
+                            callbackLambdaExpression.Body.WithLeadingTrivia (parameter.GetLeadingTrivia()))
+                        .WithArrowToken (callbackLambdaExpression.ArrowToken))
                 .WithOpenParenToken (node.ArgumentList.OpenParenToken)
                 .WithCloseParenToken (node.ArgumentList.CloseParenToken)
                 .WithLeadingAndTrailingTriviaOfNode (node.ArgumentList));
