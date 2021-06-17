@@ -178,8 +178,8 @@ namespace TestProject
 
       _propertyInformationStub.Stub (_ => _.DeclaringType).Return (_typeInformationStub);
 
-      var result = _serviceStub.GetPropertyDisplayName (_propertyInformationStub, _typeInformationForResourceResolutionStub);
-
+      var result = _serviceStub.GetPropertyDisplayName (MockRepository.GenerateStub<IPropertyInformation>(), _typeInformationForResourceResolutionStub);
+      var a = new[] { MockRepository.GenerateStub<IPropertyInformation>(), _propertyInformationStub, MockRepository.GenerateStub<IPropertyInformation>() };
       Assert.That (result, Is.EqualTo ("PropertyName"));
     }
 

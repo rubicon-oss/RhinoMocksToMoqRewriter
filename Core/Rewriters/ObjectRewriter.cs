@@ -124,12 +124,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       for (var i = 0; i < baseCallNode.Expressions.Count; i++)
       {
         var expression = newExpressions[i];
-        if (expression is not IdentifierNameSyntax identifierName)
+        if (expression is not IdentifierNameSyntax and not ObjectCreationExpressionSyntax)
         {
           continue;
         }
 
-        var typeSymbol = Model.GetTypeInfo (baseCallNode.GetOriginalNode (identifierName, CompilationId)!).Type?.OriginalDefinition;
+        var typeSymbol = Model.GetTypeInfo (baseCallNode.GetOriginalNode (expression, CompilationId)!).Type?.OriginalDefinition;
         if (!MoqSymbols.GenericMoqSymbol.Equals (typeSymbol, SymbolEqualityComparer.Default))
         {
           continue;
@@ -141,12 +141,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           {
             newExpressions = newExpressions.Replace (
                 expression,
-                MoqSyntaxFactory.MockObjectExpression (identifierName.WithoutTrailingTrivia())
-                    .WithTrailingTrivia (identifierName.GetTrailingTrivia()));
+                MoqSyntaxFactory.MockObjectExpression (expression.WithoutTrailingTrivia())
+                    .WithTrailingTrivia (expression.GetTrailingTrivia()));
           }
           else
           {
-            newExpressions = newExpressions.Replace (expression, MoqSyntaxFactory.MockObjectExpression (identifierName));
+            newExpressions = newExpressions.Replace (expression, MoqSyntaxFactory.MockObjectExpression (expression));
           }
         }
         catch (Exception ex)
@@ -232,6 +232,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       if (!MoqSymbols.GenericMoqSymbol.Equals (symbol, SymbolEqualityComparer.Default))
       {
         return baseCallNode.WithLeadingAndTrailingTriviaOfNode (node);
+      }
+
+      if (originalNode.Parent is ArgumentSyntax)
+      {
+        return MoqSyntaxFactory.MockObjectExpression (baseCallNode).WithLeadingAndTrailingTriviaOfNode (node);
       }
 
       if (originalNode.Ancestors().Any (s => s.IsKind (SyntaxKind.SimpleAssignmentExpression))

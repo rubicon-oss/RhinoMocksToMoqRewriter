@@ -166,8 +166,8 @@ namespace TestProject
 
       _propertyInformationStub.Setup (_ => _.DeclaringType).Returns (_typeInformationStub.Object);
 
-      var result = _serviceStub.Object.GetPropertyDisplayName (_propertyInformationStub.Object, _typeInformationForResourceResolutionStub.Object);
-
+      var result = _serviceStub.Object.GetPropertyDisplayName (new Mock<IPropertyInformation>().Object, _typeInformationForResourceResolutionStub.Object);
+      var a = new[] { new Mock<IPropertyInformation>().Object, _propertyInformationStub.Object, new Mock<IPropertyInformation>().Object };
       Assert.That (result, Is.EqualTo ("PropertyName"));
     }
 
