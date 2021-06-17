@@ -290,6 +290,11 @@ var aClass = new A();"
         @"ITestInterface noMock = _noMock;",
         //language=C#
         @"ITestInterface noMock = _noMock;")]
+    [TestCase (
+        //language=C#
+        @"var a = new[] { new Mock<ITestInterface>(), _mock };",
+        //language=C#
+        @"var a = new[] { new Mock<ITestInterface>().Object, _mock.Object };")]
     public void Rewrite_LocalDeclarationStatement (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileStatementWithContext (source, _context, true);
