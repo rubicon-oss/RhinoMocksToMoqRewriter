@@ -257,7 +257,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                           .WithoutTrivia())
                   .WithLeadingTrivia (SyntaxFactory.Space))
           .WithArgumentList (
-              node.ArgumentList!
+              node.ArgumentList?
                   .WithTrailingTrivia (
                       node.ArgumentList?.Arguments.HasMultiLineItems() == true
                           ? SyntaxFactory.Whitespace (Environment.NewLine)

@@ -118,7 +118,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private ArgumentListSyntax ConvertConstraints (ArgumentListSyntax originalArgumentList, IReadOnlyList<ITypeSymbol> parameterTypes)
     {
-      var convertedArguments = parameterTypes.Select ((s, i) => MoqSyntaxFactory.MatchesArgument (TypeSymbolToTypeSyntaxConverter.ConvertTypeSyntaxNodes (s, Generator), originalArgumentList.Arguments[i]));
+      var convertedArguments = parameterTypes.Select ((s, i) => MoqSyntaxFactory.MatchesArgument (TypeSymbolToTypeSyntaxConverter.ConvertTypeSyntaxNodes (s, Generator)!, originalArgumentList.Arguments[i]));
       return MoqSyntaxFactory.SimpleArgumentList (convertedArguments);
     }
 

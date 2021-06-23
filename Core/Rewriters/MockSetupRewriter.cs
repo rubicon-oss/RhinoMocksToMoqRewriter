@@ -73,7 +73,12 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           identifierName,
           MoqSyntaxFactory.ProtectedMock (identifierName));
 
-      var argumentlist = ((InvocationExpressionSyntax) invocationExpression.GetLambdaExpression().Body).ArgumentList.Arguments.Skip (1).ToList();
+      if (invocationExpression.GetLambdaExpressionOrDefault()?.Body is not InvocationExpressionSyntax innerInvocationExpression)
+      {
+        return invocationExpression;
+      }
+
+      var argumentlist = innerInvocationExpression.ArgumentList.Arguments.Skip (1).ToList();
       argumentlist.Insert (1, MoqSyntaxFactory.SimpleArgument (MoqSyntaxFactory.TrueLiteralExpression));
 
       invocationExpression = invocationExpression.GetCurrentNode (invocationExpression, CompilationId)!.ReplaceNode (
@@ -122,7 +127,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       var originalNode = node.GetOriginalNode (node, CompilationId)!;
       var setupInvocationExpression = (InvocationExpressionSyntax) originalNode.Ancestors().First (s => s.IsKind (SyntaxKind.InvocationExpression));
-      return setupInvocationExpression.ArgumentList.GetLambdaExpression().Body is AssignmentExpressionSyntax
+      return setupInvocationExpression.ArgumentList.GetLambdaExpressionOrDefault()?.Body is AssignmentExpressionSyntax
           ? MoqSyntaxFactory.SetupSetIdentifierName
           : MoqSyntaxFactory.SetupIdentifierName;
     }
@@ -138,19 +143,39 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       var argument = argumentList.Arguments.Single();
       var returnType = methodSymbol.ContainingType.TypeArguments.Single();
-      var type = TypeSymbolToTypeSyntaxConverter.ConvertTypeSyntaxNodes (returnType, Generator);
-      return MoqSyntaxFactory.SimpleArgumentList (
-          argument.WithExpression (MoqSyntaxFactory.CastExpression (type, argument.Expression)).WithLeadingAndTrailingTriviaOfNode (argument));
+      try
+      {
+        var type = TypeSymbolToTypeSyntaxConverter.ConvertTypeSyntaxNodes (returnType, Generator);
+        return MoqSyntaxFactory.SimpleArgumentList (
+            argument.WithExpression (MoqSyntaxFactory.CastExpression (type, argument.Expression)).WithLeadingAndTrailingTriviaOfNode (argument));
+      }
+      catch (Exception)
+      {
+        return argumentList;
+      }
     }
 
     private InvocationExpressionSyntax RewriteCallback (InvocationExpressionSyntax node)
     {
       var originalNode = node.GetOriginalNode (node, CompilationId)!;
       var argument = GetFirstArgumentFromExpectOrStubMethod (originalNode);
-      List<(TypeSyntax type, IdentifierNameSyntax identifierName)>? parameterTypesAndNames =
-          argument.Expression is not LambdaExpressionSyntax { Body: InvocationExpressionSyntax mockedExpression }
-              ? null
-              : GetParameterTypesAndNames (mockedExpression)?.ToList();
+      if (argument is null)
+      {
+        return node;
+      }
+
+      List<(TypeSyntax type, IdentifierNameSyntax identifierName)>? parameterTypesAndNames = null!;
+      try
+      {
+        parameterTypesAndNames =
+            argument.Expression is not LambdaExpressionSyntax { Body: InvocationExpressionSyntax mockedExpression }
+                ? null
+                : GetParameterTypesAndNames (mockedExpression)?.ToList();
+      }
+      catch (Exception)
+      {
+        return node;
+      }
 
       var parameterList = MoqSyntaxFactory.ParameterList (parameterTypesAndNames);
       var callbackArgument = originalNode.ArgumentList.GetFirstArgumentOrDefault();
@@ -195,24 +220,26 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               .WithLeadingAndTrailingTriviaOfNode (node.ArgumentList));
     }
 
-    private ArgumentSyntax GetFirstArgumentFromExpectOrStubMethod (InvocationExpressionSyntax node)
+    private ArgumentSyntax? GetFirstArgumentFromExpectOrStubMethod (InvocationExpressionSyntax node)
     {
       return node.DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.InvocationExpression))
           .Select (s => (InvocationExpressionSyntax) s)
-          .First (
+          .FirstOrDefault (
               s => Model.GetSymbolInfo (s).Symbol is IMethodSymbol symbol
                    && (RhinoMocksSymbols.ExpectSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                       || RhinoMocksSymbols.StubSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)))
+                       || RhinoMocksSymbols.StubSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)))?
           .ArgumentList
-          .GetFirstArgument();
+          .GetFirstArgumentOrDefault();
     }
 
     private IEnumerable<(TypeSyntax, IdentifierNameSyntax)>? GetParameterTypesAndNames (InvocationExpressionSyntax node)
     {
+
       return Model.GetSymbolInfo (node).Symbol is not IMethodSymbol symbol
           ? null
           : symbol.Parameters.Select (s => (TypeSymbolToTypeSyntaxConverter.ConvertTypeSyntaxNodes (s.Type, Generator), SyntaxFactory.IdentifierName (s.Name)));
+
     }
 
     private SyntaxNode? ConvertMemberAccessExpression (MemberAccessExpressionSyntax node)
@@ -220,9 +247,9 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var symbol = Model.GetSymbolInfo (node.GetOriginalNode (node, CompilationId)!.Name).Symbol;
       if (symbol is not IMethodSymbol methodSymbol)
       {
-        return RhinoMocksSymbols.RhinoMocksIRepeatSymbol.Equals (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
-            ? node.Expression
-            : node;
+          return RhinoMocksSymbols.RhinoMocksIRepeatSymbol.Equals (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+              ? node.Expression
+              : node;
       }
 
       return symbol switch

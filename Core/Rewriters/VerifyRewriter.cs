@@ -33,7 +33,21 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return node;
       }
 
-      var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf(), CompilationId)!;
+      MethodDeclarationSyntax trackedNodes = null!;
+      try
+      {
+        trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf(), CompilationId)!;
+      }
+      catch (Exception ex)
+      {
+        Console.Error.WriteLine (
+            $"WARNING: Unable to convert Verify"
+            + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}"
+            + $"\r\n{ex}");
+
+        return node;
+      }
+
       trackedNodes = ReplaceRhinoMocksVerifyExpressions (trackedNodes, rhinoMocksVerifyExpressionStatements, annotatedSetupExpressionStatements);
 
       return trackedNodes;

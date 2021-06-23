@@ -46,11 +46,20 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var nodesToBeReplaced = GetAllMoqExpressionStatements (statements).ToList();
       var parentTrivia = statements.First().Parent?.Parent?.GetLeadingTrivia();
       var parentTriviaWithoutNewLine = parentTrivia.ToString()!.Replace (Environment.NewLine, "");
-      var memberAccessExpressionTriviaWithoutNewLine = ((MemberAccessExpressionSyntax) statements.First()
-              .DescendantNodes()
-              .First (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression)))
-          .Expression
-          .GetTrailingTrivia();
+      SyntaxTriviaList memberAccessExpressionTriviaWithoutNewLine;
+      try
+      {
+        memberAccessExpressionTriviaWithoutNewLine = ((((MemberAccessExpressionSyntax) statements.First()
+                .DescendantNodes()
+                .First (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression)))))
+            .Expression
+            .GetTrailingTrivia();
+      }
+      catch (Exception)
+      {
+        memberAccessExpressionTriviaWithoutNewLine = SyntaxTriviaList.Empty;
+      }
+
       for (var i = 0; i < statements.Count; i++)
       {
         var statement = statements[i];

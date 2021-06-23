@@ -121,7 +121,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var methodParameterTypeSymbols = methodSymbol.Parameters.Select (p => p.Type).ToArray();
       var isInArguments = methodParameterTypeSymbols.Select (
           typeSymbol => MoqSyntaxFactory.IsAnyArgument (
-              MoqSyntaxFactory.SimpleTypeArgumentList (TypeSymbolToTypeSyntaxConverter.ConvertTypeSyntaxNodes (typeSymbol, Generator))));
+              MoqSyntaxFactory.SimpleTypeArgumentList (TypeSymbolToTypeSyntaxConverter.ConvertTypeSyntaxNodes (typeSymbol, Generator)!)));
 
       return MoqSyntaxFactory.SimpleArgumentList (
           MoqSyntaxFactory.SimpleArgument (
