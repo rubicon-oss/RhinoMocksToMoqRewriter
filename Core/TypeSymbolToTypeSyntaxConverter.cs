@@ -37,7 +37,14 @@ namespace RhinoMocksToMoqRewriter.Core
 
       if (typeSymbol.SpecialType != SpecialType.None)
       {
-        return (PredefinedTypeSyntax) generator.TypeExpression (typeSymbol.SpecialType);
+        try
+        {
+          return (PredefinedTypeSyntax) generator.TypeExpression (typeSymbol.SpecialType);
+        }
+        catch (Exception)
+        {
+          return (QualifiedNameSyntax) generator.TypeExpression (typeSymbol);
+        }
       }
 
       return typeSymbol switch

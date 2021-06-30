@@ -239,8 +239,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static ObjectCreationExpressionSyntax FormatObjectCreationExpression (ObjectCreationExpressionSyntax node)
     {
-      var newLineCharacter = node.ArgumentList!.GetNewLineCharacter();
-      var indentation = node.ArgumentList!.GetIndentation();
+      var newLineCharacter = node.ArgumentList?.GetNewLineCharacter() ?? string.Empty;
+      var indentation = node.ArgumentList?.GetIndentation() ?? string.Empty;
 
       var genericNameSyntax = node.DescendantNodes().FirstOrDefault (n => n.IsKind (SyntaxKind.GenericName)) as GenericNameSyntax;
       if (genericNameSyntax == null)
@@ -257,7 +257,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                           .WithoutTrivia())
                   .WithLeadingTrivia (SyntaxFactory.Space))
           .WithArgumentList (
-              node.ArgumentList!
+              node.ArgumentList?
                   .WithTrailingTrivia (
                       node.ArgumentList?.Arguments.HasMultiLineItems() == true
                           ? SyntaxFactory.Whitespace (Environment.NewLine)

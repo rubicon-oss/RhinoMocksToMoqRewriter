@@ -36,6 +36,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var baseCallNode = (ExpressionStatementSyntax) base.VisitExpressionStatement (trackedNodes)!;
 
       var originalNode = baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!;
+      var symbol = Model.GetSymbolInfo (originalNode.Expression).Symbol as IMethodSymbol;
+      if (!RhinoMocksSymbols.AllIMethodOptionsSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+          && !RhinoMocksSymbols.ExpectSymbols.Contains (symbol?.ReducedFrom ?? symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+          && !RhinoMocksSymbols.StubSymbols.Contains (symbol?.ReducedFrom ?? symbol?.OriginalDefinition, SymbolEqualityComparer.Default)
+          && !RhinoMocksSymbols.AllIRepeatSymbols.Contains (symbol?.OriginalDefinition, SymbolEqualityComparer.Default))
+      {
+        return baseCallNode;
+      }
+
       if (NeedsProtectedExpression (originalNode))
       {
         baseCallNode = baseCallNode.WithExpression (TransformSetupExpression ((InvocationExpressionSyntax) baseCallNode.Expression));
@@ -122,7 +131,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       var originalNode = node.GetOriginalNode (node, CompilationId)!;
       var setupInvocationExpression = (InvocationExpressionSyntax) originalNode.Ancestors().First (s => s.IsKind (SyntaxKind.InvocationExpression));
-      return setupInvocationExpression.ArgumentList.GetLambdaExpression().Body is AssignmentExpressionSyntax
+      return setupInvocationExpression.ArgumentList.GetLambdaExpressionOrDefault()?.Body is AssignmentExpressionSyntax
           ? MoqSyntaxFactory.SetupSetIdentifierName
           : MoqSyntaxFactory.SetupIdentifierName;
     }
@@ -147,6 +156,16 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     {
       var originalNode = node.GetOriginalNode (node, CompilationId)!;
       var argument = GetFirstArgumentFromExpectOrStubMethod (originalNode);
+
+      if (argument is null)
+      {
+        Console.Error.WriteLine (
+            $"WARNING: Unable to convert Callback"
+            + $"\r\n{originalNode.SyntaxTree.FilePath} at line {originalNode.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
+
+        return node;
+      }
+
       List<(TypeSyntax type, IdentifierNameSyntax identifierName)>? parameterTypesAndNames =
           argument.Expression is not LambdaExpressionSyntax { Body: InvocationExpressionSyntax mockedExpression }
               ? null
@@ -195,15 +214,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
               .WithLeadingAndTrailingTriviaOfNode (node.ArgumentList));
     }
 
-    private ArgumentSyntax GetFirstArgumentFromExpectOrStubMethod (InvocationExpressionSyntax node)
+    private ArgumentSyntax? GetFirstArgumentFromExpectOrStubMethod (InvocationExpressionSyntax node)
     {
       return node.DescendantNodes()
           .Where (s => s.IsKind (SyntaxKind.InvocationExpression))
           .Select (s => (InvocationExpressionSyntax) s)
-          .First (
+          .FirstOrDefault (
               s => Model.GetSymbolInfo (s).Symbol is IMethodSymbol symbol
                    && (RhinoMocksSymbols.ExpectSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)
-                       || RhinoMocksSymbols.StubSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)))
+                       || RhinoMocksSymbols.StubSymbols.Contains (symbol.ReducedFrom ?? symbol.OriginalDefinition, SymbolEqualityComparer.Default)))?
           .ArgumentList
           .GetFirstArgument();
     }

@@ -25,6 +25,11 @@ namespace RhinoMocksToMoqRewriter.Tests.Rewriters
     [Test]
     [TestCase (
         //language=C#
+        @"new Mock<string>{ Callbase = true }",
+        //language=C#
+        @"new Mock<string> { Callbase = true }")]
+    [TestCase (
+        //language=C#
         @"new Mock<string>()",
         //language=C#
         @"new Mock<string>()")]
