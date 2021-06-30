@@ -201,12 +201,12 @@ namespace RhinoMocksToMoqRewriter.Tests
       return (semanticModel, localDeclaration);
     }
 
-    public static (SemanticModel, SyntaxNode) CompileCompilationUnitWithContext (string source, Context context, bool ignoreErrors = false)
+    public static (SemanticModel, SyntaxNode) CompileCompilationUnitWithContext (string source, Context context, bool ignoreErrors = false, bool insertMissingUsings = true)
     {
       context.UsingContext = source;
       source = string.Empty;
 
-      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors);
+      var (semanticModel, syntaxNode) = CompileInMethodWithContext ("Test", source, context, ignoreErrors, insertMissingUsings);
       return (semanticModel, syntaxNode);
     }
 
@@ -239,7 +239,7 @@ namespace RhinoMocksToMoqRewriter.Tests
       return CompileInClass ("TestClass", methodTemplate, ignoreErrors);
     }
 
-    private static (SemanticModel, SyntaxNode) CompileInMethodWithContext (string methodName, string source, Context context, bool ignoreErrors = false)
+    private static (SemanticModel, SyntaxNode) CompileInMethodWithContext (string methodName, string source, Context context, bool ignoreErrors = false, bool insertMissingUsings = true)
     {
       var methodTemplate =
           $"public void {methodName} () {{\r\n" +
@@ -247,7 +247,7 @@ namespace RhinoMocksToMoqRewriter.Tests
           $"{source}" +
           "}";
 
-      return CompileInClassWithContext ("TestClass", methodTemplate, context, ignoreErrors);
+      return CompileInClassWithContext ("TestClass", methodTemplate, context, ignoreErrors, insertMissingUsings);
     }
 
     private static (SemanticModel, SyntaxNode) CompileInClass (string className, string classContentSource, bool ignoreErrors = false)
@@ -260,7 +260,7 @@ namespace RhinoMocksToMoqRewriter.Tests
       return CompileInNameSpace ("TestNameSpace", classTemplate, ignoreErrors);
     }
 
-    private static (SemanticModel, SyntaxNode) CompileInClassWithContext (string className, string source, Context context, bool ignoreErrors = false)
+    private static (SemanticModel, SyntaxNode) CompileInClassWithContext (string className, string source, Context context, bool ignoreErrors = false, bool insertMissingUsings = true)
     {
       var classTemplateWithContext =
           $"public class {className} {{\r\n" +
@@ -268,7 +268,7 @@ namespace RhinoMocksToMoqRewriter.Tests
           $"{source}\r\n" +
           "}";
 
-      return CompileInNameSpaceWithContext ("TestNameSpace", classTemplateWithContext, context, ignoreErrors);
+      return CompileInNameSpaceWithContext ("TestNameSpace", classTemplateWithContext, context, ignoreErrors, insertMissingUsings);
     }
 
     private static (SemanticModel, SyntaxNode) CompileInNameSpace (string nameSpaceName, string nameSpaceContent, bool ignoreErrors = false)
@@ -288,7 +288,7 @@ namespace RhinoMocksToMoqRewriter.Tests
       return Compile (nameSpaceTemplate, ignoreErrors);
     }
 
-    private static (SemanticModel, SyntaxNode) CompileInNameSpaceWithContext (string nameSpaceName, string nameSpaceContent, Context context, bool ignoreErrors = false)
+    private static (SemanticModel, SyntaxNode) CompileInNameSpaceWithContext (string nameSpaceName, string nameSpaceContent, Context context, bool ignoreErrors = false, bool insertMissingUsings = true)
     {
       if (context.UsingContext == string.Empty)
       {
@@ -302,11 +302,18 @@ namespace RhinoMocksToMoqRewriter.Tests
       var nameSpaceTemplate =
           "using System;\r\n" +
           "using System.Collections.Generic;\r\n" +
-          "using System.Linq;\r\n" +
-          $"{string.Join (Environment.NewLine, usingContext.SkipLast (usingContext.Length == 4 ? 2 : 1))}\r\n" +
-          "using Rhino.Mocks;\r\n" +
-          "using Rhino.Mocks.Interfaces;\r\n" +
-          $"{string.Join (Environment.NewLine, usingContext.Skip (2))}\r\n" +
+          "using System.Linq;\r\n";
+
+      if (insertMissingUsings)
+      {
+        nameSpaceTemplate +=
+            $"{string.Join (Environment.NewLine, usingContext.SkipLast (usingContext.Length == 4 ? 2 : 1))}\r\n" +
+            "using Rhino.Mocks;\r\n" +
+            "using Rhino.Mocks.Interfaces;\r\n" +
+            $"{string.Join (Environment.NewLine, usingContext.Skip (2))}\r\n";
+      }
+
+      nameSpaceTemplate +=
           $"namespace {nameSpaceName} {{\r\n" +
           $"{context.NamespaceContext} \r\n" +
           $"public interface ITestInterface {{{context.InterfaceContext}}} \r\n" +

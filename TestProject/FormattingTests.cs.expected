@@ -19,10 +19,8 @@ using System.Reflection.Metadata;
 using Moq;
 using Moq.Protected;
 using NUnit.Framework;
-using Rhino.Mocks;
 using TestProject.TestClasses;
 using TestProject.TestInterfaces;
-using MockRepository = Rhino.Mocks.MockRepository;
 
 namespace TestProject
 {

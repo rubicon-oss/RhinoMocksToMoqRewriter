@@ -45,6 +45,7 @@ namespace RhinoMocksToMoqRewriter.Core
             new ArgumentRewriter(),
             new ObsoleteMethodRewriter (Formatter),
             new ObjectRewriter(),
+            new RhinoMocksUsingDirectiveRewriter(),
         };
 
     public static async Task RewriteAsync (IEnumerable<CSharpCompilation> compilations, SyntaxGenerator generator, Workspace workspace)
