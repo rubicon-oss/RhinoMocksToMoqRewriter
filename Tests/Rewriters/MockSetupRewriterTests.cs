@@ -364,6 +364,11 @@ _anotherDataStore
         @"_mock.Expect (m => m.DoSomething (true, 1)).Return (default);",
         //language=C#
         @"_mock.Setup (m => m.DoSomething (true, 1)).Returns ((string) default).Verifiable();")]
+    [TestCase (
+        //language=C#
+        @"_mock.Expect (null);",
+        //language=C#
+        @"_mock.Setup (null).Verifiable();")]
     public void Rewrite_MockSetup (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);

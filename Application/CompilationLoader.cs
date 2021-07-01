@@ -59,9 +59,29 @@ namespace RhinoMocksToMoqRewriter.Application
           .WhenAll (projects.Select (async p => await p.GetCompilationAsync()));
       var rhinoMocksCompilations = allCompilations
           .Select (c => c as CSharpCompilation)
-          .Where (c => c?.ReferencedAssemblyNames.Any (a => a.Name.Contains ("Rhino.Mocks")) == true);
+          .Where (c => c?.ReferencedAssemblyNames.Any (a => a.Name.Contains ("Rhino.Mocks")) == true)
+          .ToList();
+      var moqCompilations = allCompilations
+          .Select (c => c as CSharpCompilation)
+          .Where (c => c?.ReferencedAssemblyNames.Any (a => a.Name.Contains ("Moq")) == true)
+          .ToList();
 
-      return rhinoMocksCompilations.ToList().AsReadOnly()!;
+      AssertThatAllRhinoMocksCompilationsReferenceMoq (rhinoMocksCompilations!, moqCompilations!);
+
+      return rhinoMocksCompilations.AsReadOnly()!;
+    }
+
+    private static void AssertThatAllRhinoMocksCompilationsReferenceMoq (IReadOnlyList<CSharpCompilation> rhinoMocksCompilations, IReadOnlyList<CSharpCompilation> moqCompilations)
+    {
+      var projectsWithMissingMoqReference = rhinoMocksCompilations.Except (moqCompilations).Select (c => c.AssemblyName).ToList();
+      if (projectsWithMissingMoqReference.Any())
+      {
+        var message =
+            $"Moq is missing in the following projects where Rhino.Mocks IS installed: {Environment.NewLine}"
+            + string.Join (Environment.NewLine, projectsWithMissingMoqReference);
+
+        throw new InvalidOperationException (message);
+      }
     }
   }
 }

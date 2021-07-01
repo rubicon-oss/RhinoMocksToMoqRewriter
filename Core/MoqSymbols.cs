@@ -28,6 +28,17 @@ namespace RhinoMocksToMoqRewriter.Core
       MoqSequenceHelperSymbol = compilation.GetTypeByMetadataName ("Moq.MockSequenceHelper")!;
       MoqProtectedSymbol = compilation.GetTypeByMetadataName ("Moq.Protected.IProtectedMock`1")!;
       MoqProtectedExtensionSymbol = compilation.GetTypeByMetadataName ("Moq.Protected.ProtectedExtension")!;
+      if (GenericMoqSymbol is null ||
+          MoqSymbol is null ||
+          MoqCallbackSymbol is null ||
+          MoqReturnsSymbol is null ||
+          MoqVerifiableSymbol is null ||
+          MoqSequenceHelperSymbol is null ||
+          MoqProtectedSymbol is null ||
+          MoqProtectedExtensionSymbol is null)
+      {
+        throw new InvalidOperationException ("Unable to get Moq Symbols.\r\nMake sure Moq is installed in:" + compilation.AssemblyName);
+      }
     }
 
     #region TypeSymbols

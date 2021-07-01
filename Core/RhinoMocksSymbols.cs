@@ -35,6 +35,25 @@ namespace RhinoMocksToMoqRewriter.Core
       RhinoMocksExpectSymbol = compilation.GetTypeByMetadataName ("Rhino.Mocks.Expect")!;
       RhinoMocksLastCallSymbol = compilation.GetTypeByMetadataName ("Rhino.Mocks.LastCall")!;
       RhinoMocksSetupResultSymbol = compilation.GetTypeByMetadataName ("Rhino.Mocks.SetupResult")!;
+      if (RhinoMocksMockRepositorySymbol is null ||
+          RhinoMocksArgSymbol is null ||
+          RhinoMocksConstraintsListArgSymbol is null ||
+          RhinoMocksGenericArgSymbol is null ||
+          RhinoMocksConstraintsIsArgSymbol is null ||
+          RhinoMocksArgTextSymbol is null ||
+          RhinoMocksConstraintIsSymbol is null ||
+          RhinoMocksConstraintListSymbol is null ||
+          RhinoMocksConstraintPropertySymbol is null ||
+          RhinoMocksExtensionSymbol is null ||
+          RhinoMocksIRepeatSymbol is null ||
+          RhinoMocksIMethodOptionsSymbol is null ||
+          RhinoMocksExpectSymbol is null ||
+          RhinoMocksLastCallSymbol is null ||
+          RhinoMocksSetupResultSymbol is null)
+      {
+        throw new InvalidOperationException ("Unable to get Rhino.Mocks Symbols.\r\n"
+                                             + "Make sure the correct version of Rhino.Mocks is installed in:" + compilation.AssemblyName);
+      }
     }
 
     #region TypeSymbols
