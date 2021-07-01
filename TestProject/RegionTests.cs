@@ -16,6 +16,7 @@ using NUnit.Framework;
 using Rhino.Mocks;
 using TestProject.TestClasses;
 using TestProject.TestInterfaces;
+
 namespace TestProject
 {
   [TestFixture]
