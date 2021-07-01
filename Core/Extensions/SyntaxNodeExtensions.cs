@@ -12,6 +12,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -34,7 +35,7 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
       }
 
       var numberOfSpaces = node.GetLeadingTrivia().ToString().Count (c => c.ToString() == c_whiteSpace);
-      return Strings.Space (numberOfSpaces);
+      return new string (Enumerable.Repeat (c_whiteSpace[0], numberOfSpaces).ToArray());
     }
 
     public static TypeArgumentListSyntax GetTypeArgumentList (this SyntaxNode node)
@@ -111,8 +112,8 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
         return string.Empty;
       }
 
-      var nodeAsString = node.ToString().Split ("(");
-      if (node.ToString().Split ("(").Length < 2)
+      var nodeAsString = node.ToString().Split ('(');
+      if (node.ToString().Split ('(').Length < 2)
       {
         return string.Empty;
       }
@@ -128,16 +129,6 @@ namespace RhinoMocksToMoqRewriter.Core.Extensions
       }
 
       return string.Empty;
-    }
-
-    public static string GetIndentation (this SyntaxNode node)
-    {
-      var nodeAsString = node.ToFullString();
-      return string.Join (
-          "",
-          nodeAsString.Select ((c, index) => nodeAsString[index..].TakeWhile (e => e.ToString() == c_whiteSpace))
-              .OrderByDescending (e => e.Count())
-              .First());
     }
   }
 }

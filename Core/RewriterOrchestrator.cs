@@ -93,7 +93,7 @@ namespace RhinoMocksToMoqRewriter.Core
     {
       foreach (var syntaxTree in syntaxTrees)
       {
-        await File.WriteAllTextAsync (
+        File.WriteAllText (
             syntaxTree.FilePath!,
             (await syntaxTree.GetRootAsync()).ToFullString(),
             syntaxTree.Encoding!);

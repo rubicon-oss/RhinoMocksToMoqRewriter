@@ -37,7 +37,14 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       {
         var currentNode = trackedNodes.GetCurrentNode (node, compilationId)!;
         var annotations = currentNode.GetAnnotations (c_annotationId).ToList();
-        var trackedNode = annotations.Select (a => s_originalNodes.GetValueOrDefault ((a, compilationId))).FirstOrDefault();
+        var trackedNode = annotations
+            .Select (
+                a =>
+                {
+                  s_originalNodes.TryGetValue ((a, compilationId), out var value);
+                  return value;
+                })
+            .FirstOrDefault();
 
         foreach (var annotation in annotations.Where (a => !s_originalNodes.ContainsKey ((a, compilationId))))
         {

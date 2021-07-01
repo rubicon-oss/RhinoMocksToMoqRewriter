@@ -128,7 +128,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
 
     private static (int Min, int Max) GetDataFromString (string? annotationData)
     {
-      var data = annotationData!.Split (":");
+      var data = annotationData!.Split (':');
       return (int.Parse (data.First()), int.Parse (data.Last()));
     }
 
