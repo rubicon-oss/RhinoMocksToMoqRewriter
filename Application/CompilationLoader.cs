@@ -15,6 +15,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Buildalyzer;
+using Buildalyzer.Workspaces;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -27,6 +29,8 @@ namespace RhinoMocksToMoqRewriter.Application
   {
     private readonly MSBuildWorkspace _msBuildWorkspace;
 
+    private AnalyzerManager _analyzerManager;
+
     public SyntaxGenerator Generator { get; }
 
     public Workspace Workspace { get; private set; } = null!;
@@ -36,6 +40,7 @@ namespace RhinoMocksToMoqRewriter.Application
       var instance = MSBuildLocator.QueryVisualStudioInstances().First();
       MSBuildLocator.RegisterInstance (instance);
       _msBuildWorkspace = MSBuildWorkspace.Create();
+      _analyzerManager = new AnalyzerManager();
       Generator = SyntaxGenerator.GetGenerator (_msBuildWorkspace, "C#");
     }
 
@@ -43,14 +48,23 @@ namespace RhinoMocksToMoqRewriter.Application
     {
       var solution = await _msBuildWorkspace.OpenSolutionAsync (pathToSolution);
       Workspace = solution.Workspace;
+      var m = new AnalyzerManager (pathToSolution);
+      var r = m.Projects.Where (s => s.Key.Contains ("ObjectBinding.Web.UnitTests")).First().Value.Build();
+      var f = (await r.First().GetWorkspace().CurrentSolution.Projects.First().GetCompilationAsync())!.GetDiagnostics().ToList();
+      var w = r.First().GetWorkspace();
+      w.ClearSolution();
+      var e = w.AddSolution (SolutionInfo.Create (solution.Id, solution.Version, pathToSolution));
       return solution;
     }
 
     public async Task<Project> LoadProjectAsync (string pathToProject)
     {
-      var project = await _msBuildWorkspace.OpenProjectAsync (pathToProject);
-      Workspace = project.Solution.Workspace;
-      return project;
+      //var project = await _msBuildWorkspace.OpenProjectAsync (pathToProject);
+      //Workspace = project.Solution.Workspace;
+      var adhocWorkspace = _analyzerManager.GetProject (pathToProject).Build().Results.First().GetWorkspace();
+      var project = adhocWorkspace.CurrentSolution.Projects.First();
+      Workspace = adhocWorkspace;
+      return await Task.FromResult(project);
     }
 
     public async Task<IReadOnlyList<CSharpCompilation>> LoadCompilationsAsync (IEnumerable<Project> projects)
