@@ -830,7 +830,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     public static IdentifierNameSyntax SystemIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.SystemIdentifier);
     public static IdentifierNameSyntax StaticIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.StaticIdentifier);
     public static IdentifierNameSyntax SetupSetIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.SetupSetIdentifier);
-
+    public static IdentifierNameSyntax StubIdentifierName { get; } = SyntaxFactory.IdentifierName (MoqSyntaxFactory.StubIdentifier);
     private static LiteralExpressionSyntax NullLiteralExpression { get; } = SyntaxFactory.LiteralExpression (SyntaxKind.NullLiteralExpression);
     private static LiteralExpressionSyntax DefaultLiteralExpression { get; } = SyntaxFactory.LiteralExpression (
         SyntaxKind.DefaultLiteralExpression,
@@ -883,6 +883,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     private static SyntaxToken SystemIdentifier => SyntaxFactory.Identifier ("System");
     private static SyntaxToken StaticIdentifier => SyntaxFactory.Identifier ("static");
     private static SyntaxToken SetupSetIdentifier => SyntaxFactory.Identifier ("SetupSet");
+    public static SyntaxToken StubIdentifier => SyntaxFactory.Identifier ("Stub");
 
     #endregion
     public static ExpressionSyntax CastExpression (TypeSyntax type, ExpressionSyntax expression)

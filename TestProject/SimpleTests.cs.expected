@@ -187,7 +187,7 @@ namespace TestProject
     [Test]
     public void Rewrite_SetupResultFor ()
     {
-      _mock1.Setup (_ => _.A).Returns (42).Verifiable();
+      _mock1.Setup (_ => _.A).Returns (42);
 
       Assert.Pass();
     }
