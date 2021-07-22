@@ -18,10 +18,10 @@ namespace RhinoMocksToMoqRewriter.Application
 {
   public class Options
   {
-    [Option ('S', "Solution", SetName = "solution", HelpText = "Relative or absolute path to a solution.")]
+    [Option ('S', "Solution", Required = true, SetName = "SolutionPath", HelpText = "Relative or absolute path to a solution file.")]
     public string? SolutionPath { get; set; }
 
-    [Option ('P', "Project", SetName = "project", HelpText = "Relative or absolute path to a project.")]
+    [Option ('P', "Project", Required = true, SetName = "ProjectPath", HelpText = "Relative or absolute path to a project file.")]
     public string? ProjectPath { get; set; }
   }
 }

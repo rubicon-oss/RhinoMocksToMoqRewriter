@@ -53,8 +53,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       if (currentNode is null)
       {
         Console.Error.WriteLine (
-            $"WARNING: Unable to insert .Object"
-            + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
+            $"  WARNING: Unable to insert .Object"
+            + $"\r\n  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
 
         return baseCallNode;
       }
@@ -67,12 +67,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
             MoqSyntaxFactory.MockObjectExpression (identifierNameToBeReplaced)
                 .WithLeadingAndTrailingTriviaOfNode (identifierNameToBeReplaced)!);
       }
-      catch (Exception ex)
+      catch (Exception)
       {
         Console.Error.WriteLine (
-            $"WARNING: Unable to insert .Object"
-            + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}"
-            + $"\r\n{ex}");
+            $"  WARNING: Unable to insert .Object"
+            + $"\r\n  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
 
         return baseCallNode;
       }
@@ -149,12 +148,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
             newExpressions = newExpressions.Replace (expression, MoqSyntaxFactory.MockObjectExpression (expression));
           }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
           Console.Error.WriteLine (
-              $"WARNING: Unable to insert .Object"
-              + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}"
-              + $"\r\n{ex}");
+              $"  WARNING: Unable to insert .Object"
+              + $"\r\n  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
 
           return baseCallNode;
         }
@@ -173,13 +171,39 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return baseCallNode;
       }
 
-      var rightType = Model.GetTypeInfo (baseCallNode.GetOriginalNode (baseCallNode.Right, CompilationId)!).Type?.BaseType;
+      INamedTypeSymbol? rightType;
+      try
+      {
+        rightType = Model.GetTypeInfo (baseCallNode.GetOriginalNode (baseCallNode.Right, CompilationId)!).Type?.BaseType;
+      }
+      catch (Exception)
+      {
+        Console.Error.WriteLine (
+            $"  WARNING: Unable to insert .Object"
+            + $"\r\n  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
+
+        return baseCallNode;
+      }
+
       if (!MoqSymbols.MoqSymbol.Equals (rightType, SymbolEqualityComparer.Default))
       {
         return baseCallNode;
       }
 
-      var leftType = Model.GetTypeInfo (baseCallNode.GetOriginalNode (baseCallNode.Left, CompilationId)!).Type?.BaseType;
+      INamedTypeSymbol? leftType;
+      try
+      {
+        leftType = Model.GetTypeInfo (baseCallNode.GetOriginalNode (baseCallNode.Left, CompilationId)!).Type?.BaseType;
+      }
+      catch (Exception)
+      {
+        Console.Error.WriteLine (
+            $"  WARNING: Unable to insert .Object"
+            + $"\r\n  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
+
+        return baseCallNode;
+      }
+
       if (MoqSymbols.MoqSymbol.Equals (leftType, SymbolEqualityComparer.Default))
       {
         return baseCallNode;

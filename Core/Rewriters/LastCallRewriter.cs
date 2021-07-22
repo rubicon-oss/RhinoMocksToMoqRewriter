@@ -30,13 +30,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       {
         trackedNodes = node.TrackNodes (node.DescendantNodes().OfType<StatementSyntax>(), CompilationId);
       }
-      catch (Exception ex)
+      catch (Exception)
       {
         Console.Error.WriteLine (
-            $"WARNING: Unable to convert LastCall"
-            + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}"
-            + $"\r\n{ex}");
-
+            $"  WARNING: Unable to convert node\r\n"
+            + $"  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
         return node;
       }
 
@@ -61,8 +59,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         if (lastCalledMock == null)
         {
           Console.Error.WriteLine (
-              $"WARNING: Unable to convert LastCall"
-              + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
+              $"  WARNING: Unable to convert LastCall"
+              + $"\r\n  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
           continue;
         }
 

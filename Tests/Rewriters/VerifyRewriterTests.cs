@@ -139,6 +139,16 @@ _mock6.Verify();")]
         @"_mock1.Verify (_ => _.DoSomething(), Times.Never());")]
     [TestCase (
         //language=C#
+        @"_mock1.AssertWasNotCalled (_ => _.DoSomething(), o => o.IgnoreArguments());",
+        //language=C#
+        @"_mock1.Verify (_ => _.DoSomething(), Times.Never(), o => o.IgnoreArguments());")]
+    [TestCase (
+        //language=C#
+        @"_mock1.AssertWasCalled (_ => _.DoSomething(), o => o.Repeat.Once());",
+        //language=C#
+        @"_mock1.Verify (_ => _.DoSomething(), Times.AtLeastOnce(), o => o.Repeat.Once());")]
+    [TestCase (
+        //language=C#
         @"Rhino.Mocks.RhinoMocksExtensions.AssertWasNotCalled (_mock1, _ => _.DoSomething());",
         //language=C#
         @"_mock1.Verify (_ => _.DoSomething(), Times.Never());")]
@@ -274,6 +284,18 @@ mock.Verify (_ => _.DoSomething(), Times.Between (2, 8));",
         //language=C#
         @"
 2:8")]
+    [TestCase (
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.VerifyAllExpectations();",
+        //language=C#
+        @"
+mock.Setup (_ => _.DoSomething());
+mock.Verify (_ => _.DoSomething(), Times.Exactly (""Unable to convert times expression""));",
+        //language=C#
+        @"
+-3")]
     [TestCase (
         //language=C#
         @"

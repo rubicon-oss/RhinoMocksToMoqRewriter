@@ -224,5 +224,25 @@ namespace TestProject
       var testClass = new TestClass();
       testClass.RegisterSingle (() => stub);
     }
+
+    [Test]
+    public void TestAssertWasCalledAndAssertWasNotCalled ()
+    {
+      var stub = MockRepository.GenerateStub<ITestInterface>();
+
+      stub.AssertWasCalled (_ => _.Delete(), o => o.Repeat.Times (42));
+      stub.AssertWasNotCalled (_ => _.Read (null), o => o.IgnoreArguments());
+    }
+
+    [Test]
+    public void RepeatTimes ()
+    {
+      var stub = MockRepository.GenerateStub<ITestInterface>();
+
+      var anyValue = 1;
+      stub.Expect (_ => _.Delete()).Repeat.Times (anyValue - 1);
+
+      stub.VerifyAllExpectations();
+    }
   }
 }

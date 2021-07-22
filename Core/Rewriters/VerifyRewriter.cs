@@ -54,9 +54,18 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           replacementNodes = InsertTimesExpression (replacementNodes, annotatedSetupExpressionStatements).ToList();
         }
 
-        node = node.ReplaceNode (
-            currentNode!,
-            replacementNodes);
+        try
+        {
+          node = node.ReplaceNode (
+              currentNode!,
+              replacementNodes);
+        }
+        catch (Exception)
+        {
+          Console.Error.WriteLine (
+              $"  WARNING: Unable to convert Ordered using statement"
+              + $"\r\n  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
+        }
       }
 
       return node;
@@ -177,10 +186,16 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         throw new InvalidOperationException ("Expression must be of type InvocationExpressionSyntax");
       }
 
+      ArgumentSyntax? optionsArgument = null;
+      if (invocationExpression.ArgumentList.Arguments.Count == 2)
+      {
+        optionsArgument = invocationExpression.ArgumentList.Arguments.Last();
+      }
+
       var identifierName = invocationExpression.GetFirstIdentifierName();
       var mockedMethodExpression = invocationExpression.ArgumentList.GetFirstArgument().Expression;
 
-      return node.WithExpression (MoqSyntaxFactory.VerifyExpression (identifierName, mockedMethodExpression, times));
+      return node.WithExpression (MoqSyntaxFactory.VerifyExpression (identifierName, mockedMethodExpression, times, optionsArgument));
     }
 
     private IEnumerable<ExpressionStatementSyntax> RewriteVerifyAllExpression (ExpressionStatementSyntax node)
@@ -188,6 +203,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       var rootNode = node.SyntaxTree.GetRoot();
       var mockRepositoryIdentifierName = node.GetFirstIdentifierName();
       var mockIdentifierNames = GetAllMockIdentifierNames (node, rootNode, mockRepositoryIdentifierName).ToList();
+
+      if (mockIdentifierNames.Count == 0)
+      {
+        return new[] { node };
+      }
 
       var verifyStatements = new List<ExpressionStatementSyntax>();
       for (var i = 0; i < mockIdentifierNames.Count; i++)
