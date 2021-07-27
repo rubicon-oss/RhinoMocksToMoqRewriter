@@ -24,7 +24,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
   {
     public override SyntaxNode? VisitExpressionStatement (ExpressionStatementSyntax node)
     {
-      var trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf().Where (s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression)), CompilationId);
+      var trackedNodes = node.TrackNodes (
+          node.DescendantNodesAndSelf().Where (
+              s => s.IsKind (SyntaxKind.SimpleMemberAccessExpression)
+                   || s.IsKind (SyntaxKind.ExpressionStatement)),
+          CompilationId);
       var baseCallNode = (ExpressionStatementSyntax) base.VisitExpressionStatement (trackedNodes)!;
 
       var setupResultForMemberAccessExpression = GetSetupResultForExpressionOrDefault (baseCallNode);
@@ -34,12 +38,23 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return baseCallNode;
       }
 
-      var expectCallExpression = baseCallNode.ReplaceNode (
-          baseCallNode.GetCurrentNode (setupResultForMemberAccessExpression, CompilationId)!,
-          MoqSyntaxFactory.ExpectCallMemberAccessExpression());
+      var mockedExpression = baseCallNode.GetCurrentNode (baseCallNode, CompilationId)!.GetFirstArgument();
+      var stubExpression = MoqSyntaxFactory.MemberAccessExpression (mockedExpression.GetFirstIdentifierName(), MoqSyntaxFactory.StubIdentifierName);
+      var stubArgumentList = MoqSyntaxFactory.SimpleArgumentList (
+          MoqSyntaxFactory.SimpleLambdaExpression (
+              mockedExpression.Expression.ReplaceNode (
+                  mockedExpression.GetFirstIdentifierName(),
+                  MoqSyntaxFactory.LambdaParameterIdentifierName)));
+
+      var currentSetupResultForInvocationExpression = baseCallNode.GetCurrentNode (setupResultForMemberAccessExpression, CompilationId)!.Parent!;
+      var rewrittenExpression = baseCallNode.ReplaceNode (
+          currentSetupResultForInvocationExpression!,
+          MoqSyntaxFactory.InvocationExpression (stubExpression, stubArgumentList));
 
       return baseCallNode.WithExpression (
-              Formatter.MarkWithFormatAnnotation (MoqSyntaxFactory.RepeatAnyExpressionStatement (expectCallExpression.Expression)))
+              Formatter.MarkWithFormatAnnotation (
+                  MoqSyntaxFactory.RepeatAnyExpressionStatement (
+                      rewrittenExpression.Expression)))
           .WithLeadingAndTrailingTriviaOfNode (node);
     }
 

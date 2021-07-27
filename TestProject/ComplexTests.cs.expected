@@ -108,7 +108,7 @@ namespace TestProject
     public void Test_SetupResultFor ()
     {
       var mock = new Mock<ITestInterface>();
-      mock.Setup (_ => _.A).Returns (42).Verifiable();
+      mock.Setup (_ => _.A).Returns (42);
 
       mock.Verify();
       Assert.Pass();

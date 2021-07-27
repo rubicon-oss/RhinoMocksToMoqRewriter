@@ -58,12 +58,12 @@ private ITestInterface _mock = MockRepository.GenerateMock<ITestInterface>();"
         //language=C#
         @"SetupResult.For (_mock.Number).Return (42);",
         //language=C#
-        @"Expect.Call (_mock.Number).Return (42).Repeat.Any();")]
+        @"_mock.Stub (_ => _.Number).Return (42).Repeat.Any();")]
     [TestCase (
         //language=C#
         @"SetupResult.For (_mock.Number).IgnoreArguments().Return (42);",
         //language=C#
-        @"Expect.Call (_mock.Number).IgnoreArguments().Return (42).Repeat.Any();")]
+        @"_mock.Stub (_ => _.Number).IgnoreArguments().Return (42).Repeat.Any();")]
     public void Rewrite_SetupResultFor (string source, string expected)
     {
       var (model, node) = CompiledSourceFileProvider.CompileExpressionStatementWithContext (source, _context);
@@ -88,7 +88,7 @@ using (null)
         @"
 using (null)
 {
-  Expect.Call (_mock.Number).Return (42).Repeat.Any();
+ _mock.Stub (_ => _.Number).Return (42).Repeat.Any();
 }")]
     [TestCase (
         //language=C#
@@ -102,7 +102,7 @@ DoSomething(
 DoSomething(
     ""test"",
     null,
-    delegate { Expect.Call (_mock.DoSomething(() => 1)).Return (42).Repeat.Any(); });")]
+    delegate { _mock.Stub (_ => _.DoSomething (() => 1)).Return (42).Repeat.Any(); });")]
     [TestCase (
         //language=C#
         @"
@@ -117,8 +117,8 @@ _mock.DoSomething(
 _mock.DoSomething(
     delegate
     {
-      Expect.Call (_mock.DoSomething (
-        () => { Expect.Call (_mock.Number).Return (42).Repeat.Any(); })).Return (1).Repeat.Any();
+      _mock.Stub (_ => _.DoSomething (
+        () => { _mock.Stub (_ => _.Number).Return (42).Repeat.Any(); })).Return (1).Repeat.Any();
     });")]
     public void Rewrite_NestedSetupResultFor (string source, string expected)
     {
