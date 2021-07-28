@@ -27,7 +27,7 @@ namespace RhinoMocksToMoqRewriter.Tests
   public class IntegrationTests
   {
     private MSBuildWorkspace _workspace;
-    private const string c_pathToExecutable = @"../../../../Application/bin/Release/net5.0/Application.dll";
+    private const string c_pathToExecutable = @"../../../../Application/bin/Release/net5.0/RhinoMocksToMoqRewriter.dll";
     private const string c_pathToProject = @"../../../../TestProject/TestProject.csproj";
     private const string c_pathToApplication = @"../../../../Application/Application.csproj";
     private const string c_pathToCore = @"../../../../Core/Core.csproj";
