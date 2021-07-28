@@ -1,0 +1,26 @@
+name: Publish
+on:
+  release:
+    types: [published]
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+          - name: Checkout
+            uses: actions/checkout@v2
+         
+          - name: Setup .NET Core SDK
+            uses: actions/setup-dotnet@v1.8.1
+          
+          - name: Build
+            shell: bash
+            run: |
+              version=$(git describe --tags --abbrev=0)
+              dotnet pack --output output --configuration Release -p:version="$version" Application/Application.csproj
+          - name: Publish
+            uses: softprops/action-gh-release@v1
+            with:
+              files: "output/*.nupkg"
+            env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -7,6 +7,9 @@
     <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>RhinoMocksToMoqRewriter</AssemblyName>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>RhinoMocksToMoqRewriter</ToolCommandName>
   </PropertyGroup>
 
   <ItemGroup>
