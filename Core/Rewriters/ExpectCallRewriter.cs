@@ -79,7 +79,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         InvocationExpressionSyntax originalRhinoMocksInvocationExpression)
     {
       var rewrittenInvocationExpression =
-          (InvocationExpressionSyntax) ((SimpleLambdaExpressionSyntax) rewrittenContainedExpression.GetFirstArgument().Expression).ExpressionBody!;
+          (InvocationExpressionSyntax) (rewrittenContainedExpression.GetFirstArgumentOrDefault()?.Expression as SimpleLambdaExpressionSyntax)?.ExpressionBody!;
+
+      if (rewrittenInvocationExpression is null)
+      {
+        Console.Error.WriteLine ("  WARNING: Unable to convert Expect.Call");
+        return rewrittenContainedExpression;
+      }
 
       var containedArgument = originalRhinoMocksMemberAccessExpression.Expression.GetFirstArgument();
       var originalContainedInvocationExpression = containedArgument.Expression switch

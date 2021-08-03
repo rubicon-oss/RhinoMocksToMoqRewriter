@@ -243,7 +243,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           MoqSyntaxFactory.VerifyExpression (identifierName));
     }
 
-    public static ExpressionSyntax VerifyExpression (IdentifierNameSyntax identifierName, ExpressionSyntax? expression = null, int? times = null)
+    public static ExpressionSyntax VerifyExpression (IdentifierNameSyntax identifierName, ExpressionSyntax? expression = null, int? times = null, ArgumentSyntax? rhinoMocksMethodOptions = null)
     {
       var argumentList = expression is null || times == null
           ? null
@@ -253,6 +253,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                   MoqSyntaxFactory.Argument (expression),
                   MoqSyntaxFactory.Argument (TimesExpression ((int) times)).WithLeadingTrivia (SyntaxFactory.Space)
               });
+
+      if (rhinoMocksMethodOptions is not null)
+      {
+        argumentList = argumentList?.WithArguments (argumentList.Arguments.Add (rhinoMocksMethodOptions.WithLeadingTrivia (SyntaxFactory.Space)));
+      }
 
       return MoqSyntaxFactory.InvocationExpression (
           MoqSyntaxFactory.MemberAccessExpression (
@@ -764,7 +769,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           {
               -1 or 0 or 1 => null,
               -2 => MoqSyntaxFactory.ArgumentList (new[] { Argument (NumericLiteralExpression (min)), Argument (NumericLiteralExpression (max)).WithLeadingTrivia (SyntaxFactory.Space) }),
-              _ => MoqSyntaxFactory.ArgumentList (Argument (NumericLiteralExpression (times)))
+              _ => MoqSyntaxFactory.ArgumentList (
+                  Argument (
+                      times == -3
+                          ? StringLiteralExpression ("Unable to convert times expression")
+                          : NumericLiteralExpression (times)))
           });
     }
 
@@ -778,6 +787,13 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       return SyntaxFactory.LiteralExpression (
           SyntaxKind.NumericLiteralExpression,
           SyntaxFactory.Literal (times));
+    }
+
+    private static LiteralExpressionSyntax StringLiteralExpression (string text)
+    {
+      return SyntaxFactory.LiteralExpression (
+          SyntaxKind.StringLiteralExpression,
+          SyntaxFactory.Literal (text));
     }
 
     private static ParameterSyntax Parameter (TypeSyntax type, SyntaxToken identifier)

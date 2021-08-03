@@ -43,12 +43,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
         return MoqSyntaxFactory.ExpressionStatement (MoqSyntaxFactory.NestedMemberAccessExpression (mockIdentifierName, expressionsWithModifiedArgumentLists))
             .WithLeadingAndTrailingTriviaOfNode (node);
       }
-      catch (Exception ex)
+      catch (Exception)
       {
         Console.Error.WriteLine (
             $"  WARNING: Unable to convert .IgnoreArguments\r\n"
-            + $"  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}\r\n"
-            + ex);
+            + $"  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
 
         return baseCallNode;
       }

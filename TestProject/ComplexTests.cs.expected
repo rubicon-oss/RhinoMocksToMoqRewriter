@@ -213,5 +213,25 @@ namespace TestProject
       var testClass = new TestClass();
       testClass.RegisterSingle (() => stub.Object);
     }
+
+    [Test]
+    public void TestAssertWasCalledAndAssertWasNotCalled ()
+    {
+      var stub = new Mock<ITestInterface>();
+
+      stub.Verify (_ => _.Delete(), Times.AtLeastOnce(), o => o.Repeat.Times (42));
+      stub.Verify (_ => _.Read (null), Times.Never(), o => o.IgnoreArguments());
+    }
+
+    [Test]
+    public void RepeatTimes ()
+    {
+      var stub = new Mock<ITestInterface>();
+
+      var anyValue = 1;
+      stub.Setup (_ => _.Delete()).Verifiable();
+
+      stub.Verify (_ => _.Delete(), Times.Exactly ("Unable to convert times expression"));
+    }
   }
 }

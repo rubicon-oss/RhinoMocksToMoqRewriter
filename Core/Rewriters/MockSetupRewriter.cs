@@ -33,6 +33,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
     public override SyntaxNode? VisitExpressionStatement (ExpressionStatementSyntax node)
     {
       var trackedNodes = TrackDescendantNodes (node);
+      if (IsAssertWasCalledOrAssertWasNotCalledExpressionStatement (trackedNodes))
+      {
+        return node;
+      }
+
       var baseCallNode = (ExpressionStatementSyntax) base.VisitExpressionStatement (trackedNodes)!;
 
       var originalNode = baseCallNode.GetOriginalNode (baseCallNode, CompilationId)!;
@@ -73,6 +78,15 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
                       .Expression))
           .WithAdditionalAnnotations (
               baseCallNode.GetAnnotations (new[] { "Id", MoqSyntaxFactory.VerifyAnnotationKind }));
+    }
+
+    private bool IsAssertWasCalledOrAssertWasNotCalledExpressionStatement (ExpressionStatementSyntax node)
+    {
+      var originalNode = node.GetOriginalNode (node, CompilationId)!;
+      var symbol = Model.GetSymbolInfo (originalNode.Expression).Symbol as IMethodSymbol;
+      return RhinoMocksSymbols.AssertWasCalledSymbols.Contains (symbol?.ReducedFrom ?? symbol?.OriginalDefinition)
+             || RhinoMocksSymbols.AssertWasNotCalledSymbols.Contains (symbol?.ReducedFrom ?? symbol?.OriginalDefinition);
+
     }
 
     private InvocationExpressionSyntax TransformSetupExpression (InvocationExpressionSyntax invocationExpression)
@@ -160,8 +174,8 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       if (argument is null)
       {
         Console.Error.WriteLine (
-            $"WARNING: Unable to convert Callback"
-            + $"\r\n{originalNode.SyntaxTree.FilePath} at line {originalNode.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
+            $"  WARNING: Unable to convert Callback"
+            + $"\r\n  {originalNode.SyntaxTree.FilePath} at line {originalNode.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
 
         return node;
       }
@@ -293,7 +307,7 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
           1 when invocationExpression.ArgumentList.Arguments.Single().Expression is LiteralExpressionSyntax { Token: { Value: int times } } => times.ToString(),
           2 when invocationExpression.ArgumentList.Arguments.First().Expression is LiteralExpressionSyntax { Token: { Value: int min } }
                  && invocationExpression.ArgumentList.Arguments.Last().Expression is LiteralExpressionSyntax { Token: { Value: int max } } => $"{min}:{max}",
-          _ => throw new InvalidOperationException ("Unable to resolve Repeat.Times")
+          _ => "-3"
       };
     }
 

@@ -36,13 +36,11 @@ namespace RhinoMocksToMoqRewriter.Core.Rewriters
       {
         trackedNodes = node.TrackNodes (node.DescendantNodesAndSelf(), CompilationId);
       }
-      catch (Exception ex)
+      catch (Exception)
       {
         Console.Error.WriteLine (
-            $"WARNING: Unable to delete obsolete methods"
-            + $"\r\n{node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}"
-            + $"\r\n{ex}");
-
+            $"  WARNING: Unable to convert node\r\n"
+            + $"  {node.SyntaxTree.FilePath} at line {node.GetLocation().GetMappedLineSpan().StartLinePosition.Line}");
         return node;
       }
 
