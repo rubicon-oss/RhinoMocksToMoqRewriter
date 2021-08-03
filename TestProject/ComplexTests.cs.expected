@@ -1,0 +1,237 @@
+﻿//  Copyright (c) rubicon IT GmbH
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+//
+
+using System;
+using Moq;
+using Moq.Protected;
+using NUnit.Framework;
+using TestProject.TestClasses;
+using TestProject.TestInterfaces;
+
+namespace TestProject
+{
+  [TestFixture]
+  public class ComplexTests
+  {
+    private ITestInterface _memberCaller;
+    private Order _order1;
+
+    private Customer _customer1;
+    private DomainObjectMockEventReceiver _order1MockEventReceiver;
+    private DomainObjectMockEventReceiver _customer1MockEventReceiver;
+    private ClientTransaction _subTransaction;
+    private Mock<ITestInterface> _serviceStub;
+    private Mock<ITypeInformation> _typeInformationForResourceResolutionStub;
+    private Mock<ITypeInformation> _typeInformationStub;
+    private Mock<IPropertyInformation> _propertyInformationStub;
+    private IDataStore<string, Lazy<Page>> _innerDataStoreMock;
+
+    [SetUp]
+    public void SetUp ()
+    {
+      _memberCaller = new TestClass();
+      _serviceStub = new Mock<ITestInterface>();
+      _typeInformationStub = new Mock<ITypeInformation>();
+      _typeInformationForResourceResolutionStub = new Mock<ITypeInformation>();
+      _propertyInformationStub = new Mock<IPropertyInformation>();
+
+      _serviceStub.Setup (_ => _.GetKey (1)).Returns ((string) null);
+    }
+
+    [Test]
+    public void InitRecursive ()
+    {
+      Page namingContainer = new Page();
+      var parentControlMock = new Mock<IControl>() { CallBase = true };
+      var childControlMock = new Mock<IControl>() { CallBase = true };
+      var childControlStub = new Mock<IControl>();
+      var anotherStub = new Mock<IControl>();
+
+      var sequence = new MockSequence();
+      childControlMock.InSequence (sequence).Protected().Setup ("OnInit", true, EventArgs.Empty).Verifiable();
+      parentControlMock.InSequence (sequence).Protected().Setup ("OnInit", true, EventArgs.Empty).Verifiable();
+
+      namingContainer.Controls.Add (parentControlMock.Object);
+      parentControlMock.Object.Controls.Add (childControlMock.Object);
+      _memberCaller.InitRecursive (parentControlMock.Object, namingContainer);
+
+      parentControlMock.Verify();
+      childControlMock.Verify();
+    }
+
+    [Test]
+    public void SubCommit_OfDeletedObject_DoesNotRaiseDeletedEvent ()
+    {
+      using (_subTransaction.EnterDiscardingScope())
+      {
+        ITestInterface domainObject = new TestClass();
+
+        var extensionMock = new Mock<IClientTransactionExtension> (MockBehavior.Strict);
+        extensionMock.Setup (stub => stub.Key).Returns ("Mock");
+        _subTransaction.Extensions.Add (extensionMock.ToString());
+        try
+        {
+          extensionMock.BackToRecord();
+
+          extensionMock.Object.ObjectDeleting (_subTransaction, domainObject);
+          extensionMock.Object.ObjectDeleted (_subTransaction, domainObject);
+
+          domainObject.Delete();
+          extensionMock.Verify();
+
+          repository.BackToRecordAll();
+          extensionMock.Setup (_ => _.Committing (It.IsAny<ITestInterface>(), It.IsAny<Order>(), It.IsAny<ClientTransaction>())).Verifiable();
+          extensionMock.Setup (_ => _.CommitValidate (It.IsAny<ITestInterface>(), It.IsAny<ClientTransaction>())).Verifiable();
+          extensionMock.Setup (_ => _.Committed (It.IsAny<ITestInterface>(), It.IsAny<ClientTransaction>())).Verifiable();
+
+          _subTransaction.Commit();
+          extensionMock.Verify();
+        }
+        finally
+        {
+          _subTransaction.Extensions.Remove ("Mock");
+        }
+      }
+    }
+
+    [Test]
+    public void Test_SetupResultFor ()
+    {
+      var mock = new Mock<ITestInterface>();
+      mock.Setup (_ => _.A).Returns (42);
+
+      mock.Verify();
+      Assert.Pass();
+    }
+
+    private void ChangeCustomerNameCallback (object sender, EventArgs e)
+    {
+      LastCall.IgnoreArguments();
+    }
+
+    [Test]
+    public void ContainsPropertyDisplayName_NoResourceFound_ReturnsFalse ()
+    {
+      _serviceStub
+          .Setup (
+              _ => _.TryGetPropertyDisplayName (
+                  _propertyInformationStub.Object,
+                  _typeInformationForResourceResolutionStub.Object,
+                  out Arg<string>.Out (null).Dummy))
+          .Returns (false);
+
+      var result = _serviceStub.Object.ContainsPropertyDisplayName (_propertyInformationStub.Object, _typeInformationForResourceResolutionStub.Object);
+
+      Assert.That (result, Is.False);
+    }
+
+    [Test]
+    public void ContainsPropertyDisplayName_ResourceFound_ReturnsTrue ()
+    {
+      _serviceStub
+          .Setup (
+              _ => _.TryGetPropertyDisplayName (
+                  _propertyInformationStub.Object,
+                  _typeInformationForResourceResolutionStub.Object,
+                  out Arg<string>.Out ("expected").Dummy))
+          .Returns (true);
+
+      var result = _serviceStub.Object.ContainsPropertyDisplayName (_propertyInformationStub.Object, _typeInformationForResourceResolutionStub.Object);
+
+      Assert.That (result, Is.True);
+    }
+
+    [Test]
+    public void GetPropertyDisplayName_NoResourceFound_ReturnsShortPropertyName ()
+    {
+      _serviceStub
+          .Setup (
+              _ => _.TryGetPropertyDisplayName (
+                  new Mock<IPropertyInformation>().Object,
+                  _typeInformationForResourceResolutionStub.Object,
+                  out Arg<string>.Out (null).Dummy))
+          .Returns (false);
+
+      _propertyInformationStub.Setup (_ => _.DeclaringType).Returns (_typeInformationStub.Object);
+
+      var result = _serviceStub.Object.GetPropertyDisplayName (new Mock<IPropertyInformation>().Object, _typeInformationForResourceResolutionStub.Object);
+      var a = new[] { new Mock<IPropertyInformation>().Object, _propertyInformationStub.Object, new Mock<IPropertyInformation>().Object };
+      Assert.That (result, Is.EqualTo ("PropertyName"));
+    }
+
+    [Test]
+    public void Add ()
+    {
+      var value = new object ();
+      _innerDataStoreMock
+          .Setup (store => store.Add ("key", It.Is<Lazy<Page>> (c => c.Value == value)))
+          .Callback ((string key, Lazy<Page> value) => CheckInnerDataStoreIsProtected ())
+          .Verifiable();
+
+      _innerDataStoreMock.Verify();
+    }
+
+    [Test]
+    public void Remove ()
+    {
+      _innerDataStoreMock
+          .Setup (mock => mock.Remove ("key"))
+          .Returns (true)
+          .Callback ((string key) => CheckInnerDataStoreIsProtected())
+          .Verifiable();
+
+      _innerDataStoreMock.Verify();
+      Assert.That (true, Is.EqualTo (true));
+    }
+
+    [Test]
+    public void Clear ()
+    {
+      _innerDataStoreMock
+          .Setup (store => store.Clear())
+          .Callback (() => CheckInnerDataStoreIsProtected ())
+          .Verifiable();
+
+      _innerDataStoreMock.Verify();
+    }
+
+    private void CheckInnerDataStoreIsProtected ()
+    {
+      var stub = new Mock<IPropertyInformation>();
+      IPropertyInformation a = stub.Object;
+
+      var testClass = new TestClass();
+      testClass.RegisterSingle (() => stub.Object);
+    }
+
+    [Test]
+    public void TestAssertWasCalledAndAssertWasNotCalled ()
+    {
+      var stub = new Mock<ITestInterface>();
+
+      stub.Verify (_ => _.Delete(), Times.AtLeastOnce(), o => o.Repeat.Times (42));
+      stub.Verify (_ => _.Read (null), Times.Never(), o => o.IgnoreArguments());
+    }
+
+    [Test]
+    public void RepeatTimes ()
+    {
+      var stub = new Mock<ITestInterface>();
+
+      var anyValue = 1;
+      stub.Setup (_ => _.Delete()).Verifiable();
+
+      stub.Verify (_ => _.Delete(), Times.Exactly ("Unable to convert times expression"));
+    }
+  }
+}
