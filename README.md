@@ -80,6 +80,7 @@ RhinoMocksToMoqRewriter supports the following conversions:
 ## Tips for manually fixing the code after the transformation
 
 * `.Record()` and `.Playback()` are currently not supported.
+* When using the `Repeat` Keyword, the expectation will be set up `n` times. After the `n`th call the default value will be returned.
 * In `Rhino.Mocks` the first expectation is not overwritten, unless it is a `StrictMock`, in this case the first setup is used for the first call and the second setup is used for the second call and so on.
 ```csharp
 mock.Expect (_ => _.A).Return (1);
