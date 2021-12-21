@@ -60,7 +60,8 @@ RhinoMocksToMoqRewriter supports the following conversions:
 | .Repeat.Twice()                                            | Times.Exactly (2)^6                                                        |
 | .Repeat.AtLeastOnce()                                      | Times.AtLeastOnce()^6                                                      |
 | .Repeat.Times (min, max)                                   | Times.Between (min, max)^6                                                 |
-| Expect.Call (expression)                                   | .Expect (expression)                                                          |
+| Expect.Call (expression)                                   | .Expect (expression) 
+| .BackToRecordAll()                                         | .Invocations.Clear()                                                          |
 | using (mockRepository.Ordered())<br>{<br>mock.Expect()<br>}| var sequence1 = new MockSequence();<br>mock.InSequence (sequence1).Expect()); |
 
 ## Footnotes
