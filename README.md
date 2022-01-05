@@ -61,7 +61,7 @@ RhinoMocksToMoqRewriter supports the following conversions:
 | .Repeat.AtLeastOnce()                                      | Times.AtLeastOnce()^6                                                      |
 | .Repeat.Times (min, max)                                   | Times.Between (min, max)^6                                                 |
 | Expect.Call (expression)                                   | .Expect (expression) 
-| .BackToRecordAll()                                         | .Invocations.Clear()                                                          |
+| .BackToRecordAll()                                         | no equivalent. .Invocations.Clear() only clears actual invocations, not Setup |
 | using (mockRepository.Ordered())<br>{<br>mock.Expect()<br>}| var sequence1 = new MockSequence();<br>mock.InSequence (sequence1).Expect()); |
 
 ## Footnotes
